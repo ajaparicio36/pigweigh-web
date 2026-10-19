@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T00:00:00Z",
+  "title": "Design System: PigWeigh",
+  "extensions": {
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.23, 1, 0.32, 1)", "purpose": "Subtle pointer press feedback." },
+      { "name": "press", "value": "160ms", "purpose": "Button press scale to 0.98; removed for reduced motion and keyboard focus." }
+    ],
+    "breakpoints": [{ "name": "stack", "value": "768px" }],
+    "focus": { "width": "3px", "offset": "4px", "color": "var(--primary)", "onHeader": "var(--background)" }
+  },
+  "components": [
+    {
+      "name": "Primary button", "kind": "button", "refersTo": "button-primary",
+      "description": "The main action for the current task, with a visible pending or disabled state.",
+      "html": "<button class=\"ds-primary\">Request estimate</button>",
+      "css": ".ds-primary { background: var(--primary, #a40000); color: #fff; min-height: 46px; padding: 11px 20px; border: 1px solid transparent; border-radius: 8px; font: 600 15px/1.5 system-ui; cursor: pointer; } .ds-primary:focus-visible { outline: 3px solid #a40000; outline-offset: 4px; } .ds-primary:disabled { opacity: .5; cursor: not-allowed; } @media (hover:hover) and (pointer:fine) { .ds-primary:hover:not(:disabled) { background: #6a1314; } } @media (prefers-reduced-motion:no-preference) { .ds-primary { transition: transform 160ms cubic-bezier(.23,1,.32,1); } .ds-primary:active:not(:disabled) { transform: scale(.98); } .ds-primary:focus-visible { transform:none; transition:none; } }"
+    },
+    {
+      "name": "Secondary button", "kind": "button", "refersTo": "button-secondary",
+      "description": "Sign-out and explicit retry actions.",
+      "html": "<button class=\"ds-secondary\">Sign out</button>",
+      "css": ".ds-secondary { background: transparent; color: #6a1314; min-height: 46px; padding: 11px 20px; border: 1px solid #887a6b; border-radius: 8px; font: 600 15px/1.5 system-ui; cursor:pointer; } .ds-secondary:focus-visible { outline:3px solid #a40000; outline-offset:4px; } .ds-secondary:disabled { opacity:.5; } @media (hover:hover) and (pointer:fine) { .ds-secondary:hover:not(:disabled) { background:#faf6ef; } }"
+    },
+    {
+      "name": "Labeled field", "kind": "input", "refersTo": "input",
+      "description": "Permanent labels with associated help and errors.",
+      "html": "<label class=\"ds-label\" for=\"ds-reference\">Source reference</label><input id=\"ds-reference\" class=\"ds-input\" />",
+      "css": ".ds-label { display:block; margin-bottom:8px; color:#30231d; font:600 14px/1.5 system-ui; } .ds-input { width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid #887a6b; border-radius:8px; background:#fff; color:#30231d; font:16px/1.5 system-ui; caret-color:#a40000; } .ds-input:focus-visible { outline:3px solid #a40000; outline-offset:4px; } .ds-input[aria-invalid=true] { border-color:#a40000; } .ds-input:disabled { background:#faf6ef; }"
+    },
+    {
+      "name": "Primary navigation", "kind": "nav",
+      "description": "Compact dark red navigation with an explicit current page.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">Estimate</a><a href=\"#\">Admin</a></nav>",
+      "css": ".ds-nav { display:flex; gap:8px; background:#6a1314; color:#fff; padding:0 16px; font:15px/1.5 system-ui; } .ds-nav a { padding:20px 12px; border-bottom:3px solid transparent; text-decoration:none; color:#f3ebdf; } .ds-nav a[aria-current=page] { border-color:#f3ebdf; font-weight:650; color:#fff; } .ds-nav a:focus-visible { outline:3px solid #f3ebdf; outline-offset:-4px; } @media (hover:hover) and (pointer:fine) { .ds-nav a:hover { background:#7b2021; } }"
+    },
+    {
+      "name": "Photo work area", "kind": "card", "refersTo": "panel",
+      "description": "A view label, whole-photo review frame and native file selection form a single work area.",
+      "html": "<section class=\"ds-photo\"><h3>Top view</h3><div class=\"ds-frame\">From above</div><label class=\"ds-file\">Choose top-view photo<input type=\"file\" accept=\"image/jpeg,image/png,image/webp\" /></label></section>",
+      "css": ".ds-photo { border:1px solid #ccc0b0; border-radius:12px; background:#fff; color:#30231d; font:14px/1.5 system-ui; } .ds-photo h3 { font-size:17px; margin:0; padding:16px 20px; } .ds-frame { min-height:140px; display:grid; place-items:center; background:#faf6ef; color:#6a1314; border-block:1px solid #ccc0b0; font-size:20px; } .ds-file { display:block; padding:20px; font-weight:600; } .ds-file input { display:block; width:100%; margin-top:10px; font-size:13px; } .ds-file input:focus-visible { outline:3px solid #a40000; outline-offset:4px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Task-first paired photo review",
+    "overview": "The interface puts the photo pair and price publication tasks first. A cream canvas, dark red navigation and red primary actions preserve the incumbent identity. System typography and native controls keep repeated actions familiar.",
+    "keyCharacteristics": ["Preserved cream/red identity", "Native labeled forms", "Whole-photo review", "Truthful server states"],
+    "rules": [],
+    "dos": ["Do preserve the cream/red identity and familiar native form behavior.", "Do show server-derived prices, provenance and status truthfully.", "Do preserve visible keyboard focus, structural mobile stacking and reduced-motion support."],
+    "donts": ["Don't add model overlays, invented weights, confidence, valuations or institutional affiliation.", "Don't animate numbers or move readable data for decoration.", "Don't hide errors in temporary notifications or replace labels with placeholders."]
+  }
+}

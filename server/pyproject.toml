@@ -1,0 +1,21 @@
+[project]
+name = "pigweigh-api"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "alembic>=1.16,<2",
+  "fastapi>=0.115,<1",
+  "pillow>=12,<13",
+  "psycopg[binary]>=3.3,<4",
+  "pwdlib[argon2]>=0.3,<1",
+  "python-multipart>=0.0.22,<1",
+  "sqlalchemy>=2.0,<3",
+  "uvicorn>=0.35,<1",
+]
+
+[dependency-groups]
+dev = ["httpx>=0.28,<1", "pytest>=8,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

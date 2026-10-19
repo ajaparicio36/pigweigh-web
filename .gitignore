@@ -1,0 +1,14 @@
+# Local backend environments, credentials, caches, and generated artifacts
+server/.venv/
+**/__pycache__/
+**/.pytest_cache/
+*.pyc
+.env
+.env.*
+!.env.example
+!**/.env.example
+server/.coverage
+server/htmlcov/
+*.pt
+*.onnx
+*.tflite

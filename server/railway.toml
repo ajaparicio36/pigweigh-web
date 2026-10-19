@@ -1,0 +1,12 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = ["/server/**"]
+
+[deploy]
+preDeployCommand = ".venv/bin/alembic upgrade head"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

@@ -1,0 +1,14 @@
+.git/
+**/node_modules/
+**/.next/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.env*
+**/*.pt
+**/*.onnx
+**/*.tflite
+.scratch/
+**/captures/
+**/datasets/
+docs/

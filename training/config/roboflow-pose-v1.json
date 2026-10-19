@@ -1,0 +1,1481 @@
+{
+  "schema_version": 1,
+  "review_basis": "User selected current Roboflow projects as canonical on 2026-10-19; current names plus two local indexed overlays per exported class, representative raw/export coordinate checks. Ordering verification is not an annotation-quality certification.",
+  "views": {
+    "top": {
+      "canonical_keypoints": [
+        "snout-tip",
+        "left-ear-base",
+        "right-ear-base",
+        "left-shoulder",
+        "right-shoulder",
+        "left-chest",
+        "right-chest",
+        "left-hip",
+        "right-hip",
+        "tail-base",
+        "spine-midpoint"
+      ],
+      "aliases": {
+        "Snout-tip": "snout-tip",
+        "snout": "snout-tip",
+        "left-ear-based": "left-ear-base",
+        "right-ear-based": "right-ear-base",
+        "midpoint-spint": "spine-midpoint",
+        "midpoint-spine": "spine-midpoint",
+        "snipe-midpoint": "spine-midpoint",
+        "right-soulder": "right-shoulder",
+        "rights-shoulder": "right-shoulder",
+        "Left-shoulder": "left-shoulder",
+        "tail-based": "tail-base"
+      },
+      "classes": {
+        "16KG_Top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout-tip",
+            "left-shoulder",
+            "left-chest",
+            "left-hip",
+            "tail-base",
+            "right-hip",
+            "right-chest",
+            "right-shoulder",
+            "spine-midpoint",
+            "left-ear-base",
+            "right-ear-base"
+          ],
+          "output_to_input": [
+            0,
+            9,
+            10,
+            1,
+            7,
+            2,
+            6,
+            3,
+            5,
+            4,
+            8
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1817_jpeg_jpeg.rf.7524136c59d28adc057a08f17ceae9ce.txt",
+              "sha256": "f30a7983667e72b8554ae626d5f186d8cbdae3bc7bc0df0c813c679b990ce643",
+              "image": "valid/images/IMG_1817_jpeg_jpeg.rf.7524136c59d28adc057a08f17ceae9ce.jpg",
+              "image_sha256": "f5f30f38b2c834a8495af6bd273b63e6bc0211a4fd779fcc6cebf2961d4f83cc",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_1821_jpeg_jpeg.rf.bc0c952f356f004726ed36da1a15b3f6.txt",
+              "sha256": "af99d379e5052d59779b7f237a39e45df9c2f9a168f6ed3dee5a81c32820fa90",
+              "image": "valid/images/IMG_1821_jpeg_jpeg.rf.bc0c952f356f004726ed36da1a15b3f6.jpg",
+              "image_sha256": "9119c990f0c5a653745904991c9554b20b44eab8739a6de113c3a3bfc7629510",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "17_TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-based",
+            "left-shoulder",
+            "left-chest",
+            "left-hip",
+            "tail-base",
+            "right-hip",
+            "right-chest",
+            "right-shoulder",
+            "right-ear-based",
+            "midpoint-spint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            9,
+            2,
+            8,
+            3,
+            7,
+            4,
+            6,
+            5,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1656_jpeg_jpeg.rf.5bdad84026bc98598edc75bcf6fe0114.txt",
+              "sha256": "367b0b6f61d13ef30463efc6fc24b44ffa2e7dc33986b1ce541dd40e67092ce0",
+              "image": "valid/images/IMG_1656_jpeg_jpeg.rf.5bdad84026bc98598edc75bcf6fe0114.jpg",
+              "image_sha256": "154da62f0385cc930d28adfaaacfcf314af27f56652d4872514236203faf1a6f",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_1663_jpeg_jpeg.rf.50018a5005f840548df79ead15974463.txt",
+              "sha256": "c5f7d5904c052b4a5131de203634668b81ee52517fb157e261d1eb03f17f2eff",
+              "image": "valid/images/IMG_1663_jpeg_jpeg.rf.50018a5005f840548df79ead15974463.jpg",
+              "image_sha256": "6815a5fff874d46571cb269a7946d56345a6d0433c63e552372fdcac6bf72ea6",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "18_top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1480_jpeg_jpeg.rf.e9990bab491ef7812ac726785a890f57.txt",
+              "sha256": "bdb4a36a2a55bb00b6bc0c710025819da7ae66893a98f6f4ce010feae2afca13",
+              "image": "valid/images/IMG_1480_jpeg_jpeg.rf.e9990bab491ef7812ac726785a890f57.jpg",
+              "image_sha256": "ef994e27b0b20a6277d631905a7c15f5d961fb3ef7c8ed684b33f42f01594c2c",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_1492_jpeg_jpeg.rf.d39446b02fdad17e8bfd001fc00023db.txt",
+              "sha256": "7feb3fdbb9e9d944472f994f586ed542cde5a55fdee6eea013a8a69c376473d9",
+              "image": "valid/images/IMG_1492_jpeg_jpeg.rf.d39446b02fdad17e8bfd001fc00023db.jpg",
+              "image_sha256": "4bd5aac2cabb7cfac64e683af659ef80713afd2bea032de7a46e2030e0477157",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "19_top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1944_jpeg_jpeg.rf.b2d7d279468f4c40959ac5e6ac79a5ad.txt",
+              "sha256": "16ab4b804c529ad8c492c6673a72ae7e28e9f456f8ea79f67a5b341b41f62c73",
+              "image": "valid/images/IMG_1944_jpeg_jpeg.rf.b2d7d279468f4c40959ac5e6ac79a5ad.jpg",
+              "image_sha256": "914975be6a0398272c07247d586e72305c8baa599170385127d21fef3c47c3d1",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_1955_jpeg_jpeg.rf.7e102b265f989b531b1da102da11db6d.txt",
+              "sha256": "e037d48be7d827b44f3d675a6260533856f862ac87728adabe67527d8f7cf7db",
+              "image": "valid/images/IMG_1955_jpeg_jpeg.rf.7e102b265f989b531b1da102da11db6d.jpg",
+              "image_sha256": "3055f1f2f76cd75e09993c0569a5230393cb8a3ea9a0a27a9e407c0010b10fa7",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "20-TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-based",
+            "left-shoulder",
+            "left-chest",
+            "left-hip",
+            "tail-tip",
+            "right-hip",
+            "right-chest",
+            "right-soulder",
+            "right-ear-based",
+            "midpoint-spine"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            9,
+            2,
+            8,
+            3,
+            7,
+            4,
+            6,
+            5,
+            10
+          ],
+          "masks": {
+            "tail-base": "Source label tail-tip is not certified equivalent to tail-base; omit only this supervision in prepared copy."
+          },
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2115_jpeg_jpeg.rf.5aaf84700d4bc1cd360fa11bcce2f6c7.txt",
+              "sha256": "8bdfe4268333d205dc76fe4b5c8739aa7cc6fdde2cf8a75a2a2bf7edd7b553d8",
+              "image": "valid/images/IMG_2115_jpeg_jpeg.rf.5aaf84700d4bc1cd360fa11bcce2f6c7.jpg",
+              "image_sha256": "6a9ce1c8a70184797483ec7c4bab456d3e5cbb12b7b9479eab6eccf963680a30",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_2131_jpeg_jpeg.rf.f2b150c792cefbe4f3a768b378061cd9.txt",
+              "sha256": "173ec5f9c749401cb81240447a3d8a954dca2a9c4f7d3e445ec8a9c94c1ae579",
+              "image": "valid/images/IMG_2131_jpeg_jpeg.rf.f2b150c792cefbe4f3a768b378061cd9.jpg",
+              "image_sha256": "9c8bba4aa0bffb3898deb1560f816184445f012bc7649c4b799035ebb0090953",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "22-TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-based",
+            "left-shoulder",
+            "left-chest",
+            "left-hip",
+            "tail-based",
+            "right-hip",
+            "right-chest",
+            "right-shoulder",
+            "right-ear-based",
+            "midpoint-spine"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            9,
+            2,
+            8,
+            3,
+            7,
+            4,
+            6,
+            5,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_4826_jpeg_jpeg.rf.11e15e207c4f82d15345f18a3643ed04.txt",
+              "sha256": "0f9c4d0eab4bf1630acbd78acec612fcec773a6e71a4eb06f17ce9fdc70cb75f",
+              "image": "valid/images/IMG_4826_jpeg_jpeg.rf.11e15e207c4f82d15345f18a3643ed04.jpg",
+              "image_sha256": "430e9c22af7325331a97be7f9a34a063c91ad725247a469e14587232ca2af519",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_4830_jpeg_jpeg.rf.d86d72b44642dca9f8e1c1a7406858a8.txt",
+              "sha256": "a9bdfc916131feb2b61132b4fb1d5e4406650c919f440f8330d7564968b4ffbc",
+              "image": "valid/images/IMG_4830_jpeg_jpeg.rf.d86d72b44642dca9f8e1c1a7406858a8.jpg",
+              "image_sha256": "8f8364151ea459eeea140d7bc360b2cf6653162421cf14dab5453742f29f7f75",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "23_top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_5474_jpeg_jpeg.rf.f1b22e3985d90496cffd10eb7f1952b9.txt",
+              "sha256": "8e4dbe05c70bde0bf82778e1927713ed66a098eabaa2d1081e8e393d2a5c10d2",
+              "image": "valid/images/IMG_5474_jpeg_jpeg.rf.f1b22e3985d90496cffd10eb7f1952b9.jpg",
+              "image_sha256": "936f81e524e8cfdd5d01ccb419f5df22ea56a08fdb3d7631adca60cf79ab1219",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_5496_jpeg_jpeg.rf.758d6785ca495b74cdae0ab453085dee.txt",
+              "sha256": "4c39e5e27ed5bfb173f4c80093a2f715ee287025ef4fda24580efc8a6a8facac",
+              "image": "valid/images/IMG_5496_jpeg_jpeg.rf.758d6785ca495b74cdae0ab453085dee.jpg",
+              "image_sha256": "a15750ad8972763bb11dd431c424ea3986914cbeafaab07de42f83f31af40f3e",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "27_top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2993_jpeg_jpeg.rf.d13eac513289aa6ff4c8a4304ea91ba1.txt",
+              "sha256": "4679e288f40ddc78ae8afa5e5c5820051963e154c0a2722ccdca0ae3af347aa8",
+              "image": "valid/images/IMG_2993_jpeg_jpeg.rf.d13eac513289aa6ff4c8a4304ea91ba1.jpg",
+              "image_sha256": "0d0fa0cdf3f2b9b7379f40a18b885f89def245192dfce127c711b1f653ffd392",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_2994_jpeg_jpeg.rf.dc6f2c37e40a1460f1925962762e79a0.txt",
+              "sha256": "627994c4a26faa37f232fcb20bed2a3ac29267634c86280c4542d1ead20f5cc8",
+              "image": "valid/images/IMG_2994_jpeg_jpeg.rf.dc6f2c37e40a1460f1925962762e79a0.jpg",
+              "image_sha256": "46cde6038d0b37c131333ad4226f06b3f96ea64a8f96cc9aae74697dfc888477",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "28_top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3742_jpeg_jpeg.rf.dff9be9c5a59fd4610b1e79ec2baba17.txt",
+              "sha256": "52f3ef3886d84af52ac70af28d1eb6493a1d29bab484b6f092b29617086ebf4e",
+              "image": "valid/images/IMG_3742_jpeg_jpeg.rf.dff9be9c5a59fd4610b1e79ec2baba17.jpg",
+              "image_sha256": "5421bf1e9464a35ae976b5064bc184b8ebe893ac13e6b9bd3ac0652f39d80bbf",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_3743_jpeg_jpeg.rf.f9fd4c26ab8dafcb99cc7d23402b90df.txt",
+              "sha256": "8562a95c03cc7391e69be1c90e180b1774079f350782c45d9bf69a530696edb8",
+              "image": "valid/images/IMG_3743_jpeg_jpeg.rf.f9fd4c26ab8dafcb99cc7d23402b90df.jpg",
+              "image_sha256": "1235fe2e89f05193f1a8260f1ffc21a34dc6b4b5bbd0093399ed89b48392db47",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "29-TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout",
+            "left-ear-base",
+            "left-shoulder",
+            "left-chest",
+            "left-hip",
+            "tail",
+            "right-hip",
+            "right-chest",
+            "rights-shoulder",
+            "right-ear-base",
+            "midpoint-spine"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            9,
+            2,
+            8,
+            3,
+            7,
+            4,
+            6,
+            5,
+            10
+          ],
+          "masks": {
+            "tail-base": "Source label tail is not certified equivalent to tail-base; omit only this supervision in prepared copy."
+          },
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2842_jpeg_jpeg.rf.bf738e66c2b84ae99151807aa07b65fc.txt",
+              "sha256": "9cf1ccb58ecc96ff5bd32d0bf082bed2b997871ab17094f03be321243b282c9b",
+              "image": "valid/images/IMG_2842_jpeg_jpeg.rf.bf738e66c2b84ae99151807aa07b65fc.jpg",
+              "image_sha256": "30e6f44c9a8654d32ce303010bfda92c7ea2e4eda5c90f1f2286f30d97e44f4f",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_2845_jpeg_jpeg.rf.654bd34c50cc444fd7d41ce3095e739c.txt",
+              "sha256": "9cf1ccb58ecc96ff5bd32d0bf082bed2b997871ab17094f03be321243b282c9b",
+              "image": "valid/images/IMG_2845_jpeg_jpeg.rf.654bd34c50cc444fd7d41ce3095e739c.jpg",
+              "image_sha256": "ec299fd6d8e5311b655f79a34321ce2c2dc27fc7ef0510566a579d9f26dfb525",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "30_top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2693_jpeg_jpeg.rf.09ef87aa743c961bc77e0d15f6f5e48a.txt",
+              "sha256": "489d5eb4ad1e5d9229fcad231ee1634f392ca2d35462acb99fd7eb30565e4d44",
+              "image": "valid/images/IMG_2693_jpeg_jpeg.rf.09ef87aa743c961bc77e0d15f6f5e48a.jpg",
+              "image_sha256": "9146ed19d3d42e2f070fadd8e1cabb4dfb4a08792abc7800f1b1abd952ec5b99",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_2708_jpeg_jpeg.rf.66fa4e6f36d0efa5b4160e98c65fac81.txt",
+              "sha256": "73bf1506ac2a6a91692dc3850dd162316d32ac7ad1d82b472a3512db2552a5de",
+              "image": "valid/images/IMG_2708_jpeg_jpeg.rf.66fa4e6f36d0efa5b4160e98c65fac81.jpg",
+              "image_sha256": "c46fb14db9ddbaa6fb063e52bca9d0ec3ea6e05fd6f3f9c82efadb475277bae8",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "31_top": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_4262_jpeg_jpeg.rf.255a9a6ce8569ae167eb4ccc6680f826.txt",
+              "sha256": "459b4c60b120dca0de4e90353b2e57e3a356fcad2090bd44d92894185c749edb",
+              "image": "valid/images/IMG_4262_jpeg_jpeg.rf.255a9a6ce8569ae167eb4ccc6680f826.jpg",
+              "image_sha256": "de889cdcdb2da53ef88c4b3177561e06f4d4669475bd4c6d272fa8208ba7f11a",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_4263_jpeg_jpeg.rf.fadbaad60f8536101b52619e018af0d5.txt",
+              "sha256": "2ea6c2c52e4959f3581f966db9d8a4bab136ecef6efda4f7d216bc3a65bfdb1f",
+              "image": "valid/images/IMG_4263_jpeg_jpeg.rf.fadbaad60f8536101b52619e018af0d5.jpg",
+              "image_sha256": "f2a7fd5b311b95ae7d0b57728e28c2eaef6df6077beef7a2fc500d9c86f5d9cf",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "34-TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout",
+            "left-ear-based",
+            "left-shoulder",
+            "left-chest",
+            "left-hip",
+            "tail-based",
+            "right-hip",
+            "right-chest",
+            "right-shoulder",
+            "right-ear-based",
+            "midpoint-spine"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            9,
+            2,
+            8,
+            3,
+            7,
+            4,
+            6,
+            5,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_5907_jpeg_jpeg.rf.7cedb7b61a20c1dfa9a6258b7477cb37.txt",
+              "sha256": "66501b7c60737b57b77453707bf1f64401d5237aad42861bed77779a512b1bda",
+              "image": "valid/images/IMG_5907_jpeg_jpeg.rf.7cedb7b61a20c1dfa9a6258b7477cb37.jpg",
+              "image_sha256": "e031d1e0a74cc82f40c8a2de3845b641098be7ceef1423408b649c5f5eb3ffb5",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_5910_jpeg_jpeg.rf.64e76f2d678a1543a9f8e4e39b528128.txt",
+              "sha256": "69c85305c312d34066d85f1580c460df54609339539d08853b0790672c1ba513",
+              "image": "valid/images/IMG_5910_jpeg_jpeg.rf.64e76f2d678a1543a9f8e4e39b528128.jpg",
+              "image_sha256": "96694fa7bdc1984252dc84acfa0a0ca324456203fb8a80744764dc6171bd485b",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "35-TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout",
+            "right-ear-base",
+            "left-ear-base",
+            "left-shoulder",
+            "right-shoulder",
+            "spine-midpoint",
+            "left-chest",
+            "right-chest",
+            "left-hip",
+            "right-hip",
+            "tail-base"
+          ],
+          "output_to_input": [
+            0,
+            2,
+            1,
+            3,
+            4,
+            6,
+            7,
+            8,
+            9,
+            10,
+            5
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6767_jpeg_jpeg.rf.b6edc27672822cba08ff7e0a8e2779e6.txt",
+              "sha256": "eea09b3e333bf22486e41837b834a0d5e49d25e4141d97cc9e93c72d514a6d4e",
+              "image": "valid/images/IMG_6767_jpeg_jpeg.rf.b6edc27672822cba08ff7e0a8e2779e6.jpg",
+              "image_sha256": "1c6ba7b1161f8e42e61fca75c535d8610a26471348dd14411335cf35f6edef46",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_6775_jpeg_jpeg.rf.7fb4416d18b1b2c64622081aa0852369.txt",
+              "sha256": "3307e69d13f1b529092d8556198fdc506bcefbd8c82e3b2772b38dc4fc3a26e8",
+              "image": "valid/images/IMG_6775_jpeg_jpeg.rf.7fb4416d18b1b2c64622081aa0852369.jpg",
+              "image_sha256": "2f2e144b41ee643f7358d61d3fb3169b33efef9b4871dfbc55294e255dadafd4",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "36-TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "left-ear-base",
+            "right-ear-base",
+            "Left-shoulder",
+            "right-shoulder",
+            "left-chest",
+            "right-chest",
+            "tail-base",
+            "snipe-midpoint",
+            "left-hip",
+            "right-hip"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            9,
+            10,
+            7,
+            8
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6451_jpeg_jpeg.rf.23a1d30fa7b924fa4f258e558a7191fc.txt",
+              "sha256": "20660763db911a3ea66bc222de21db7bce013dac0069d146a456032346aea6fe",
+              "image": "valid/images/IMG_6451_jpeg_jpeg.rf.23a1d30fa7b924fa4f258e558a7191fc.jpg",
+              "image_sha256": "f39e1e340066b56b15954f359322491a3781ed68c45f70986534a4949bcb0dae",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_6452_jpeg_jpeg.rf.3b62108ec18c4300cd43d3428a125a26.txt",
+              "sha256": "f0e54427ceef76324b1dcb8412e531c6a93a3462f8d92554f9bb191c73e15cc1",
+              "image": "valid/images/IMG_6452_jpeg_jpeg.rf.3b62108ec18c4300cd43d3428a125a26.jpg",
+              "image_sha256": "87862ef13f8051aaae915a57885c2281fe2f0e2cffc1dc5db185d965ada87fcc",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "38-TOP": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "snout-tip",
+            "right-ear-base",
+            "left-ear-base",
+            "right-shoulder",
+            "left-shoulder",
+            "right-chest",
+            "left-chest",
+            "right-hip",
+            "left-hip",
+            "tail-base",
+            "spine-midpoint"
+          ],
+          "output_to_input": [
+            0,
+            2,
+            1,
+            4,
+            3,
+            6,
+            5,
+            8,
+            7,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3451_jpeg_jpeg.rf.bb9bc8f1897a499c0586af0e4dd136a4.txt",
+              "sha256": "2e1cac40bd39ff425a1da3f9bcafafab2f52f8aabb4e9b6db7e533db2b4091c8",
+              "image": "valid/images/IMG_3451_jpeg_jpeg.rf.bb9bc8f1897a499c0586af0e4dd136a4.jpg",
+              "image_sha256": "48413c08300bdd9fbbae69b4681be0042c5d8d5e8fa9343ef93db320249d9093",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_3461_jpeg_jpeg.rf.6099788444036ac14666d3905abac9bf.txt",
+              "sha256": "73867b49aa59c86fa35375f4e20a6148c6fb932993b7d7c34425c15ef8d94d19",
+              "image": "valid/images/IMG_3461_jpeg_jpeg.rf.6099788444036ac14666d3905abac9bf.jpg",
+              "image_sha256": "768516356b9195e628c5853e3f62a73d0ffca9de272811d73747ef806730218e",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        }
+      },
+      "excluded_labels": {
+        "train/labels/IMG_6455_jpeg_jpeg.rf.7a90838496716f8f07b8c3e86e1dc131.txt": {
+          "sha256": "e85d1faa6c3c337a90f667780ab6150d35e8bbd97001bde43224067756a28b75",
+          "reason": "Known source keypoint7 y=-0.0041097966; exclude entire image rather than clamp or alter coordinates."
+        },
+        "train/labels/IMG_6455_jpeg_jpeg.rf.917715f283035b6c620fe3225a741f27.txt": {
+          "sha256": "e85d1faa6c3c337a90f667780ab6150d35e8bbd97001bde43224067756a28b75",
+          "reason": "Known source keypoint7 y=-0.0041097966; exclude entire image rather than clamp or alter coordinates."
+        },
+        "train/labels/IMG_6455_jpeg_jpeg.rf.db3b6730c7be75d9f7a621b39fff0228.txt": {
+          "sha256": "e85d1faa6c3c337a90f667780ab6150d35e8bbd97001bde43224067756a28b75",
+          "reason": "Known source keypoint7 y=-0.0041097966; exclude entire image rather than clamp or alter coordinates."
+        }
+      }
+    },
+    "side": {
+      "canonical_keypoints": [
+        "snout-tip",
+        "eye",
+        "ear-tip",
+        "withers",
+        "mid-point-peak",
+        "loin",
+        "tail-base",
+        "front-shoulder-joint",
+        "front-hoof",
+        "rear-hip-joint",
+        "rear-hoof",
+        "sternum",
+        "belly-lowest-part"
+      ],
+      "aliases": {
+        "Snout_Tip-occluded-if-not-seen-": "snout-tip",
+        "Eye": "eye",
+        "Ear_Tip-head_reference-": "ear-tip",
+        "Withers-between_neck_shoulder_starts-": "withers",
+        "Mid_Point_Peak": "mid-point-peak",
+        "Loin-before_or_around_hips-": "loin",
+        "Tail_Base": "tail-base",
+        "Snout_Tip.": "snout-tip",
+        "Ear_Tip": "ear-tip",
+        "Ear_Tip-head-reference-": "ear-tip",
+        "Front-Shoulder-Joint": "front-shoulder-joint",
+        "Front_Hoof-attach_to_ground-": "front-hoof",
+        "Rear_Hip-Joint": "rear-hip-joint",
+        "Rear_Hip_Joint": "rear-hip-joint",
+        "Rear_Hip-attach-to-ground-": "rear-hoof",
+        "-Sternum-behind_leg-": "sternum",
+        "Sternum-behind_leg-": "sternum",
+        "-Belly-Lowest-Part": "belly-lowest-part",
+        "Belly-Lowest-Part": "belly-lowest-part"
+      },
+      "classes": {
+        "16_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Mid_Point_Peak",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "Rear_Hip_Joint",
+            "Rear_Hip-attach-to-ground-",
+            "Sternum-behind_leg-",
+            "Belly-Lowest-Part"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            6,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1865_jpeg_jpeg.rf.97d43a9fdb58370efdf5800d70777a2e.txt",
+              "sha256": "a94737abed9a2ee79931c3cbdb288893aa1902a382e36a55b5e0f9f44c26d0ec",
+              "image": "valid/images/IMG_1865_jpeg_jpeg.rf.97d43a9fdb58370efdf5800d70777a2e.jpg",
+              "image_sha256": "501c21012000c3b4e9f74613c483bab0d326cf03c79794f08659c36e85d01ef1",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_1868_jpeg_jpeg.rf.9092908be72efe67cfb9c4dea53d807c.txt",
+              "sha256": "433f9993d27747bda4836787e809d668c2b9702468c54f5701a9d4af1740cb07",
+              "image": "valid/images/IMG_1868_jpeg_jpeg.rf.9092908be72efe67cfb9c4dea53d807c.jpg",
+              "image_sha256": "a21fd76e28f4dd490b874d4f1685ca66dffec13f2acf3447b57766ec15d45f31",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "17_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "-Belly-Lowest-Part",
+            "-Sternum-behind_leg-",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1705_jpeg_jpeg.rf.ff2774640904ceb8d69a8a492e53f74b.txt",
+              "sha256": "3678ae114950afa4bd6fbc5a12e327231235e936bb1d0ef992e9ae878b960ff9",
+              "image": "valid/images/IMG_1705_jpeg_jpeg.rf.ff2774640904ceb8d69a8a492e53f74b.jpg",
+              "image_sha256": "57d0c9b52c067000dd24d03240d5464715b97f90dead0171b686f18f9e5c03d4",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_1708_jpeg_jpeg.rf.c94fc8463ebb188b8ba532207ee93d52.txt",
+              "sha256": "77f2ba566349baa6e3aec90d7d3481dbe64c0daf2708105f81f63cdeefa1bc5b",
+              "image": "valid/images/IMG_1708_jpeg_jpeg.rf.c94fc8463ebb188b8ba532207ee93d52.jpg",
+              "image_sha256": "a2a48bac555b34035eca9f50a02c63763d68abc70fe7ee738d375c4f943bb05e",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "18_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "-Belly-Lowest-Part",
+            "-Sternum-behind_leg-",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1556_jpeg_jpeg.rf.d047d6b9ad83361b6625d09854088f01.txt",
+              "sha256": "212f332800c3eb74f720d50ed77bb7dc721031c5d933ae6d781ac233bb838964",
+              "image": "valid/images/IMG_1556_jpeg_jpeg.rf.d047d6b9ad83361b6625d09854088f01.jpg",
+              "image_sha256": "ff52581bc9da55488f5410f790bd4e1209c855a0c9590e6126e2b0b3f432f966",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_1562_jpeg_jpeg.rf.b2977c02fe35e19da73c002a9a0caeb3.txt",
+              "sha256": "80f7ed3ba5d6e3bc5f6a3970ba7a1e71f8215fdb9c838df88f6632c2d1d759da",
+              "image": "valid/images/IMG_1562_jpeg_jpeg.rf.b2977c02fe35e19da73c002a9a0caeb3.jpg",
+              "image_sha256": "878a4532c2a8e5d14fc8efe1aa47889b39b2742575ba1463bcb1c350fd2121d0",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "19_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head-reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1998_jpeg_jpeg.rf.13adfd8233edf89a409f408598f92669.txt",
+              "sha256": "6fdb70c0d5aa0cfecfb3f227d1b48e64b87d9738719553ad237711f56c4d7f1e",
+              "image": "valid/images/IMG_1998_jpeg_jpeg.rf.13adfd8233edf89a409f408598f92669.jpg",
+              "image_sha256": "44510caf7aa7a5aafea6fdd9cf5586f611ddce4e0d0a2ea564670c3b56dbc24c",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_2001_jpeg_jpeg.rf.3339403d5025f56fccc13ac2295b8140.txt",
+              "sha256": "856e9407a8d7c8cc8a2e20b483bb84b1c5b2baff1b05df54422a20d1f83afcc5",
+              "image": "valid/images/IMG_2001_jpeg_jpeg.rf.3339403d5025f56fccc13ac2295b8140.jpg",
+              "image_sha256": "7d84de32c924a48b4bdca7e82d612c89766df056a20b934282652f8ae6aae127",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "20_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2173_jpeg_jpeg.rf.d3631cdc3836ddd4d27306db96c5c011.txt",
+              "sha256": "fc6e1524d8c458a54425b191a9f8534202376da71ed244dbbb43e781867c5afa",
+              "image": "valid/images/IMG_2173_jpeg_jpeg.rf.d3631cdc3836ddd4d27306db96c5c011.jpg",
+              "image_sha256": "ecc9887830bf22bad35f28aef52b1f54b41a7bddf0d3109cc175dd6ca914897b",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_2175_jpeg_jpeg.rf.b19e46cddd2dcdd972e6624bd3d1dc8a.txt",
+              "sha256": "32eed43366140d7912ed83e939db80ff3541434ed950fecb96e116f8c0959616",
+              "image": "valid/images/IMG_2175_jpeg_jpeg.rf.b19e46cddd2dcdd972e6624bd3d1dc8a.jpg",
+              "image_sha256": "caf6dde5f5a57c97b0b881293e3ef4b6cd269d914f5f54f123cd3e90d10e2ba1",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "23_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "-Belly-Lowest-Part",
+            "-Sternum-behind_leg-",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_5577_jpeg_jpeg.rf.eebc365ad0dc119cf9e0d789482f201a.txt",
+              "sha256": "0141e29951233d705b0ca6b18a1817a8fb95abd4762b893828bee1f9ff5dbd36",
+              "image": "valid/images/IMG_5577_jpeg_jpeg.rf.eebc365ad0dc119cf9e0d789482f201a.jpg",
+              "image_sha256": "190d2667efb7675b63acb53d3facbc32284f87846aa1cadc8427ef23f0f8132b",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_5584_jpeg_jpeg.rf.73ca101a6a1d34ec9bf5f4a123235145.txt",
+              "sha256": "b23449386f9c0e4c34fe40d7d8e294e746134118de015b48db34453eae87b569",
+              "image": "valid/images/IMG_5584_jpeg_jpeg.rf.73ca101a6a1d34ec9bf5f4a123235145.jpg",
+              "image_sha256": "1280f338a274556f16f9103dc4f7e10a89a31621767dd08ee582158353741c1e",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "27_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3083_jpeg_jpeg.rf.dfbd888b576671a8dd0be7c097b5eb45.txt",
+              "sha256": "7bd25fc2fe37744358ebf58fd6a4c2f6202d8e6de97209cc6f04f6d469f436ef",
+              "image": "valid/images/IMG_3083_jpeg_jpeg.rf.dfbd888b576671a8dd0be7c097b5eb45.jpg",
+              "image_sha256": "a7489e4cda3ded606936cb5ee736cf47cad8fafeccd9e41ba3eab953c39e7000",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_3112_jpeg_jpeg.rf.fa699cfb75cc4ef8ea254b80fd72c08e.txt",
+              "sha256": "a1ce72a022f37f6475d517c3eff0a08e0b0c68edfca953df56e3024ee98af9ab",
+              "image": "valid/images/IMG_3112_jpeg_jpeg.rf.fa699cfb75cc4ef8ea254b80fd72c08e.jpg",
+              "image_sha256": "83e43170525870d52229265df4d13c16584970251d2c1507dc39661c82a52b71",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "28_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3834_jpeg_jpeg.rf.4ad19cb627e3af0a899ed1371c0c7d62.txt",
+              "sha256": "db88ff98be73ccc514486d20c45153192c3a23da3438fb34fdb505dd5a891fd0",
+              "image": "valid/images/IMG_3834_jpeg_jpeg.rf.4ad19cb627e3af0a899ed1371c0c7d62.jpg",
+              "image_sha256": "8fb64440305e73828577eb0a96f38ac4fb013575737b35ff8dd3d47e12f0661b",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_3837_jpeg_jpeg.rf.63483ee795db7a817363b3a44e7fc21a.txt",
+              "sha256": "962d575428a7780a033b572c7e56d7900b33e9c91d9d25a05940751ce2d524c4",
+              "image": "valid/images/IMG_3837_jpeg_jpeg.rf.63483ee795db7a817363b3a44e7fc21a.jpg",
+              "image_sha256": "abdefb516c1f553eaaaf0c236d7092e9b81cba685a7016ad47c87019700d8fe9",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "29_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2926_jpeg_jpeg.rf.22a59ad45983f7a42383ffd030041362.txt",
+              "sha256": "5de9e14a380b6468fb897cefa531c11774f8000ee781e4a76f70092dc4d13983",
+              "image": "valid/images/IMG_2926_jpeg_jpeg.rf.22a59ad45983f7a42383ffd030041362.jpg",
+              "image_sha256": "0b1343cb648c5bb97a6902c516c8e996b8a3aae4ef51a51de6ff5bf96e35321d",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_2930_jpeg_jpeg.rf.b569707dbb2cb151e1f1891094df5973.txt",
+              "sha256": "a5e924841db7953623727cfdb7e06b4900a4dda45738c6f90537a5643230641c",
+              "image": "valid/images/IMG_2930_jpeg_jpeg.rf.b569707dbb2cb151e1f1891094df5973.jpg",
+              "image_sha256": "fe1d50a4daec5c4c3189e566fe95e4050febf9f13bc11b3d6b75ff9766598035",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "34_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6080_jpeg_jpeg.rf.462a2d3f6b6ed52cd752812074905234.txt",
+              "sha256": "f623746aab0ddf476ab2f0f1b21e6cc6568e1be5b1c19488452f62ccfd9e40b9",
+              "image": "valid/images/IMG_6080_jpeg_jpeg.rf.462a2d3f6b6ed52cd752812074905234.jpg",
+              "image_sha256": "120dd95cae330d307fe6215faadf1d88810c54558ca8125f4d4a564c5035aab8",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_6084_jpeg_jpeg.rf.60b8f32b935e728791b8f46852240294.txt",
+              "sha256": "651c9cb4408bc72ebd3708374d82d6ef52d5dc64f4d4ed7b7fa1bdf1727e56b8",
+              "image": "valid/images/IMG_6084_jpeg_jpeg.rf.60b8f32b935e728791b8f46852240294.jpg",
+              "image_sha256": "8a052e921aa85cde3d07fea166df345021f8bb00d5473e512099b767cbeb380f",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "35_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6842_jpeg_jpeg.rf.27c84d7da267e84df4be688b1da75c69.txt",
+              "sha256": "9c880d072de29fbc9a2fc386ebee3c2d46acffd44e6c640d49bf674124a14cac",
+              "image": "valid/images/IMG_6842_jpeg_jpeg.rf.27c84d7da267e84df4be688b1da75c69.jpg",
+              "image_sha256": "bafb620b25f1d2a26b267ea0c6d3cc4f6cb328c00f6ebd93886affdcdce7a777",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_6872_jpeg_jpeg.rf.80661b36b6bee1f0aac5a4032df37296.txt",
+              "sha256": "37527f3b734b26d0aacc988b5de79a0f9b9140e526dd1ed9aa5bd77911614241",
+              "image": "valid/images/IMG_6872_jpeg_jpeg.rf.80661b36b6bee1f0aac5a4032df37296.jpg",
+              "image_sha256": "f2a4cb0aafdc1b11fa0cfb530215d64b2c320021cebf01f20a59474c7a423af4",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "36_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6554_jpeg_jpeg.rf.860da4d55d41adbb282114469744fa79.txt",
+              "sha256": "68c37c63cf7992d80113e07ff31e8c4fffe38839988ec8c602cab25223e06482",
+              "image": "valid/images/IMG_6554_jpeg_jpeg.rf.860da4d55d41adbb282114469744fa79.jpg",
+              "image_sha256": "babbfc33de334c58903ff7c284a90127b8bfeea9928886c2876173bf6196d8a6",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_6556_jpeg_jpeg.rf.bfa73a9924906998dae91dc04440255c.txt",
+              "sha256": "025882d7c69a53d0b064cdc83f63e14183d17e286bb826cee7fcd3742fca5341",
+              "image": "valid/images/IMG_6556_jpeg_jpeg.rf.bfa73a9924906998dae91dc04440255c.jpg",
+              "image_sha256": "f4834e58eebe051b72d26409422f0c21f79b13ee088dd10c4056b45d4de254e8",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        },
+        "38_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3517_jpeg_jpeg.rf.9f6c474b80cd5106bb6072e8c6917f30.txt",
+              "sha256": "76b994d85e96d222fa92f651c528280f03b07e972fa53476453d8943ff71ac1a",
+              "image": "valid/images/IMG_3517_jpeg_jpeg.rf.9f6c474b80cd5106bb6072e8c6917f30.jpg",
+              "image_sha256": "ae0719cb1c7baa336ffb8f258dfba5746cf3f63d7f8d45b35af7c4ed0ac094ff",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            },
+            {
+              "label": "valid/labels/IMG_3520_jpeg_jpeg.rf.72c3b6cf6a5ac1d532394233ff253e6a.txt",
+              "sha256": "a702c6c410d83b8d5d750faf6b2c850f8944a4a050f4c3461f69fdd100f2146f",
+              "image": "valid/images/IMG_3520_jpeg_jpeg.rf.72c3b6cf6a5ac1d532394233ff253e6a.jpg",
+              "image_sha256": "5d6d4483e676c673d3dd54d2516fee6e978910069f82665bbbad60677bd468ec",
+              "check": "Local indexed overlay reviewed against current Roboflow named class sequence; source ordering, not anatomical accuracy."
+            }
+          ]
+        }
+      },
+      "excluded_labels": {}
+    }
+  }
+}
