@@ -12,4 +12,4 @@ COPY models ./models
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 ENV PORT=8000 PIGWEIGH_MODEL_BUNDLE=/app/models/v1/manifest.json
-CMD ["sh", "-c", "exec .venv/bin/uvicorn pigweigh.main:create_app --factory --host :: --port \"$PORT\""]
+CMD ["sh", "-c", "exec .venv/bin/uvicorn pigweigh.main:create_app --factory --host 0.0.0.0 --port \"$PORT\""]
