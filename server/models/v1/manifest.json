@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "bundle_id": "attached-marker-ellipse-11900-v1-5dd3bd4779d7539a",
+  "method": "attached-marker-ellipse-11900-v1",
+  "formula_divisor": 11900,
+  "marker": {
+    "dictionary": "DICT_4X4_50",
+    "id": 0,
+    "side_mm": 100
+  },
+  "models": {
+    "top": {
+      "file": "top.onnx",
+      "sha256": "370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa",
+      "keypoints": [
+        "snout-tip",
+        "left-ear-base",
+        "right-ear-base",
+        "left-shoulder",
+        "right-shoulder",
+        "left-chest",
+        "right-chest",
+        "left-hip",
+        "right-hip",
+        "tail-base",
+        "spine-midpoint"
+      ],
+      "input_size": 640,
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shape": [
+        1,
+        300,
+        39
+      ],
+      "end2end": true,
+      "source_checkpoint_sha256": "5a2f43b8264b7edf70603fd330354bf24624bc70e67e622954095fdf736ce24f"
+    },
+    "side": {
+      "file": "side.onnx",
+      "sha256": "ed40cb8d60da95b1f8eb1c955b7e52fc70bfb00bf798eb2a57a52a2d4e175c72",
+      "keypoints": [
+        "snout-tip",
+        "eye",
+        "ear-tip",
+        "withers",
+        "mid-point-peak",
+        "loin",
+        "tail-base",
+        "front-shoulder-joint",
+        "front-hoof",
+        "rear-hip-joint",
+        "rear-hoof",
+        "sternum",
+        "belly-lowest-part"
+      ],
+      "input_size": 640,
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "output_shape": [
+        1,
+        300,
+        45
+      ],
+      "end2end": true,
+      "source_checkpoint_sha256": "40ed648a5bbfd25ad36cebe328fbaaf77ce93dafc7fabbed5439701bb8e74331"
+    }
+  },
+  "export": {
+    "ultralytics": "8.4.9",
+    "torch": "2.10.0+cu128",
+    "onnx": "1.23.2",
+    "onnxruntime": "1.24.4",
+    "device": "cpu",
+    "imgsz": 640,
+    "batch": 1,
+    "dynamic": false,
+    "half": false,
+    "simplify": false,
+    "nms": false,
+    "end2end": true,
+    "opset": 17
+  },
+  "parity": {
+    "top": {
+      "image_sha256": "4f96b300752165fc99ad3f620bd71ce5caa49e8fb57ece38a68994c8d7aafa63",
+      "matching_detections_at_score_0_5": 1,
+      "max_abs_difference_input_pixels_or_score": 4.57763671875e-05,
+      "rtol": 0.0001,
+      "atol": 0.05,
+      "scope": "functional fixture; not measurement/weight accuracy"
+    },
+    "side": {
+      "image_sha256": "2ae47e8fe70a227859821276c3f921161195daa9f34a7feb625eb178945743b0",
+      "matching_detections_at_score_0_5": 1,
+      "max_abs_difference_input_pixels_or_score": 4.57763671875e-05,
+      "rtol": 0.0001,
+      "atol": 0.05,
+      "scope": "functional fixture; not measurement/weight accuracy"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import os
 from urllib.parse import urlsplit
+from pathlib import Path
 
 from sqlalchemy.engine import URL, make_url
 
@@ -19,6 +20,7 @@ def database_url(value: str) -> URL:
 class Settings:
     database: URL
     public_origin: str
+    model_bundle: Path | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -36,7 +38,8 @@ class Settings:
             or (parsed.scheme == "http" and parsed.hostname not in {"localhost", "127.0.0.1", "::1"})
         ):
             raise ValueError("PUBLIC_ORIGIN must be an HTTPS origin or local HTTP origin, without a trailing slash")
-        return cls(database_url(value), origin)
+        bundle = os.environ.get("PIGWEIGH_MODEL_BUNDLE")
+        return cls(database_url(value), origin, Path(bundle) if bundle else None)
 
     @property
     def secure_cookie(self) -> bool:

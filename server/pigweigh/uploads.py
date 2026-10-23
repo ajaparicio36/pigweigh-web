@@ -49,7 +49,7 @@ class InvalidImage(Exception):
         self.status, self.code, self.message = status, code, message
 
 
-def validate_image(upload: UploadFile) -> None:
+def decode_image(upload: UploadFile) -> Image.Image:
     file = upload.file
     file.seek(0, 2)
     if file.tell() > FILE_LIMIT:
@@ -69,8 +69,12 @@ def validate_image(upload: UploadFile) -> None:
             file.seek(0)
             with Image.open(file) as image:
                 image.load()
-                with ImageOps.exif_transpose(image) as oriented:
-                    oriented.load()
+                oriented = ImageOps.exif_transpose(image)
+                try:
+                    return oriented.convert("RGB")
+                finally:
+                    oriented.close()
+                    image.close()
     except (Image.DecompressionBombError, Image.DecompressionBombWarning):
         raise InvalidImage(413, "image_dimensions_too_large", "Images must contain at most 20 megapixels.") from None
     except UnidentifiedImageError:
@@ -80,3 +84,8 @@ def validate_image(upload: UploadFile) -> None:
     finally:
         if not file.closed:
             file.seek(0)
+
+
+def validate_image(upload: UploadFile) -> None:
+    image = decode_image(upload)
+    image.close()

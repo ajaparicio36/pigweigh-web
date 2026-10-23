@@ -116,6 +116,11 @@ details li + li { margin-top: 0.375rem; }
 .result-value span { font-size: 1rem; font-weight: 450; }
 .result-source { padding-top: 1.25rem; border-top: 1px solid var(--border); font-size: 0.875rem; overflow-wrap: anywhere; }
 .result-source p + p { margin-top: 0.75rem; }
+.measurement-details { margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.875rem; }
+.measurement-details p { max-width: 75ch; margin-top: 0.75rem; }
+.measurement-list { margin: 0.75rem 0; max-width: 36rem; }
+.measurement-list > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem 1.25rem; padding-block: 0.375rem; }
+.measurement-list dd { margin: 0; color: var(--foreground); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 .admin-shell { padding-bottom: 3rem; }
 .login-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr); align-items: start; gap: 4rem; }

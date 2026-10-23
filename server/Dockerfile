@@ -8,7 +8,8 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY pigweigh ./pigweigh
 COPY migrations ./migrations
 COPY alembic.ini ./
+COPY models ./models
 RUN useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
-ENV PORT=8000
+ENV PORT=8000 PIGWEIGH_MODEL_BUNDLE=/app/models/v1/manifest.json
 CMD ["sh", "-c", "exec .venv/bin/uvicorn pigweigh.main:create_app --factory --host :: --port \"$PORT\""]

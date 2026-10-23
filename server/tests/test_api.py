@@ -47,7 +47,7 @@ def publish(client, price="210.50", revision=0):
 def test_public_routes_and_origin_and_authorization(client):
     assert client.get("/api/health").json() == {"status": "ok"}
     ready = client.get("/api/inference/readiness")
-    assert ready.json()["ready"] is False and len(ready.json()["blockers"]) == 4
+    assert ready.json()["ready"] is False and ready.json()["blockers"][0]["code"] == "model_bundle_missing"
     assert ready.headers["cache-control"] == "no-store"
     assert client.get("/api/prices/current").json() == {"revision": 0, "price": None}
     assert client.get("/api/auth/session").status_code == 401

@@ -4,6 +4,8 @@ Current decision, 2026-10-19: the user chose **“Keep staged for now”**. Depl
 
 The user separately confirmed **“Chrome is available; run QA”** on 2026-10-19. [Frontend-only graphical QA](qa-browser.md) completed bounded layout, keyboard and offline-state checks. Full-stack graphical authentication/publication/upload verification remains pending because setup was blocked by policy. This authorization does not change the staged Railway state.
 
+Later local delivery decision, 2026-10-23: the user approved the three serving files `server/models/v1/{manifest.json,top.onnx,side.onnx}` in ordinary Git (no LFS). Backend image packaging copies that directory and sets `PIGWEIGH_MODEL_BUNDLE=/app/models/v1/manifest.json`; no external artifact mount is required for this bundle. Source `.pt` checkpoints, photos, training data, export intermediates and credentials remain excluded. This prepares future application delivery only: no push, Docker/platform build or deployment is claimed here. Railway remains staged. Chrome is now available for fresh QA after packaging; that check is approved but not yet executed. See [inference runbook](inference.md).
+
 ## Verified identities
 
 | Resource | Name | ID |
@@ -50,7 +52,7 @@ The following deployment operations are deferred by the user's latest decision. 
 2. Allocate a domain only for web and set API `PUBLIC_ORIGIN` to its exact HTTPS origin. The connector's domain-generation tool has no staged option; no domain was requested for the staged-only service. No API/DB domains or TCP proxies were created. Describe-service currently returns null live domains/proxies because all services remain staged-only; this is not a runtime exposure test.
 3. After application review, stage service-root/build/start/health/migration settings from the backend/frontend owners' final files. No source, build, pre-deploy, or start commands have been attached. No GitHub connection, local source upload, `railway up`, or application deploy occurred.
 4. The exact 17-change base diff was re-read and remained limited to the three approved services and volume. One `accept-deploy` attempt for this production environment was cancelled: tool error `INVALID_ARGUMENT`, “Cancelled — the user did not approve this action. No changes were made.” No CLI/API workaround followed. The user subsequently chose to keep it staged; no retry is authorized now. If the user later resumes deployment, re-read the whole diff first, since a commit applies every staged change. No application source is attached, so the reviewed base patch would only start the database and create empty web/API services.
-5. After the later deployment, verify private connectivity, cookie/Origin forwarding, health, migrations, volume allocation, upload limits, and secure admin bootstrap. None of those runtime checks has occurred. Model/calibration readiness remains separately blocked.
+5. After the later deployment, verify private connectivity, cookie/Origin forwarding, health, migrations, volume allocation, bundled-model loading, upload limits, and secure admin bootstrap. None of those deployed-runtime checks has occurred. Local CPU inference is implemented and API/PostgreSQL tested; physical accuracy remains unverified.
 
 ## Read/write evidence and isolation
 

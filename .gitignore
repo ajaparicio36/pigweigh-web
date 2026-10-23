@@ -12,3 +12,9 @@ server/htmlcov/
 *.pt
 *.onnx
 *.tflite
+# Only this reviewed serving bundle is intentionally versioned.
+server/models/**
+!server/models/v1/
+!server/models/v1/manifest.json
+!server/models/v1/top.onnx
+!server/models/v1/side.onnx

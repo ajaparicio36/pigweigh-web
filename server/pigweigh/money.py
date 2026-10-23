@@ -24,6 +24,7 @@ def valuation(weight_kg: Decimal, price: dict | None) -> dict | None:
     if price is None:
         return None
     with localcontext() as context:
-        context.prec = 64
+        context.prec = max(64, len(weight_kg.as_tuple().digits) + max(0, weight_kg.adjusted())
+                           + len(price["php_per_kg"]) + 8)
         amount = (weight_kg * Decimal(price["php_per_kg"])).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return {"amount_php": str(amount), "price": dict(price)}

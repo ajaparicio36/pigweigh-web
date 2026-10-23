@@ -7,6 +7,8 @@
 **/.env*
 **/*.pt
 **/*.onnx
+!server/models/v1/top.onnx
+!server/models/v1/side.onnx
 **/*.tflite
 .scratch/
 **/captures/

@@ -1,6 +1,6 @@
 # Software implementation contract
 
-Status, 2026-10-19: **core software implemented and locally verified**. This document records the implemented core contract and separates future inference requirements below. [Frontend-only Chrome QA](qa-browser.md) is complete; graphical authentication/publication/upload flows remain unverified because full-stack setup was blocked by policy. Railway deployment is intentionally deferred by the user; runtime verification and pose/marker/formula integration remain pending; formula accuracy is unmeasured. Accepted product intent remains handheld phone capture for an experimental thesis, using Next.js/Tailwind without ShadCN and FastAPI/SQLAlchemy/uv. PostgreSQL and Railway are explicit user decisions. The user-selected formula method is accepted in [ADR-0007](adr/0007-formula-weight-prototype.md); passing software tests does not establish weight accuracy.
+Status, 2026-10-23: **core software and configured ONNX CPU inference implemented**. A local serving bundle is ready; [the runbook](inference.md) records exact runtime/configuration. Final backend API/PostgreSQL proof passed 73 tests after review fixes, with 44 focused regressions; fresh graphical QA remains pending. October 19 [frontend-only QA](qa-browser.md) is historical. Railway deployment remains intentionally deferred. Handheld phone capture uses the selected experimental 11900 method, with unmeasured accuracy; neither model scores nor software tests establish kilogram accuracy. Next.js/Tailwind without ShadCN, FastAPI/SQLAlchemy/uv and PostgreSQL remain the chosen stack.
 
 ## Runtime and persistence
 
@@ -27,16 +27,22 @@ All backend routes are under `/api`; the web also has an independent `/health` r
 | `GET /auth/session` | Verifies session against server | `{admin:{id,username}}`, or `401` |
 | `POST /auth/logout` | Revokes session and clears cookie | `204` |
 | `POST /prices` | Authenticated `{php_per_kg,source_reference,expected_revision}` | `201` current-snapshot shape; `409` stale revision |
-| `POST /estimates` | Anonymous multipart, exactly `top_image` and `side_image`, representing the same pig | Valid uploads currently return `503 inference_unavailable`; future experimental success when compatible pose checkpoints, explicit marker/geometry configuration and the measurement/formula pipeline are ready |
+| `POST /estimates` | Anonymous multipart, exactly `top_image` and `side_image`, representing the same pig | Loaded bundle: experimental estimate or 422 capture rejection; missing/invalid bundle: `503 inference_unavailable`; competing CPU estimate: `429 inference_busy` |
 
 Identifiers and timestamps in JSON are strings; `published_at` is an ISO 8601 UTC timestamp. `revision`/`expected_revision` are nonnegative integers. Unauthenticated protected requests return `401`; invalid Origin returns `403`. Request validation uses `422`. Authentication failures must not reveal which credential was wrong.
 
-Future formula-estimate success shape (wire/price contract unchanged):
+Implemented formula-estimate success shape (values below are placeholders, not a fixture or measured pig):
 
 ```json
 {
   "status": "estimated",
   "estimated_weight_kg": "<decimal string>",
+  "measurements": {
+    "body_length_cm": "<two-decimal string>",
+    "chest_width_cm": "<two-decimal string>",
+    "chest_depth_cm": "<two-decimal string>",
+    "girth_cm": "<two-decimal string>"
+  },
   "valuation": {
     "amount_php": "<two-decimal string>",
     "price": {
@@ -46,7 +52,16 @@ Future formula-estimate success shape (wire/price contract unchanged):
       "published_at": "<UTC timestamp>"
     }
   },
-  "artifacts": { "bundle_id": "<reviewed bundle id>" }
+  "artifacts": { "bundle_id": "<loaded bundle id>" },
+  "method": {
+    "version": "attached-marker-ellipse-11900-v1",
+    "formula": "G_cm^2 * L_cm / 11900",
+    "marker_dictionary": "DICT_4X4_50",
+    "marker_id": 0,
+    "marker_side_mm": "100",
+    "experimental": true,
+    "accuracy_evaluated": false
+  }
 }
 ```
 
@@ -57,15 +72,19 @@ When no price exists, return the valid weight with `valuation:null` and `valuati
 - A published price is positive PHP/kg with at most two decimal places; keep exact integer centavos in PostgreSQL `BIGINT` with a positive constraint and return canonical two-decimal strings. This preserves a single exact minor-unit representation rather than introducing a second `NUMERIC` money model. Reject signed-64-bit overflow explicitly; a narrower practical UI cap has not been selected. Trim leading/trailing whitespace from `source_reference`, then require length 1–500 while retaining interior spaces. Reject malformed/nonfinite values rather than coercing them.
 - Price records are immutable and immediately effective at publication; no scheduling/end-date editor in this stage. Record publishing admin and server time internally.
 - Initialize singleton `price_state` in the migration. Publication locks it with PostgreSQL `SELECT FOR UPDATE`, compares `expected_revision`, and updates it atomically in the same transaction as the new record. A stale request returns `409` and rolls back the entire transaction, leaving no record behind. Never hold that lock during password hashing, image decoding, or inference; prove the concurrent-publication invariant against actual PostgreSQL.
-- After successful inference, capture the current-price snapshot once. Multiply using Decimal and round the final PHP value with `ROUND_HALF_UP` to two decimals. Preserve that price provenance in the response; later publication must not alter an already computed valuation.
+- After successful inference, capture the current-price snapshot once, with no transaction spanning CPU computation. Multiply the rounded weight actually returned to the client using Decimal and round the final PHP value with `ROUND_HALF_UP` to two decimals. Preserve that price provenance in the response; later publication must not alter an already computed valuation.
 
 ## Upload boundary and inference hold
 
-The user accepts new prototype/evaluation captures using flat ArUco cards attached near measured back/flank regions, with controlled-pen phone top/side views and taught guidelines; see [ADR-0006](adr/0006-controlled-capture-guidelines.md). This supersedes earlier floor/wall references. The printed sticker goes on a flat removable card; preserve visible corners/white margin, measure the black square and avoid landmarks. This reduces offset without proving whole-body coplanarity. The user selected the 11900 formula with ellipse-proxy girth; fitted weight regression and prior error evaluation are not prototype prerequisites. Marker size/dictionary, precise feature geometry, capture rejection and artifact configuration remain to be specified. [Verified prepared pose copies](research/pose-preparation.md) are ready for user-run training; missing weight calibration is not a pose-training hold. Use the prepared copies rather than unconverted exports.
+The user accepts flat ArUco cards attached near measured back/flank regions with controlled-pen phone top/side views; see [ADR-0006](adr/0006-controlled-capture-guidelines.md). Settled configuration is `DICT_4X4_50`, ID 0, actual black-square side 100 mm (10 cm), white margin excluded. Preserve visible corners/margin and avoid landmarks; confirm actual printed size rather than assuming a document setting proves it. The card reduces offset without making the curved pig coplanar. The user-selected 11900 formula needs no trained weight regression or prior error evaluation.
 
 Implemented bounds: 10 MiB per file, 21 MiB whole request, and 20 megapixels per decoded image. The body is bounded before multipart parsing. Accepted decoded formats are JPEG, PNG, and WebP; actual content is checked, EXIF orientation applied, and animation rejected. Missing/extra/invalid pairs receive `422`, oversized input `413`, and unsupported image content `415`. Photos are not permanently stored or logged. Upload cleanup and multipart completion have focused regression coverage, including unfinalized spools. Supplying two images does not by itself prove same-pig identity; that remains a capture requirement and research validation concern.
 
-Inference remains blocked by missing compatible top/side serving pose checkpoints, concrete marker/geometry configuration and the actual measurement/formula pipeline. Canonical preparation and installed Ultralytics loader checks passed for all 4,412 prepared images/4,419 objects. Eleven native tests and independent review passed; original hashes and retained/excluded weight provenance are unchanged. The user can train pose independently of weight calibration. No model/GPU/training execution or exhaustive anatomy/split-independence proof is claimed. See [prepared-copy evidence and commands](research/pose-preparation.md). See [historical annotation audit](research/training-readiness.md) and the current [selected formula contract/source inspection](research/selected-weight-formula.md). Use actual derived centimeter measurements with Ramanujan-II ellipse girth and the selected divisor 11900, recording formula/configuration versions. Formula-derived output is an experimental estimate with unmeasured accuracy; no learned weight regression or prior held-out acceptance is required. Missing/unusable landmarks or markers still reject/unavailable; no fake confidence, class-label weight fallback or guessed physical scale. The detailed artifact schema, capture bounds and error gates remain unresolved.
+The loader reads `PIGWEIGH_MODEL_BUNDLE` at startup, verifies schema/model hashes and metadata, and warms two CPU ONNX sessions. The user approved ordinary Git (no LFS) for exactly `server/models/v1/{manifest.json,top.onnx,side.onnx}`, copied from the verified private export with bundle ID `attached-marker-ellipse-11900-v1-5dd3bd4779d7539a`. Source checkpoints, photos, training data, other intermediates and credentials remain excluded. Local startup from `server/` uses `models/v1/manifest.json`; Docker copies `models` and selects `/app/models/v1/manifest.json`. The schema fixes RGB float32 `[1,3,640,640]`, end-to-end outputs `[1,300,39]` top / `[1,300,45]` side and named landmarks. [ADR-0008](adr/0008-cpu-inference-bundle.md) and [the runbook](inference.md) give delivery details. Missing/invalid bundles stay unavailable without exposing local paths.
+
+Each image has a separate 10×10 cm marker-plane homography. After inverse letterbox mapping and projection, top ear-base midpoint→tail-base gives L, top left/right chest gives W, and side withers→sternum gives D. Ramanujan II on semiaxes W/2,D/2 gives G; output weight is G²L/11900. Distances, girth and weight are rounded to two-decimal strings with half-up rounding. These are marker-plane proxies rather than 3D anatomy or a measured tape path. The formula website inconsistency remains documented in [source inspection](research/selected-weight-formula.md).
+
+Each view must contain exactly one class-0 pig scoring at least 0.5, one configured marker, and usable required keypoints scoring at least 0.5. Reject missing/multiple/wrong markers, missing/multiple pigs, unusable/outside-image landmarks and unstable geometry with 422 and view-specific details. These engineering thresholds are not weight accuracy. One estimate runs at a time per API process; a competing estimate returns 429. On success the API reads one current-price snapshot only after CPU computation and values the rounded reported weight through Decimal. No transaction spans inference. No price preserves weight with null valuation. Formula output remains explicitly experimental/accuracy unevaluated; no confidence fabrication or class-label fallback.
 
 ## Implemented interface structure
 
@@ -75,10 +94,10 @@ On `/admin`, login is shown when unauthenticated; after server verification, the
 
 ## Implementation and verification boundary
 
-Core authentication, price publication, bounded uploads, readiness and truthful unavailable states are implemented independently of training. FastAPI, Uvicorn, SQLAlchemy, Alembic, `psycopg[binary]`, `python-multipart`, `pwdlib[argon2]` and Pillow are used, with pytest/HTTPX for development checks. A settings package was not needed. Torch, OpenCV, NumPy and serving-runtime selection remain future artifact-dependent work; preserve the separate training environment.
+Core authentication, price publication, bounded uploads, readiness and truthful unavailable states are implemented independently of training. FastAPI, Uvicorn, SQLAlchemy, Alembic, `psycopg[binary]`, `python-multipart`, `pwdlib[argon2]` and Pillow are used, with pytest/HTTPX for development checks. A settings package was not needed. Serving now additionally uses CPU ONNX Runtime, NumPy and the sole opencv-python-headless provider through backend uv. Export uses a separate environment; preserve the global training environment.
 
 Task-owned portable PostgreSQL supplied real integration tests without SQLite substitution or existing cloud databases. [Backend verification](../server/VERIFICATION.md) records 28 PostgreSQL tests and the live eight-route proxy smoke, followed by 11 focused multipart regressions after an independent review fix. The earlier PostgreSQL suite was not rerun for that upload-only fix. Docker's unavailable engine prevented an image build. The stopped original test cluster remains under the documented cleanup limitation; the reusable runner cleaned its separate cluster.
 
-The implemented frontend passed lint, typecheck, a production build and four helper tests, plus HTTP checks of `/`, `/admin` and `/health`; independent frontend review found no P1/P2 issues. Checks ran on available Node 24.13.0 with an engine warning; the pinned Node 22 platform runtime remains unverified. See [frontend instructions and verification status](../web/README.md). The earlier backend record's instruction for the UI writer to rerun frontend checks is historical and is satisfied by these later checks. No composition approval is implied. The user authorized Chrome QA. [Recorded frontend-only checks](qa-browser.md) cover desktop/phone layouts, selected keyboard paths and offline states before the attached-card capture-copy update. The later copy update passed lint/typecheck/four helper tests, with no subsequent build or graphical verification; full-stack setup was blocked by policy, leaving graphical authentication/publication/photo-upload behavior unverified.
+On 2026-10-23 the experimental-result frontend passed lint, TypeScript, seven helper tests and a production build on Node 24.13.0 with the existing Node 22 warning; platform Node 22 remains unverified. See [frontend evidence](../web/README.md). CPU/PyTorch export parity and a mock-image measurement pass provide functional evidence, not physical accuracy. [Final backend verification](../server/VERIFICATION.md) records 73 complete PostgreSQL-backed tests after geometry/cancellation/runtime fixes and 44 final focused regressions. Actual ONNX/API checks cover no-price output, authenticated publication, exact valuation of returned weight/provenance and missing-marker rejection; independent review found no remaining P1/P2 in scope. New disposable clusters were cleaned. [October 19 frontend-only graphical QA](qa-browser.md) predates the current pipeline/result UI; fresh October 23 graphical verification is not established. No composition approval or complete accessibility audit is implied.
 
-The dedicated PigWeigh Railway target and PostgreSQL choice are settled; actual IDs are recorded, while the user has explicitly deferred deployment by choosing “Keep staged for now” on 2026-10-19. Application configuration, deployment and runtime verification remain pending as detailed in [deployment status](deployment.md). Persistent image retention is outside this no-retention stage. The 11900 formula method is selected; concrete artifact/marker/geometry configuration and integration remain unresolved. Scale-error evaluation can follow implementation, and fitted correction remains optional. Nothing in this contract certifies trading fitness or numerical weight accuracy.
+The dedicated PigWeigh Railway target and PostgreSQL choice are settled; actual IDs are recorded, while the user has explicitly deferred deployment by choosing “Keep staged for now” on 2026-10-19. Application configuration, deployment and runtime verification remain pending as detailed in [deployment status](deployment.md). Persistent image retention is outside this no-retention stage. The 11900 method, concrete versioned serving bundle, marker configuration and measurement pipeline are implemented. Default unconfigured serving remains unavailable; physical print/capture validation and scale-error evidence remain unverified. Scale-error evaluation can follow implementation, and fitted correction remains optional. Nothing in this contract certifies trading fitness or numerical weight accuracy.

@@ -1,6 +1,6 @@
 # PigWeigh API
 
-PostgreSQL-only FastAPI service for admin sessions, immutable PHP/kg publication and bounded paired-image requests. Pose models, configured marker geometry and a photo measurement pipeline are absent: valid photo pairs return `503 inference_unavailable`, never invented kilograms or confidence. The selected experimental weight formula is implemented as isolated arithmetic; a trained regression is not a prototype prerequisite. The global model-training Python environment is separate.
+PostgreSQL-only FastAPI service for admin sessions, immutable PHP/kg publication and paired-photo formula estimation. The reviewed ONNX serving bundle is included at `models/v1`; absent or incompatible artifacts return `503 inference_unavailable`. The selected 11900 formula is experimental with unmeasured accuracy. No regression prerequisite, fabricated confidence or class-label weight fallback is used. The global model-training Python environment is separate.
 
 ## Development
 
@@ -12,6 +12,8 @@ Copy-Item .env.example .env
 ```
 
 Set `.env` to a dedicated local PostgreSQL database and an exact `PUBLIC_ORIGIN`, with no trailing slash. Do not commit credentials. Only PostgreSQL URLs are accepted and are normalized to Psycopg 3. No automatic schema creation or SQLite fallback occurs.
+
+The example already sets `PIGWEIGH_MODEL_BUNDLE=models/v1/manifest.json`, relative to this server working directory. See [CPU photo inference](#enable-cpu-photo-inference) for the bundle/marker contract; explicitly removing this setting keeps estimation unavailable.
 
 ```powershell
 uv run --env-file .env alembic upgrade head
@@ -33,16 +35,16 @@ Public examples (assumes web on port 3000):
 curl.exe http://localhost:3000/api/health
 # 200 {"status":"ok"}; 503 database_unavailable when DB connectivity fails
 curl.exe http://localhost:3000/api/inference/readiness
-# 200 {"ready":false,"blockers":[{"code":"serving_landmark_contract_missing","message":"..."}, ...]}
+# 200 {"ready":true,"blockers":[]}, or ready:false with actual bundle/configuration blockers
 curl.exe http://localhost:3000/api/prices/current
 # 200 {"revision":0,"price":null}, or a committed price snapshot
 curl.exe -H 'Origin: http://localhost:3000' `
   -F 'top_image=@D:/captures/top.jpg' -F 'side_image=@D:/captures/side.jpg' `
   http://localhost:3000/api/estimates
-# Valid pair: 503 inference_unavailable
+# Configured usable pair: 200 estimate; missing bundle: 503 inference_unavailable; unusable capture: 422
 ```
 
-Exactly one `top_image` and one `side_image` file are required. Both must depict the same pig; the software does not claim to verify identity. JPEG, PNG and WebP are decoded and EXIF-oriented, not trusted from extensions. No animation; maximum 10 MiB/file, 21 MiB/body and 20 million decoded pixels/image. Missing/extra/malformed pairs return 422; unsupported formats return 415; body/file/pixel limits return 413. At most two upload requests run concurrently, with busy responses 429. The body is bounded before multipart parsing, including chunked uploads. No photos are retained or logged; temporary spools close on success and rejection. The API does not yet produce anatomical overlays or validate marker placement.
+Exactly one `top_image` and one `side_image` file are required. Both must depict the same pig; the software does not claim to verify identity. JPEG, PNG and WebP are decoded and EXIF-oriented, not trusted from extensions. No animation; maximum 10 MiB/file, 21 MiB/body and 20 million decoded pixels/image. Missing/extra/malformed pairs return 422; unsupported formats return 415; body/file/pixel limits return 413. The body boundary permits two uploads, while only one decoded pair/inference operation runs at a time; busy requests receive 429 without queuing CPU jobs. The body is bounded before multipart parsing, including chunked uploads. No photos are retained or logged; temporary spools and decoded images close on every outcome. Request cancellation joins the actual CPU worker before releasing its slot and resources. The API does not claim to verify anatomical card attachment or same-pig identity.
 
 For login, construct a temporary body from a secure terminal prompt rather than putting a password into history. This example holds a cookie jar only for the current shell and cleans it up:
 
@@ -82,12 +84,26 @@ uv run --frozen python -c "from pigweigh.formula import estimate_weight_kg; prin
 # Approximately 84.03361344537815 kg from explicitly supplied 100 cm girth and 100 cm length
 ```
 
-Readiness reports four actual gaps: serving checkpoints bound to the reviewed landmark order, top/side pose models, configured ArUco size/dictionary/photo-to-centimeter geometry, and the landmark/marker measurement pipeline. A trained weight regression or held-out calibration is not required to enable the selected experimental prototype. Later comparisons of estimated kilograms against scale weights assess error; no accuracy is established by these helpers. Numerical HTTP inference remains unavailable until real photo measurements can be produced. Currency continues to use the separate Decimal valuation layer.
+Readiness now checks the configured bundle and loads both actual CPU models once per application lifespan, including warmup. Missing configuration yields `model_bundle_missing`; invalid files, checksums, canonical names, ONNX metadata/shapes or marker/method configuration yield `model_bundle_invalid`. Both are unavailable states rather than failed pricing/admin health. A runtime model failure disables readiness with `inference_runtime_failed` until restart. There is no automatic reload or model download. A trained weight regression or held-out calibration is not required; later comparisons against scale weights assess error.
+
+### Enable CPU photo inference
+
+The user explicitly authorized including the deployable bundle in Git: `server/models/v1/manifest.json`, `top.onnx`, and `side.onnx`. The source export at `D:/pigweigh-inference-artifacts/v1` remains unchanged. Local `.env.example` uses `models/v1/manifest.json`; Docker copies the same three-file directory and sets `/app/models/v1/manifest.json`, so runtime needs no developer drive or remote model download. Exact Git/Railway allowlists and Git attributes preserve only this serving release, including original manifest bytes. Training `.pt` checkpoints, source images/data and environments remain excluded. The serving environment uses ONNX Runtime CPU, NumPy and exactly one OpenCV provider (`opencv-python-headless` 4.13 with ArUco); it contains no Torch/Ultralytics training dependency.
+
+The version-1 manifest contains `schema_version:1`, a content-derived `bundle_id`, `method:"attached-marker-ellipse-11900-v1"`, `formula_divisor:11900`, and `marker:{dictionary:"DICT_4X4_50",id:0,side_mm:100}`. `models.top` and `models.side` declare a relative `file` inside the bundle, lowercase SHA256, exact canonical `keypoints`, `input_size:640`, `input_shape:[1,3,640,640]`, output shapes `[1,300,39]` and `[1,300,45]`, and `end2end:true`. Extra export/source provenance is retained in the manifest. The actual ONNX task, single pig class, keypoint names/shape and end-to-end metadata must agree. No extra NMS is applied to the exported end-to-end rows.
+
+Both photos must contain one complete flat `DICT_4X4_50` ID 0 marker; measure its **black square**, which must be 100 mm on each side. The white margin is not part of the measurement. ArUco detection uses full EXIF-oriented resolution. Pose inference uses RGB float32/255 with centered 640-pixel letterboxing and pad 114; coordinates are mapped back through the actual rounded resize/padding.
+
+Each view uses its own marker-corner-to-10-cm-square homography. Top length is the distance between the **projected** ear-base midpoint and tail base; width is projected left-chest to right-chest. Side depth is projected withers to sternum. There is no snout/tail-tip/hoof/belly fallback. An ellipse approximation gives girth, followed by G²L/11900. These remain local reference-plane proxies for a curved body and a tape path. Matching pig identity, marker attachment and posture are capture requirements, not automatically verified facts.
+
+The initial box and required-keypoint thresholds are both 0.5, an engineering usability gate rather than measured accuracy. Zero/multiple pigs, absent/wrong/multiple markers, low-confidence or out-of-image required points, degenerate/horizon-crossing projections, and unusable numeric/reporting precision return 422 with an actionable code and view. No biological weight range is clamped. Measurements and weight are positive two-decimal strings; positive values rounding to `0.00` are rejected. The exact returned Decimal weight is multiplied by the price snapshot queried **after** CPU inference, with HALF_UP PHP rounding. No DB transaction/connection is held during inference.
+
+Success preserves `status`, `estimated_weight_kg`, `valuation` and `artifacts.bundle_id`, adding four strings under `measurements`: `body_length_cm`, `chest_width_cm`, `chest_depth_cm`, `girth_cm`. `method` contains version `attached-marker-ellipse-11900-v1`, formula `G_cm^2 * L_cm / 11900`, dictionary `DICT_4X4_50`, ID 0, `marker_side_mm:"100"`, `experimental:true`, `accuracy_evaluated:false`. No model confidence is presented as kilogram accuracy. Without a price, weight is preserved with `valuation:null` and `valuation_unavailable_reason:"no_price"`; a valued result omits that reason.
 
 The focused formula/readiness/upload checks need no PostgreSQL connection:
 
 ```powershell
-uv run --frozen pytest -q tests/test_formula.py tests/test_multipart_cleanup.py --tb=short
+uv run --frozen pytest -q tests/test_formula.py tests/test_inference.py tests/test_multipart_cleanup.py --tb=short
 ```
 
 ## PostgreSQL tests and HTTP proxy proof
@@ -99,6 +115,14 @@ pwsh -File scripts/test-postgres.ps1 -PostgresBin 'C:/path/to/trusted/pgsql/bin'
 ```
 
 Alternatively set `PIGWEIGH_TEST_DATABASE_URL` and `PIGWEIGH_TEST_ALLOW_RESET` to the exact name of a separately provisioned disposable local test DB, then `uv run pytest -q`. Tests truncate all app tables and prove initial migration down/up only there. They verify real PostgreSQL concurrent revision locking, rollback/immutability, credentials/session expiry/revocation, Origin, decimal bounds, upload formats/EXIF/limits/spool cleanup and truthful inference unavailability.
+
+For opt-in actual ONNX/API/price proof, set `PIGWEIGH_TEST_MODEL_BUNDLE` to the packaged manifest and `PIGWEIGH_TEST_PAIR_DIR` to the private `D:/pigweigh-pose-data/test` before running the isolated PostgreSQL runner. The test uses the explicitly named generated-image pair without copying either image into source. It verifies actual CPU readiness/measurement, no-price weight preservation, admin publication, Decimal valuation/provenance and missing-marker rejection. Generated images establish functionality only, not real pig weight or accuracy.
+
+```powershell
+$env:PIGWEIGH_TEST_MODEL_BUNDLE = (Resolve-Path models/v1/manifest.json).Path
+$env:PIGWEIGH_TEST_PAIR_DIR = 'D:/pigweigh-pose-data/test'
+pwsh -File scripts/test-postgres.ps1 -PostgresBin 'C:/path/to/trusted/pgsql/bin'
+```
 
 `tests/proxy_smoke.py` is an optional live HTTP check, not a production test. It expects the same isolated database fixture with its test-only admin and sends a real 12 MiB pair through a built Next server. Start API on 18080 with `PUBLIC_ORIGIN=http://localhost:13000`; build web with `BACKEND_INTERNAL_URL=http://127.0.0.1:18080`, then start Next on 13000. Run `uv run python tests/proxy_smoke.py`. It exercises all eight routes, cookies, protected publication, stale revision, upload-unavailable and Origin rejection. Do not run against deployment credentials.
 

@@ -1,0 +1,4 @@
+# Preserve reviewed release bytes, including the manifest's original CRLF.
+models/v1/manifest.json -text whitespace=cr-at-eol
+models/v1/top.onnx binary
+models/v1/side.onnx binary

@@ -5,3 +5,11 @@ tests
 .env
 .env.*
 README.md
+**/*.pt
+**/*.tflite
+models/**
+!models/v1/
+models/v1/**
+!models/v1/manifest.json
+!models/v1/top.onnx
+!models/v1/side.onnx

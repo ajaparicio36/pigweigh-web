@@ -5,6 +5,9 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
   "alembic>=1.16,<2",
   "fastapi>=0.115,<1",
+  "numpy>=2,<3",
+  "onnxruntime>=1.23,<2",
+  "opencv-python-headless>=4.13,<4.14",
   "pillow>=12,<13",
   "psycopg[binary]>=3.3,<4",
   "pwdlib[argon2]>=0.3,<1",

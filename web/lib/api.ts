@@ -4,13 +4,31 @@ export type Price = { id: string; php_per_kg: string; source_reference: string; 
 export type PriceSnapshot = { revision: number; price: Price | null };
 export type Readiness = { ready: boolean; blockers: Array<{ code: string; message: string }> };
 export type AdminSession = { admin: { id: string; username: string } };
+export type EstimateMeasurements = {
+  body_length_cm: string;
+  chest_width_cm: string;
+  chest_depth_cm: string;
+  girth_cm: string;
+};
+export type EstimateMethod = {
+  version: "attached-marker-ellipse-11900-v1";
+  formula: "G_cm^2 * L_cm / 11900";
+  marker_dictionary: "DICT_4X4_50";
+  marker_id: 0;
+  marker_side_mm: "100";
+  experimental: true;
+  accuracy_evaluated: false;
+};
 export type Estimate = {
   status: "estimated";
   estimated_weight_kg: string;
-  valuation: { amount_php: string; price: Price } | null;
-  valuation_unavailable_reason?: "no_price";
   artifacts: { bundle_id: string };
-};
+  measurements: EstimateMeasurements;
+  method: EstimateMethod;
+} & (
+  | { valuation: { amount_php: string; price: Price }; valuation_unavailable_reason?: never }
+  | { valuation: null; valuation_unavailable_reason: "no_price" }
+);
 export type LoadState<T> = { status: "loading" } | { status: "ready"; data: T } | { status: "error"; message: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -42,13 +60,32 @@ export function isAdminSession(value: unknown): value is AdminSession {
     && value.admin.id.length > 0 && typeof value.admin.username === "string" && value.admin.username.length > 0;
 }
 
+function isPositiveMeasurement(value: unknown): value is string {
+  return typeof value === "string" && value === value.trim()
+    && /^(?:0|[1-9]\d*)\.\d{2}$/.test(value) && /[1-9]/.test(value);
+}
+
+function isEstimateMeasurements(value: unknown): value is EstimateMeasurements {
+  return isRecord(value) && isPositiveMeasurement(value.body_length_cm)
+    && isPositiveMeasurement(value.chest_width_cm) && isPositiveMeasurement(value.chest_depth_cm)
+    && isPositiveMeasurement(value.girth_cm);
+}
+
+function isEstimateMethod(value: unknown): value is EstimateMethod {
+  return isRecord(value) && value.version === "attached-marker-ellipse-11900-v1"
+    && value.formula === "G_cm^2 * L_cm / 11900" && value.marker_dictionary === "DICT_4X4_50"
+    && value.marker_id === 0 && value.marker_side_mm === "100"
+    && value.experimental === true && value.accuracy_evaluated === false;
+}
+
 export function isEstimate(value: unknown): value is Estimate {
-  if (!isRecord(value) || value.status !== "estimated" || typeof value.estimated_weight_kg !== "string"
-    || !/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value.estimated_weight_kg)
-    || !/[1-9]/.test(value.estimated_weight_kg) || !isRecord(value.artifacts)
-    || typeof value.artifacts.bundle_id !== "string" || value.artifacts.bundle_id.length === 0) return false;
+  if (!isRecord(value) || value.status !== "estimated" || !isPositiveMeasurement(value.estimated_weight_kg)
+    || !isRecord(value.artifacts) || typeof value.artifacts.bundle_id !== "string"
+    || value.artifacts.bundle_id.trim().length === 0 || !isEstimateMeasurements(value.measurements)
+    || !isEstimateMethod(value.method)) return false;
   if (value.valuation === null) return value.valuation_unavailable_reason === "no_price";
-  return isRecord(value.valuation) && isMoney(value.valuation.amount_php) && isPrice(value.valuation.price);
+  return value.valuation_unavailable_reason === undefined && isRecord(value.valuation)
+    && isMoney(value.valuation.amount_php) && isPrice(value.valuation.price);
 }
 
 export class ApiError extends Error {

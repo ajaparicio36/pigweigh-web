@@ -1,8 +1,10 @@
-from contextlib import asynccontextmanager
+from contextlib import ExitStack, asynccontextmanager
 from datetime import datetime, timedelta, timezone
 import asyncio
 import secrets
+from decimal import Decimal
 from typing import Annotated
+from collections.abc import Callable
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -18,9 +20,10 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from pigweigh.config import Settings
 from pigweigh.db import Admin, LoginSession, PriceRecord, PriceState, make_engine
-from pigweigh.money import MAX_BIGINT, format_price, parse_price
+from pigweigh.money import MAX_BIGINT, format_price, parse_price, valuation
+from pigweigh.inference import CaptureRejected, InferenceEngine, InferenceUnavailable
 from pigweigh.security import COOKIE, PASSWORDS, LoginGuard, normalize_username, token_hash
-from pigweigh.uploads import BODY_LIMIT, InvalidImage, capture_form, validate_image
+from pigweigh.uploads import BODY_LIMIT, InvalidImage, capture_form, decode_image
 
 
 class APIError(Exception):
@@ -31,6 +34,27 @@ class APIError(Exception):
 def error_response(status: int, code: str, message: str, details: dict | None = None) -> JSONResponse:
     return JSONResponse({"error": {"code": code, "message": message, "details": details or {}}},
                         status_code=status, headers={"Cache-Control": "no-store"})
+
+
+async def complete_cpu_work(work: Callable[[], dict]) -> dict:
+    """Request cancellation must not release resources while its CPU thread runs."""
+    task = asyncio.create_task(run_in_threadpool(work))
+    cancelled = False
+    while True:
+        try:
+            result = await asyncio.shield(task)
+            break
+        except asyncio.CancelledError:
+            cancelled = True
+            if task.cancelled():
+                raise
+        except Exception:
+            if cancelled:
+                raise asyncio.CancelledError() from None
+            raise
+    if cancelled:
+        raise asyncio.CancelledError()
+    return result
 
 
 class RequestBoundary:
@@ -126,15 +150,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     config = settings or Settings.from_env()
     engine = make_engine(config)
     guard = LoginGuard()
+    inference = InferenceEngine(config.model_bundle)
+    inference_slot = asyncio.Semaphore(1)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        yield
-        engine.dispose()
+        await run_in_threadpool(inference.load)
+        try:
+            yield
+        finally:
+            inference.models.clear()
+            engine.dispose()
 
     app = FastAPI(title="PigWeigh API", lifespan=lifespan)
     app.state.engine = engine
     app.state.login_guard = guard
+    app.state.inference = inference
+    app.state.inference_slot = inference_slot
     app.add_middleware(RequestBoundary, origin=config.public_origin)
 
     @app.exception_handler(APIError)
@@ -187,12 +219,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/inference/readiness")
     def readiness():
-        return {"ready": False, "blockers": [
-            {"code": "serving_landmark_contract_missing", "message": "Serving pose checkpoints must declare the reviewed landmark order."},
-            {"code": "pose_artifacts_missing", "message": "Compatible top and side pose models are required."},
-            {"code": "capture_geometry_missing", "message": "ArUco size, dictionary and photo-to-centimeter geometry are not configured."},
-            {"code": "measurement_pipeline_missing", "message": "The landmark and marker measurement pipeline is not implemented."},
-        ]}
+        return inference.readiness()
 
     @app.get("/api/prices/current")
     def current_price(session: DB):
@@ -265,17 +292,46 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def estimate(request: Request):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the two images as multipart form data.")
-        async with capture_form(request) as form:
-            items = list(form.multi_items())
-            if len(items) != 2 or {key for key, _ in items} != {"top_image", "side_image"}:
-                raise APIError(422, "invalid_capture_pair", "Provide exactly one top image and one side image.")
-            for view, upload in items:
-                if not isinstance(upload, UploadFile):
+        if inference_slot.locked():
+            raise APIError(429, "inference_busy", "An estimate is already running. Try again shortly.")
+        await inference_slot.acquire()
+        try:
+            async with capture_form(request) as form:
+                items = list(form.multi_items())
+                if len(items) != 2 or {key for key, _ in items} != {"top_image", "side_image"}:
+                    raise APIError(422, "invalid_capture_pair", "Provide exactly one top image and one side image.")
+                if any(not isinstance(upload, UploadFile) for _,upload in items):
                     raise APIError(422, "invalid_capture_pair", "Each view must be an image file.")
+                def compute():
+                    # The worker owns decoded buffers through its entire lifetime.
+                    with ExitStack() as images_owner:
+                        images = {}
+                        for view,upload in items:
+                            try:
+                                decoded = decode_image(upload)
+                                images_owner.callback(decoded.close)
+                                images[view.removesuffix("_image")] = decoded
+                            except InvalidImage as exc:
+                                raise APIError(exc.status, exc.code, exc.message, {"view":view}) from None
+                        return inference.estimate(images)
                 try:
-                    await run_in_threadpool(validate_image, upload)
-                except InvalidImage as exc:
-                    raise APIError(exc.status, exc.code, exc.message, {"view": view}) from None
-        raise APIError(503, "inference_unavailable", "Estimation awaits compatible pose models, marker geometry and photo measurements.")
+                    result = await complete_cpu_work(compute)
+                except CaptureRejected as exc:
+                    raise APIError(422, exc.code, exc.message, {"view": exc.view}) from None
+                except InferenceUnavailable:
+                    raise APIError(503, "inference_unavailable", "Estimation requires a verified local model bundle and marker configuration.") from None
+            # This short read occurs only after CPU inference; no DB transaction spans it.
+            def priced_result():
+                with Session(engine) as session:
+                    state, price = session.execute(select(PriceState, PriceRecord).outerjoin(
+                        PriceRecord, PriceRecord.id == PriceState.current_id).where(PriceState.id == 1)).one()
+                    snapshot = price_json(price)
+                result["valuation"] = valuation(Decimal(result["estimated_weight_kg"]), snapshot)
+                if snapshot is None:
+                    result["valuation_unavailable_reason"] = "no_price"
+                return result
+            return await run_in_threadpool(priced_result)
+        finally:
+            inference_slot.release()
 
     return app

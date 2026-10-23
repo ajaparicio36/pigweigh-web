@@ -72,7 +72,7 @@ def test_complete_pair_still_unavailable_and_closes(upload_client):
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "inference_unavailable"
     assert response.json()["error"]["message"] == (
-        "Estimation awaits compatible pose models, marker geometry and photo measurements.")
+        "Estimation requires a verified local model bundle and marker configuration.")
     assert "estimated_weight_kg" not in response.text and "confidence" not in response.text
     assert len(created) == 2 and all(file.closed for file in created)
 
@@ -83,9 +83,7 @@ def test_readiness_reports_real_photo_pipeline_gaps_without_regression_gate(uplo
     assert response.status_code == 200
     data = response.json()
     assert data["ready"] is False
-    assert {blocker["code"] for blocker in data["blockers"]} == {
-        "serving_landmark_contract_missing", "pose_artifacts_missing",
-        "capture_geometry_missing", "measurement_pipeline_missing"}
+    assert {blocker["code"] for blocker in data["blockers"]} == {"model_bundle_missing"}
     assert "weight_calibration_missing" not in response.text
     assert response.headers["cache-control"] == "no-store"
 
