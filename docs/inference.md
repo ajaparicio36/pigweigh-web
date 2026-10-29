@@ -1,6 +1,6 @@
 # CPU inference runbook
 
-Current implementation: 2026-10-23. The API runs real top/side ONNX pose inference, detects the configured attached ArUco marker, measures named proxies and applies the selected 11900 formula. The three approved serving files are in ordinary Git and packaged in the new **PigWeigh Production** Railway API. [Deployment evidence](deployment.md#runtime-evidence) records runtime readiness and deployed hashes. The older **PigWeigh** project remains staged and untouched. A server with no usable configured bundle remains unavailable.
+Current measurement method: 2026-10-23; automatic per-photo validation added locally on 2026-10-30 (release verification pending). The API runs real top/side ONNX pose inference, detects the configured attached ArUco marker, measures named proxies and applies the selected 11900 formula. The three approved serving files are in ordinary Git and packaged in the new **PigWeigh Production** Railway API. [Deployment evidence](deployment.md#runtime-evidence) records runtime readiness and deployed hashes. The older **PigWeigh** project remains staged and untouched. A server with no usable configured bundle remains unavailable.
 
 ## Versioned serving bundle and isolated export environment
 
@@ -42,6 +42,23 @@ curl.exe -H 'Origin: http://localhost:3000' `
 
 Use actual local images of the same pig under the protocol below; the paths are usage examples. A readiness result is operational bundle readiness, not physical measurement accuracy. Missing configuration reports `model_bundle_missing`; failed schema/hash/runtime validation reports `model_bundle_invalid`, without local paths. A runtime failure changes readiness to `inference_runtime_failed`; inspect private artifacts and restart after correction. Valid decoded pairs with unavailable inference return 503. Core `/api/health` checks the database separately.
 
+## Automatic per-photo validation
+
+After each successful upload selection or camera capture, the web automatically sends the selected File to `POST /api/photos/top/validate` or `/api/photos/side/validate`, with exactly one multipart `image` file. Live camera video stays local; guides perform no live inference. Photos are not retained. The route has no database dependency and returns `{"status":"validated","view":"top","artifacts":{"bundle_id":"<loaded bundle ID>"}}` (or `side`) after the existing per-view marker, pig-count, required-landmark and projection gates pass. It returns the first failing issue, not a list of all possible problems, and supplies no kilograms or confidence.
+
+The browser runs checks serially and associates results with the current File object and view. Replacing/removing photos, including same-name replacements, invalidates stale results. Rejected photos need replacement; busy/network/unavailable or interrupted checks offer Retry. Both current checks must pass before the estimate button/submit handler proceed. Final estimation uploads/rechecks both images independently; preflight is no cached approval or identity guarantee. Correct physical marker scale/placement, same-pig identity, geometry validity in the real scene and weight accuracy remain unverified.
+
+From the same running local web/API setup, check individual views before sending the pair:
+
+```powershell
+curl.exe -H 'Origin: http://localhost:3000' `
+  -F 'image=@D:/captures/top.jpg' http://localhost:3000/api/photos/top/validate
+curl.exe -H 'Origin: http://localhost:3000' `
+  -F 'image=@D:/captures/side.jpg' http://localhost:3000/api/photos/side/validate
+```
+
+These are local-file usage examples; see [backend route/error examples](../server/README.md#check-one-photo-before-estimation). Checks preserve strict Origin, no-store, 10 MiB/file, 20 MP/image and 21 MiB/body bounds, and share the two-upload admission and single CPU slot with paired estimation. `429 upload_busy`/`inference_busy` means retry shortly; missing/invalid bundles remain `503` unavailable. Temporary spools/decoded buffers close after completion, rejection or cancellation; a cancelled worker retains its CPU slot until it actually finishes. No model, threshold, marker or formula changed.
+
 ## Capture and implemented measurement
 
 Use a flat `DICT_4X4_50` / ID 0 card near the measured region: back for the straight bird's-eye photo, flank for the straight-on side photo. **The actual outer black square must measure 100 mm = 10 cm**; white margin is additional and excluded from that length. Keep all corners/margin visible and do not cover landmarks. A Photoshop/document size setting or detected marker does not prove the physical print dimension; check the printed card with a ruler. The API assumes this configured physical size.
@@ -58,7 +75,7 @@ For each EXIF-oriented decoded image, OpenCV detects exactly one marker, maps it
 
 These are marker-plane proxies. A straight ear-to-tail chord differs from the tape's path along the spine; the chest section is approximated by an ellipse. The curved body, cross-view posture and residual marker/body offset are not reconstructed in 3D. The formula source displays 11900 but its calculator code uses an imperial conversion near 14450.9; [source inspection](research/selected-weight-formula.md) records this discrepancy. The explicit user choice remains 11900, with no borrowed accuracy claim or mandatory trained regression.
 
-Exactly one class-0 pig at score ≥0.5 must be detected in each view, and each required landmark must score ≥0.5 and lie within the image. These are engineering usability gates, not “50% weight accuracy” or a confidence interval. Missing/extra/wrong markers, missing/multiple pigs, unusable points and unstable/invalid projections return 422 with a view and actionable rejection. The software does not verify same-pig identity, card attachment location or anatomical correctness of every prediction. One CPU estimate is admitted at a time; a competing request gets `429 inference_busy` (separate bounded upload admission can return `upload_busy`). Existing image/body limits and temporary-file cleanup still apply.
+Exactly one class-0 pig at score ≥0.5 must be detected in each view, and each required landmark must score ≥0.5 and lie within the image. These are engineering usability gates, not “50% weight accuracy” or a confidence interval. Missing/extra/wrong markers, missing/multiple pigs, unusable points and unstable/invalid projections return 422 with a view and actionable rejection. The software does not verify same-pig identity, card attachment location or anatomical correctness of every prediction. One CPU photo check or estimate is admitted at a time; a competing request gets `429 inference_busy` (separate bounded upload admission can return `upload_busy`). Existing image/body limits and temporary-file cleanup still apply.
 
 Success returns decimal strings for rounded weight and four measurements, plus bundle ID and method metadata: version, formula, dictionary, ID, `marker_side_mm:"100"`, `experimental:true`, `accuracy_evaluated:false`. The current price is read once **after** CPU computation; no database transaction spans inference. Valuation uses Decimal on the two-decimal reported weight and keeps that snapshot's provenance. With no price, keep the weight, `valuation:null` and `valuation_unavailable_reason:"no_price"`.
 
@@ -76,6 +93,8 @@ side: snout-tip, eye, ear-tip, withers, mid-point-peak, loin, tail-base,
 The exporter derives the bundle ID from canonical model/configuration JSON; runtime validates its permitted string form and model hashes. Do not describe the runtime as recomputing that ID. Private source-checkpoint hashes and parity evidence remain in the manifest; they are provenance, not biological accuracy.
 
 ## Evidence and remaining work
+
+October 30 [backend verification](../server/VERIFICATION.md#stateless-per-photo-validation--2026-10-30) records 93 focused tests including actual ONNX top/side validation endpoints, no database access, independent final rechecks, shared admission and repeated-cancellation cleanup. Frontend lint, TypeScript, 24 helper tests and production build passed; independent review found no remaining P1/P2 in scope. [Local browser QA](qa-photo-validation.md) passed 32 bounded assertions plus graphical Chrome upload/review checks: 13 real-model/proxy, 10 deterministic HTTP race/error, three supplemental and six preview-containment checks. Actual ONNX top/side validation ran through the Next proxy with no database; fake-camera capture reached the real marker-rejection path. HTTP harness successes prove client lifecycle only. The whole-photo clipping fix passed desktop/actual 390 px checks; owned browsers/services stopped. No physical camera or production was used. Release proof remains pending; older evidence below does not establish this route's deployment.
 
 Export metadata/checker and CPU-versus-PyTorch parity passed on two mock images: maximum selected output difference `4.57763671875e-05` in model input units. A real local pipeline pass on mock imagery produced 149.25 kg; this is a functional fixture result only, not an actual pig's verified weight. Original checkpoints/images were unchanged.
 

@@ -18,7 +18,7 @@ try {
 }
 after(() => rmSync(compiled, { recursive: true, force: true }));
 const { formatMoney, normalizePrice } = require(path.join(compiled, "format.js"));
-const { ApiError, isPriceSnapshot, isReadiness, isAdminSession, isEstimate, request } = require(path.join(compiled, "api.js"));
+const { ApiError, isPriceSnapshot, isReadiness, isAdminSession, isEstimate, isPhotoValidation, validatePhoto, request } = require(path.join(compiled, "api.js"));
 
 // Synthetic protocol fixtures exercise software parsing, never inference accuracy.
 const price = { id: "1", php_per_kg: "210.50", source_reference: "Test reference", published_at: "2026-10-19T00:00:00Z" };
@@ -151,5 +151,33 @@ test("fetch keeps same-origin cookies/no-store and preserves structured failures
     await assert.rejects(request("/prices/current", isPriceSnapshot), (error) => error instanceof ApiError && error.status === 502);
     globalThis.fetch = async () => Response.json({ revision: 1, price: "bad" });
     await assert.rejects(request("/prices/current", isPriceSnapshot), (error) => error instanceof ApiError && error.code === "invalid_response");
+  } finally { globalThis.fetch = original; }
+});
+
+test("per-photo contract requires a valid view, status and bundle provenance", () => {
+  const valid = { status: "validated", view: "top", artifacts: { bundle_id: "synthetic-parser-fixture" } };
+  assert.equal(isPhotoValidation(valid), true);
+  assert.equal(isPhotoValidation({ ...valid, view: "side" }), true);
+  for (const invalid of [null, [], {}, { ...valid, status: "estimated" }, { ...valid, view: "front" }, { ...valid, artifacts: {} }, { ...valid, artifacts: { bundle_id: " " } }]) {
+    assert.equal(isPhotoValidation(invalid), false);
+  }
+});
+
+test("per-photo request sends only the selected file and rejects a mismatched response view", async () => {
+  const original = globalThis.fetch;
+  const file = new File(["protocol fixture"], "pig.jpg", { type: "image/jpeg" });
+  const signal = new AbortController().signal;
+  try {
+    globalThis.fetch = async (url, options) => {
+      assert.equal(url, "/api/photos/top/validate");
+      assert.equal(options.method, "POST");
+      assert.equal(options.signal, signal);
+      assert.deepEqual([...options.body.keys()], ["image"]);
+      assert.equal(options.body.get("image"), file);
+      return Response.json({ status: "validated", view: "top", artifacts: { bundle_id: "fixture" } });
+    };
+    assert.equal((await validatePhoto("top", file, signal)).view, "top");
+    globalThis.fetch = async () => Response.json({ status: "validated", view: "side", artifacts: { bundle_id: "fixture" } });
+    await assert.rejects(validatePhoto("top", file, signal), (error) => error instanceof ApiError && error.code === "invalid_response");
   } finally { globalThis.fetch = original; }
 });

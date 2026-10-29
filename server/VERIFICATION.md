@@ -68,3 +68,24 @@ Implemented only the standard-library calculation core in `pigweigh/formula.py`:
 Updated readiness's four blockers to actual serving landmark-contract/model, marker geometry and measurement-pipeline gaps. Removed trained/validated weight calibration as a mandatory prototype capability gate. The real upload route still validates/closes both files and returns `503 inference_unavailable` without numerical output. Auth, PostgreSQL, upload limits, Decimal currency, dependencies and deployment configuration are unchanged.
 
 `uv run --frozen pytest -q tests/test_formula.py tests/test_multipart_cleanup.py --tb=short` passed **22 tests**: selected divisor/unit arithmetic, circle/ellipse symmetry/scaling, positive/finite validation, output overflow/underflow, representable extreme arithmetic, actual readiness HTTP response, and existing multipart EOF/cleanup/rejection checks including the valid-pair 503 response. The known Starlette HTTPX deprecation warning remains. No PostgreSQL cluster, live server, browser, new package, GPU task, training, source image/checkpoint or deployment was used. These checks prove arithmetic and honest unavailability, not photo measurement or weight accuracy.
+
+## Stateless per-photo validation — 2026-10-30
+
+Added `POST /api/photos/{top|side}/validate` with exactly one multipart `image` file. `InferenceEngine._measure_view` is the single shared marker/pose/required-landmark/projection path used by preflight and final paired estimation. Success returns only `status`, `view` and loaded `bundle_id`; the final pair always rechecks both images and retains the existing formula and post-compute Decimal price snapshot. No database dependency, storage, cache, model/manifest/configuration/threshold change, training dependency or accuracy claim was added.
+
+Final noninteractive run from `server/`, using the unchanged packaged bundle and the explicitly authorized generated fixture directory:
+
+```powershell
+$env:PIGWEIGH_TEST_MODEL_BUNDLE = (Resolve-Path models/v1/manifest.json).Path
+$env:PIGWEIGH_TEST_PAIR_DIR = 'D:/pigweigh-pose-data/test'
+uv run --frozen pytest -q tests/test_photo_validation.py tests/test_inference.py tests/test_formula.py tests/test_multipart_cleanup.py tests/test_packaged_bundle.py tests/test_boundaries.py::test_streamed_body_enforced_before_parser_without_content_length tests/test_boundaries.py::test_upload_slots_are_bounded_and_released --tb=short
+# 93 passed, 1 existing Starlette/httpx deprecation warning in 11.16s
+uv run --frozen python -m compileall -q pigweigh
+# passed
+```
+
+Proof includes both public-route success contracts; absent/wrong/duplicate real ArUco markers; zero/multiple pigs; required-keypoint confidence, bounds and finite-output gates; shared projection rejection; and independent final revalidation of both previously checked images. The opt-in endpoint tests run actual CPU ONNX separately for `Gemini_Generated_Image_wfs237wfs237wfs2.jpg` (top) and `Gemini_Generated_Image_mcndf9mcndf9mcnd.jpg` (side), assert the loaded bundle ID, fail on any DB Session creation, and verify `engine.pool.checkedout() == 0`. The app uses an unused loopback PostgreSQL URL; no PostgreSQL server/database was provisioned or contacted, and no prices/users were written. Generated images establish endpoint functionality only.
+
+Boundary/lifecycle proof covers missing/unknown/duplicate/extra file fields, extra text fields, malformed/truncated multipart, finalized and unfinished rolled spool cleanup, invalid/unsupported/animated/over-byte/over-pixel/thin images, unsupported views/paths, strict/duplicate Origin rejection, no-store responses, streamed body bounds, and shared two-upload admission with estimates. Cross-route CPU tests exercise both ownership directions, call `Task.cancel()` twice while work is blocked, prove both routes return `429 inference_busy` and keep buffers/spools usable until worker completion, then prove semaphore/spools/decoded buffers are released. An initial regression exposed that Pillow's image context exit alone leaves converted pixel buffers alive; the route now uses explicit `contextlib.closing(image)`. Existing paired inference/formula/multipart cancellation regressions still pass.
+
+Missing bundles never validate; runtime failures are sanitized and disable both flows until restart. Readme curl examples document first-issue rejection, exact multipart contract, retention and retry behavior. `git diff --check -- server` passed. No full PostgreSQL rerun was needed for this stateless change; existing pricing/auth evidence above remains historical. Graphical/proxy QA is tracked separately by the coordinating QA worker. Physical camera support, marker print scale/attachment, same-pig identity and weight accuracy are not established by these checks. No deployment, commit, push or pre-existing temporary-directory cleanup was performed.

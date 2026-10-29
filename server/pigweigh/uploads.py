@@ -23,8 +23,8 @@ class CaptureMultipartParser(MultiPartParser):
 
 
 @asynccontextmanager
-async def capture_form(request: Request) -> AsyncIterator[FormData]:
-    parser = CaptureMultipartParser(request.headers, request.stream(), max_files=2, max_fields=0, max_part_size=1024)
+async def capture_form(request: Request, *, max_files: int = 2) -> AsyncIterator[FormData]:
+    parser = CaptureMultipartParser(request.headers, request.stream(), max_files=max_files, max_fields=0, max_part_size=1024)
     form = None
     try:
         form = await parser.parse()

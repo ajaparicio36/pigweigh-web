@@ -3,6 +3,8 @@ import { isMoney, normalizePrice } from "./format";
 export type Price = { id: string; php_per_kg: string; source_reference: string; published_at: string };
 export type PriceSnapshot = { revision: number; price: Price | null };
 export type Readiness = { ready: boolean; blockers: Array<{ code: string; message: string }> };
+export type PhotoView = "top" | "side";
+export type PhotoValidation = { status: "validated"; view: PhotoView; artifacts: { bundle_id: string } };
 export type AdminSession = { admin: { id: string; username: string } };
 export type EstimateMeasurements = {
   body_length_cm: string;
@@ -53,6 +55,19 @@ export function isReadiness(value: unknown): value is Readiness {
   return isRecord(value) && typeof value.ready === "boolean" && Array.isArray(value.blockers)
     && value.blockers.every((item: unknown) => isRecord(item) && typeof item.code === "string" && typeof item.message === "string")
     && (!value.ready || value.blockers.length === 0);
+}
+
+export function isPhotoValidation(value: unknown): value is PhotoValidation {
+  return isRecord(value) && value.status === "validated" && (value.view === "top" || value.view === "side")
+    && isRecord(value.artifacts) && typeof value.artifacts.bundle_id === "string"
+    && value.artifacts.bundle_id.trim().length > 0;
+}
+
+export async function validatePhoto(view: PhotoView, file: File, signal: AbortSignal): Promise<PhotoValidation> {
+  const body = new FormData();
+  body.set("image", file);
+  return request(`/photos/${view}/validate`, (value): value is PhotoValidation => isPhotoValidation(value) && value.view === view,
+    { method: "POST", body, signal });
 }
 
 export function isAdminSession(value: unknown): value is AdminSession {

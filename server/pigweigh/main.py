@@ -1,9 +1,9 @@
-from contextlib import ExitStack, asynccontextmanager
+from contextlib import ExitStack, asynccontextmanager, closing
 from datetime import datetime, timedelta, timezone
 import asyncio
 import secrets
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 from collections.abc import Callable
 
 from fastapi import Depends, FastAPI, Request
@@ -24,6 +24,8 @@ from pigweigh.money import MAX_BIGINT, format_price, parse_price, valuation
 from pigweigh.inference import CaptureRejected, InferenceEngine, InferenceUnavailable
 from pigweigh.security import COOKIE, PASSWORDS, LoginGuard, normalize_username, token_hash
 from pigweigh.uploads import BODY_LIMIT, InvalidImage, capture_form, decode_image
+
+PHOTO_VALIDATION_PATHS = frozenset({"/api/photos/top/validate", "/api/photos/side/validate"})
 
 
 class APIError(Exception):
@@ -79,7 +81,7 @@ class RequestBoundary:
         if origins != [self.origin]:
             await error_response(403, "invalid_origin", "This request origin is not allowed.")(scope, receive, no_store)
             return
-        is_upload = scope["path"] == "/api/estimates"
+        is_upload = scope["path"] == "/api/estimates" or scope["path"] in PHOTO_VALIDATION_PATHS
         if is_upload and self.upload_slots.locked():
             await error_response(429, "upload_busy", "Uploads are busy. Try again shortly.")(scope, receive, no_store)
             return
@@ -182,6 +184,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def http_error(request: Request, exc: HTTPException):
         if request.url.path == "/api/estimates" and exc.status_code == 400:
             return error_response(422, "invalid_capture_pair", "Provide exactly one top image and one side image as valid multipart data.")
+        if request.url.path in PHOTO_VALIDATION_PATHS and exc.status_code == 400:
+            return error_response(422, "invalid_capture", "Provide exactly one image file as valid multipart data.")
         return error_response(exc.status_code, "invalid_request", "The request could not be processed.")
 
     @app.exception_handler(SQLAlchemyError)
@@ -287,6 +291,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         result = {"revision": state.revision, "price": price_json(price)}
         session.commit()
         return result
+
+    @app.post("/api/photos/{view}/validate")
+    async def validate_photo(view: Literal["top", "side"], request: Request):
+        if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
+            raise APIError(415, "unsupported_content_type", "Submit the image as multipart form data.")
+        if inference_slot.locked():
+            raise APIError(429, "inference_busy", "Photo inference is already running. Try again shortly.")
+        await inference_slot.acquire()
+        try:
+            async with capture_form(request, max_files=1) as form:
+                items = list(form.multi_items())
+                if len(items) != 1 or items[0][0] != "image" or not isinstance(items[0][1], UploadFile):
+                    raise APIError(422, "invalid_capture", "Provide exactly one image file.")
+                upload = items[0][1]
+                def compute():
+                    try:
+                        image = decode_image(upload)
+                    except InvalidImage as exc:
+                        raise APIError(exc.status, exc.code, exc.message, {"view": view}) from None
+                    # Both decoded image and spool outlive any cancelled CPU work.
+                    with closing(image):
+                        return inference.validate_photo(view, image)
+                try:
+                    return await complete_cpu_work(compute)
+                except CaptureRejected as exc:
+                    raise APIError(422, exc.code, exc.message, {"view": exc.view}) from None
+                except InferenceUnavailable:
+                    raise APIError(503, "inference_unavailable", "Photo validation requires a verified local model bundle and marker configuration.") from None
+        finally:
+            inference_slot.release()
 
     @app.post("/api/estimates")
     async def estimate(request: Request):

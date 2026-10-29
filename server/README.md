@@ -46,6 +46,23 @@ curl.exe -H 'Origin: http://localhost:3000' `
 
 Exactly one `top_image` and one `side_image` file are required. Both must depict the same pig; the software does not claim to verify identity. JPEG, PNG and WebP are decoded and EXIF-oriented, not trusted from extensions. No animation; maximum 10 MiB/file, 21 MiB/body and 20 million decoded pixels/image. Missing/extra/malformed pairs return 422; unsupported formats return 415; body/file/pixel limits return 413. The body boundary permits two uploads, while only one decoded pair/inference operation runs at a time; busy requests receive 429 without queuing CPU jobs. The body is bounded before multipart parsing, including chunked uploads. No photos are retained or logged; temporary spools and decoded images close on every outcome. Request cancellation joins the actual CPU worker before releasing its slot and resources. The API does not claim to verify anatomical card attachment or same-pig identity.
 
+### Check one photo before estimation
+
+`POST /api/photos/{view}/validate` accepts only `top` or `side` and exactly one multipart **file** field named `image`, without additional fields/files. It is anonymous and stateless: no database query, photo retention, result cache or authorization token. It uses the loaded CPU sessions and the same per-view marker, pig-count, required-landmark and projection gates as final estimation. Only the first failing check is returned; it does not aggregate all possible issues. Passing checks does not certify physical card scale/attachment, same-pig identity or weight accuracy. Final `/api/estimates` always checks both supplied photos again and then performs pair measurements/formula evaluation.
+
+```powershell
+curl.exe -H 'Origin: http://localhost:3000' `
+  -F 'image=@D:/captures/top.jpg' http://localhost:3000/api/photos/top/validate
+# 200 {"status":"validated","view":"top","artifacts":{"bundle_id":"<loaded bundle ID>"}}
+curl.exe -H 'Origin: http://localhost:3000' `
+  -F 'image=@D:/captures/side.jpg' http://localhost:3000/api/photos/side/validate
+# 200 with view:"side" when usable; no weight, dimensions, confidence or price is returned
+```
+
+The existing error envelope contains actionable `error.code`/`error.message`, with `error.details.view` set to `top` or `side` for image/pipeline failures. Actual capture failures return 422, including `marker_missing`, `marker_ambiguous`, `marker_unusable`, `pig_count`, `invalid_pose`, `landmark_unusable`, `landmark_outside_image`, `projection_unusable` and `image_aspect_unusable`. Invalid/missing/extra/malformed/truncated multipart returns `422 invalid_capture`; unsupported views return `422 invalid_request`. Invalid decoded content can return `422 invalid_image`/`animated_image`, unsupported content type or image format returns 415, and byte/pixel bounds return 413. A missing/invalid/failed runtime returns `503 inference_unavailable`, never a successful validation. A runtime failure disables inference until restart.
+
+Validation shares the pair route's two-upload admission boundary and single CPU semaphore: `429 upload_busy` or `429 inference_busy` means try again shortly. The same 10 MiB/file, 20 MP/image and 21 MiB/body limits, strict Origin and `Cache-Control: no-store` apply. Unknown paths/views remain bounded by the ordinary 16 KiB request limit before route validation. Temporary finalized/unfinished upload spools and decoded image buffers close after completion, rejection or cancellation; repeated cancellation cannot release the shared CPU slot while its worker is still using them.
+
 For login, construct a temporary body from a secure terminal prompt rather than putting a password into history. This example holds a cookie jar only for the current shell and cleans it up:
 
 ```powershell
@@ -103,7 +120,7 @@ Success preserves `status`, `estimated_weight_kg`, `valuation` and `artifacts.bu
 The focused formula/readiness/upload checks need no PostgreSQL connection:
 
 ```powershell
-uv run --frozen pytest -q tests/test_formula.py tests/test_inference.py tests/test_multipart_cleanup.py --tb=short
+uv run --frozen pytest -q tests/test_formula.py tests/test_inference.py tests/test_multipart_cleanup.py tests/test_photo_validation.py --tb=short
 ```
 
 ## PostgreSQL tests and HTTP proxy proof
@@ -117,6 +134,8 @@ pwsh -File scripts/test-postgres.ps1 -PostgresBin 'C:/path/to/trusted/pgsql/bin'
 Alternatively set `PIGWEIGH_TEST_DATABASE_URL` and `PIGWEIGH_TEST_ALLOW_RESET` to the exact name of a separately provisioned disposable local test DB, then `uv run pytest -q`. Tests truncate all app tables and prove initial migration down/up only there. They verify real PostgreSQL concurrent revision locking, rollback/immutability, credentials/session expiry/revocation, Origin, decimal bounds, upload formats/EXIF/limits/spool cleanup and truthful inference unavailability.
 
 For opt-in actual ONNX/API/price proof, set `PIGWEIGH_TEST_MODEL_BUNDLE` to the packaged manifest and `PIGWEIGH_TEST_PAIR_DIR` to the private `D:/pigweigh-pose-data/test` before running the isolated PostgreSQL runner. The test uses the explicitly named generated-image pair without copying either image into source. It verifies actual CPU readiness/measurement, no-price weight preservation, admin publication, Decimal valuation/provenance and missing-marker rejection. Generated images establish functionality only, not real pig weight or accuracy.
+
+With those same two variables, `uv run --frozen pytest -q tests/test_photo_validation.py --tb=short` proves the actual ONNX validation endpoint separately for each generated view without provisioning or connecting to PostgreSQL. The app still requires a syntactically valid PostgreSQL configuration; these tests use an unused loopback address and fail if validation attempts a DB session.
 
 ```powershell
 $env:PIGWEIGH_TEST_MODEL_BUNDLE = (Resolve-Path models/v1/manifest.json).Path

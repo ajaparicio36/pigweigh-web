@@ -75,7 +75,7 @@ input, textarea { caret-color: var(--primary); }
 .photo-card { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 .photo-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.25rem; }
 .photo-state { font-size: 0.75rem; color: var(--muted); }
-.photo-preview { min-height: 12rem; height: 13.5rem; display: grid; place-items: center; background: var(--surface-soft); border-block: 1px solid var(--border); overflow: hidden; }
+.photo-preview { min-height: 12rem; height: 13.5rem; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; background: var(--surface-soft); border-block: 1px solid var(--border); overflow: hidden; }
 .photo-empty { max-width: 29ch; text-align: center; padding: 1.5rem; color: var(--muted); }
 .view-label { font-size: 1.25rem; font-weight: 600; color: var(--primary-dark); }
 .photo-empty p { margin-top: 0.625rem; font-size: 0.875rem; }
@@ -90,6 +90,11 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; back
 .selected-file > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .capture-note { margin: 1rem 0 1.5rem; color: var(--muted); font-size: 0.8125rem; max-width: 85ch; }
 .photo-camera-button { width: 100%; margin-bottom: 1rem; }
+.photo-check:not(:empty) { margin-top: 1rem; padding-top: 0.875rem; border-top: 1px solid var(--border); font-size: 0.875rem; overflow-wrap: anywhere; }
+.photo-check-title { font-weight: 650; }
+.photo-check p + p { margin-top: 0.375rem; color: var(--muted); }
+.photo-check-rejected .photo-check-title { color: var(--primary); }
+.photo-check-retry { min-height: 2.75rem; }
 
 .camera-dialog { width: min(48rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--foreground); overflow: auto; overscroll-behavior: contain; }
 .camera-dialog::backdrop { background: rgb(24 17 14 / 70%); }

@@ -233,28 +233,37 @@ class InferenceEngine:
             models[view] = PoseSession(session, names, output_shape)
         self.models, self.bundle_id, self.blocker = models, bundle_id, None
 
-    def estimate(self, images: dict[str, Image.Image]) -> dict:
+    def _measure_view(self, view: str, image: Image.Image) -> dict[str, np.ndarray]:
+        """Shared photo gates; preflight never bypasses final paired validation."""
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
-        measured = {}
-        for view in ("top", "side"):
-            pixels = np.asarray(images[view])
-            try:
-                tensor, scale, left, top = letterbox(pixels)
-            except ValueError:
-                raise CaptureRejected("image_aspect_unusable", "The photo is too narrow to process. Use a normal camera photo.", view) from None
-            transform = marker_homography(pixels, view)
-            model = self.models[view]
-            try:
-                output = model.session.run(None, {model.session.get_inputs()[0].name: tensor})[0]
-                if output.shape != model.output_shape:
-                    raise ValueError("Runtime output changed shape")
-            except Exception:
-                self.blocker = {"code":"inference_runtime_failed", "message":"The configured model runtime failed. Restart after checking the artifacts."}
-                raise InferenceUnavailable() from None
-            required = ("left-ear-base", "right-ear-base", "tail-base", "left-chest", "right-chest") if view == "top" else ("withers", "sternum")
-            points = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
-            measured[view] = project_points(points, transform, view)
+        pixels = np.asarray(image)
+        try:
+            tensor, scale, left, top = letterbox(pixels)
+        except ValueError:
+            raise CaptureRejected("image_aspect_unusable", "The photo is too narrow to process. Use a normal camera photo.", view) from None
+        transform = marker_homography(pixels, view)
+        model = self.models[view]
+        try:
+            output = model.session.run(None, {model.session.get_inputs()[0].name: tensor})[0]
+            if output.shape != model.output_shape:
+                raise ValueError("Runtime output changed shape")
+        except Exception:
+            self.blocker = {"code":"inference_runtime_failed", "message":"The configured model runtime failed. Restart after checking the artifacts."}
+            raise InferenceUnavailable() from None
+        required = ("left-ear-base", "right-ear-base", "tail-base", "left-chest", "right-chest") if view == "top" else ("withers", "sternum")
+        points = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
+        return project_points(points, transform, view)
+
+    def validate_photo(self, view: str, image: Image.Image) -> dict:
+        self._measure_view(view, image)
+        return {"status": "validated", "view": view, "artifacts": {"bundle_id": self.bundle_id}}
+
+    def estimate(self, images: dict[str, Image.Image]) -> dict:
+        # Preserve unavailable behavior even when the input mapping is empty.
+        if not self.readiness()["ready"]:
+            raise InferenceUnavailable()
+        measured = {view: self._measure_view(view, images[view]) for view in ("top", "side")}
         try:
             values = measure(measured["top"], measured["side"])
             weight = decimal_measure(values.pop("weight_kg"))

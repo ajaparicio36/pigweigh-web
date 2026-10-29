@@ -16,6 +16,16 @@ Set the nonsecret `BACKEND_INTERNAL_URL` to your API origin, normally `http://12
 
 Open `/` to select and review a top-view and side-view photo of the same pig. Use a flat ArUco `DICT_4X4_50`, ID `0` card on the back for the top view and visible flank for the side view. The printed black square must measure 100 mm per side, excluding its visible white margin. JPEG, PNG, and WebP are accepted, up to 10 MiB each; the server also checks decoded content and its bounds. Readiness reflects the backend's loaded pipeline. Missing models or configuration return `503 inference_unavailable`; unusable captures return `422`, and a busy service returns `429`. Selected photos remain available for review or retry.
 
+Each selected upload or captured photo is automatically sent to `POST /api/photos/{top|side}/validate` as multipart `image`. The inline status shows checking, checks passed, or the server's first actionable rejection. Replace rejected photos; busy, unavailable, connection and unexpected-response failures offer **Retry check** without discarding the file. This page runs checks serially and skips queued photos that were replaced or removed. Late responses cannot validate a newer selection, even if filenames match. **Request estimate** becomes available only when both current photos pass and all checks finish. The final estimate request still revalidates both photos. Checks establish model usability, not animal identity, physical marker size or weight accuracy. Photos are processed without retention; camera video is not streamed, and only **Capture photo** selects a frame for upload.
+
+With the local web/API running and a compatible top-view image at `C:/captures/top.jpg`:
+
+```powershell
+curl.exe -i -X POST http://localhost:3000/api/photos/top/validate -H "Origin: http://localhost:3000" -F "image=@C:/captures/top.jpg"
+# HTTP 200: {"status":"validated","view":"top","artifacts":{"bundle_id":"<loaded-bundle-id>"}}
+# An unusable capture returns 422; unavailable models/configuration return 503.
+```
+
 Use **Print marker** in the main navigation, or open `http://localhost:3000/marker`, to save the app-compatible A4 PDF. Print at **100% / Actual size**, with Fit to page disabled, then measure the black square at **100 mm per side**. The SVG on the page is a preview, not a physical-size print template. Dictionary, ID and size are fixed to the estimator contract; there are no arbitrary marker settings. Asset generation and physical print checks are documented in [marker assets](../docs/marker-assets.md).
 
 On the Estimate page, choose **Take photo** in either photo area to open its camera modal. HTTPS (or localhost), browser camera support and permission are required. The rear camera is preferred when available; no microphone is requested. The top guide frames the whole pig from above and marks a back placement; the side guide frames the full profile and marks a visible-flank placement. These are manual composition guides, not live detection or validation. **Capture photo** saves the original video frame without guide graphics into the existing photo review. Upload, replace and remove remain available. Cancel/errors preserve earlier selections. Closing, Escape, leaving the page or hiding the tab releases the camera, including a permission request that resolves late; reopening requires another explicit Take photo action.
@@ -46,7 +56,7 @@ pnpm build
 pnpm start
 ```
 
-`pnpm test` uses Node's built-in test runner and the existing TypeScript compiler. It checks exact money strings, overflow rejection, API payload guards, response handling, camera track cleanup (including late permission), capture readiness, original-frame encoding and photo size/type boundaries. Synthetic parser and camera fixtures do not validate a model or its accuracy. Camera permission, focus and responsive behavior require browser QA; fake-camera tests do not establish physical camera support.
+`pnpm test` uses Node's built-in test runner and the existing TypeScript compiler. It checks exact money strings, overflow rejection, API payload guards, response handling, camera track cleanup (including late permission), capture readiness, original-frame encoding and photo size/type boundaries. Per-photo tests cover serial checks, stale/same-name replacements, queued removal, explicit retry, unmount cancellation, submit readiness and response-view matching. Synthetic parser and camera fixtures do not validate a model or its accuracy. Camera permission, focus and responsive behavior require browser QA; fake-camera tests do not establish physical camera support.
 
 The new local web health route is dynamic and independent of API/database availability:
 

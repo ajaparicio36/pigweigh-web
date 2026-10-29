@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ApiError, errorMessage, isEstimate, isPriceSnapshot, isReadiness, request, type Estimate, type LoadState, type PriceSnapshot, type Readiness } from "@/lib/api";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { ApiError, errorMessage, isEstimate, isPriceSnapshot, isReadiness, request, validatePhoto, type Estimate, type LoadState, type PhotoView, type PriceSnapshot, type Readiness } from "@/lib/api";
 import { formatMoney, formatPublishedAt } from "@/lib/format";
+import { PhotoCheckQueue, photosReady } from "@/lib/photo-checks";
 import { CurrentPrice } from "./current-price";
 import { PhotoInput } from "./photo-input";
 
@@ -11,11 +12,28 @@ type Submission = { status: "idle" } | { status: "pending" } | { status: "error"
 export function EstimateForm(): React.JSX.Element {
   const [price, setPrice] = useState<LoadState<PriceSnapshot>>({ status: "loading" });
   const [readiness, setReadiness] = useState<LoadState<Readiness>>({ status: "loading" });
-  const [top, setTop] = useState<File | null>(null);
-  const [side, setSide] = useState<File | null>(null);
+  const [photoQueue] = useState(() => new PhotoCheckQueue(validatePhoto));
+  const checks = useSyncExternalStore(photoQueue.subscribe, photoQueue.getSnapshot, photoQueue.getSnapshot);
+  const top = checks.top.file;
+  const side = checks.side.file;
   const [submission, setSubmission] = useState<Submission>({ status: "idle" });
   const submitting = useRef(false);
   const outcome = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    photoQueue.resume();
+    return () => photoQueue.dispose();
+  }, [photoQueue]);
+
+  function selectPhoto(view: PhotoView, file: File | null): void {
+    if (submitting.current) return;
+    photoQueue.select(view, file);
+    setSubmission({ status: "idle" });
+  }
+
+  function retryPhoto(view: PhotoView): void {
+    if (!submitting.current) photoQueue.retry(view);
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -44,12 +62,13 @@ export function EstimateForm(): React.JSX.Element {
 
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!top || !side || submitting.current) return;
+    const current = photoQueue.getSnapshot();
+    if (!photosReady(current) || !current.top.file || !current.side.file || submitting.current || readiness.status === "loading") return;
     submitting.current = true;
     setSubmission({ status: "pending" });
     const body = new FormData();
-    body.set("top_image", top);
-    body.set("side_image", side);
+    body.set("top_image", current.top.file);
+    body.set("side_image", current.side.file);
     try {
       const data = await request("/estimates", isEstimate, { method: "POST", body });
       setSubmission({ status: "success", data });
@@ -75,12 +94,13 @@ export function EstimateForm(): React.JSX.Element {
           <h2>Your photo pair</h2>
           <p className="muted">Use the same pig for both views. Use ArUco DICT_4X4_50, ID 0, on a rigid, flat card. The printed black square must measure 100 mm per side, excluding the white margin.</p>
           <p className="muted">Keep the whole marker and white margin visible without covering body landmarks. Review each photo before submitting.</p>
+          <p className="muted">Each photo you select or capture is sent automatically for pig and marker checks and is not retained. Camera video stays on your device; only a captured photo is sent.</p>
         </div>
         <div className="photo-grid">
-          <PhotoInput view="top" file={top} disabled={pending} onChange={(file) => { setTop(file); setSubmission({ status: "idle" }); }} />
-          <PhotoInput view="side" file={side} disabled={pending} onChange={(file) => { setSide(file); setSubmission({ status: "idle" }); }} />
+          <PhotoInput view="top" file={top} check={checks.top} disabled={pending} onChange={(file) => selectPhoto("top", file)} onRetry={() => retryPhoto("top")} />
+          <PhotoInput view="side" file={side} check={checks.side} disabled={pending} onChange={(file) => selectPhoto("side", file)} onRetry={() => retryPhoto("side")} />
         </div>
-        <div className="capture-note"><p>Both views must show the same animal; PigWeigh does not verify its identity. Photos are processed for this request and are not retained.</p></div>
+        <div className="capture-note"><p>Both views must show the same animal; PigWeigh does not verify its identity. Passing photo checks does not verify the printed marker’s size or weight accuracy. Both photos are checked again when you request an estimate.</p></div>
         <section className="readiness-panel" aria-labelledby="readiness-title" aria-busy={readiness.status === "loading"}>
           <div className="readiness-heading">
             <h2 id="readiness-title">{unavailable ? "Weight estimation is unavailable" : "Estimation availability"}</h2>
@@ -96,10 +116,10 @@ export function EstimateForm(): React.JSX.Element {
         </section>
         <div className="submit-row">
           <div>
-            <p className="submit-status">{!top && !side ? "Add both photos to continue." : !top ? "Add the top-view photo to continue." : !side ? "Add the side-view photo to continue." : "Both photos selected. Ready to submit."}</p>
+            <p className="submit-status">{!top && !side ? "Add both photos to continue." : !top ? "Add the top-view photo to continue." : !side ? "Add the side-view photo to continue." : checks.running ? "Checking your photos before estimation…" : photosReady(checks) ? "Both photos passed checks. Ready to submit." : "Both photos must pass checks before estimation."}</p>
             <p className="field-help">Two views, one pig. No account needed.</p>
           </div>
-          <button className="button button-primary" type="submit" disabled={!top || !side || pending || readiness.status === "loading"}>
+          <button className="button button-primary" type="submit" disabled={!photosReady(checks) || pending || readiness.status === "loading"}>
             {pending ? "Submitting photos…" : "Request estimate"}
           </button>
         </div>
