@@ -97,6 +97,27 @@ railway ssh --project cf533c71-e072-4820-93b6-0ff4eb38c9a1 --environment b5867d6
 
 No market price was invented or published during deployment. Anonymous estimates can return weight with `valuation:null` and `valuation_unavailable_reason:"no_price"` until an admin publishes a real sourced price.
 
+## Web update: printable marker and guided camera, 2026-10-29
+
+Only the existing production **web** service was uploaded and deployed for this release. The native CLI was authenticated as Anthony John; the connected Railway plugin independently confirmed the workspace, project, environment and redacted web configuration before release. The upload came from the clean repository at `dc9361697b5e76bab65b56739357139eb14e93bf` (`feat: add printable marker and guided camera capture`), after local QA and review. It used the repository root, existing `.railwayignore`, and explicit production project/environment/web service IDs. No GitHub source connection or infrastructure change was made.
+
+Web deployment [`f4ea0cee-e94e-40e2-95ed-c02124b9f086`](https://railway.com/project/cf533c71-e072-4820-93b6-0ff4eb38c9a1/service/e9ff3554-24f5-4ac2-84fe-be4913db339b?id=f4ea0cee-e94e-40e2-95ed-c02124b9f086) was created at `2026-10-29T15:05:25.551Z` and reached **SUCCESS** at `2026-10-29T15:07:53.997Z` in `asia-southeast1-eqsg3a`. The production build compiled and typechecked successfully and prerendered `/marker`. Scoped read-only web SSH returned Node `v22.23.3` and pnpm `10.30.1`. The final plugin readback confirms the same `/web` root, RAILPACK, build/start/health commands, one replica and existing public domain, with no staged or pending production work.
+
+Headless HTTPS checks against the public origin passed after SUCCESS:
+
+| Check | Observed result |
+|---|---|
+| `/`, `/admin`, `/marker` | 200 HTML; marker page includes the fixed dictionary, 100 mm instructions, Actual size / no Fit to page copy and PDF download link |
+| `/markers/pigweigh-aruco-4x4-50-id-0-100mm.pdf` | 200 `application/pdf`; 2360 bytes; SHA256 `2939159788a5e633eab4ba03987aa4645b5d4a16dc56e319375fd624b5449ab1`, byte-identical to the reviewed local asset |
+| `/markers/pigweigh-aruco-4x4-50-id-0-100mm.svg` | 200 `image/svg+xml`; 1565 bytes; SHA256 `18837c1d8581d4ed20e2853eff9ec44b3d6dc3090056698401ca2f30a92ac8d3`, byte-identical to the reviewed local asset |
+| `/health`, `/api/health` | 200, `status:ok`, `Cache-Control:no-store` |
+| `/api/inference/readiness` | 200, `ready:true`, no blockers, no-store |
+| `/api/prices/current` | 200, no-store; existing published revision 1 / price record ID 1 preserved |
+
+No API or PostgreSQL deployment, migration, account operation or price publication occurred. Final inventory retains API deployment `79c7f7ec-491b-48b9-8fbc-35ff9e346f68` and PostgreSQL deployment `90a1f606-6ae9-4dda-8eeb-e1ade2cd479a`, both SUCCESS, and the same 5000 MB volume. No variables, domains, volumes or service settings changed. Read-only checks of the older PigWeigh project before and after this release show the same `72f46ad9-4d24-40d5-a6c7-a561b0f31bd3` STAGED patch, 13 entries as displayed by the current plugin, and no live services; no operation targeted that project's resources. The historical October 23 report's 17-entry display is retained above as recorded at that time.
+
+These release checks establish deployment health, marker-page content and asset delivery. Local marker geometry/render recognition checks are documented in [marker assets](marker-assets.md). They do not establish physical printer scale, physical phone camera support or weight accuracy. The web-only release did not repeat inference/photo POSTs, admin login or price publication.
+
 ## Historical project: Railway staged preparation
 
 Everything below records the **old** `PigWeigh` project only. Its keep-staged decision and cancelled apply remain historical evidence and do not prohibit the separately authorized new deployment above.

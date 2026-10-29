@@ -73,3 +73,24 @@ The tests used Playwright request GETs plus actual page navigation/download, rat
 Both owned headless Chrome instances/contexts closed. The QA-owned shared Chrome tab closed. The owned Next session stopped, and a subsequent listener check found no process listening on 3029. Existing user tabs/profile settings, physical cameras and the older blocked temporary clusters were untouched. No private photographs or credentials were read or committed; retained images are public marker assets or synthetic Chrome frames.
 
 This did not test production deployment, real API/model estimation, admin/price publication, physical camera switching, physical Android/iOS browser behavior, printed ruler scale, real same-pig geometry, weight accuracy, screen readers, exhaustive keyboard traversal, reduced motion or all browser/device combinations. A tested narrow headless layout does not certify physical-phone support. Asset generation/ArUco decoding and PDF physical geometry are separately documented in `docs/marker-assets.md`; browser delivery does not prove an actual print is 100 mm.
+## Production static UI verification — 2026-10-29
+
+After the release owner reported deployment `f4ea0cee-e94e-40e2-95ed-c02124b9f086` healthy/SUCCESS from source commit `dc9361697b5e76bab65b56739357139eb14e93bf`, QA verified the public app at `https://web-production-4d49b.up.railway.app`. The independent headless smoke completed at **2026-10-29 15:08:59 UTC** with **7 PASS assertions**. This is a separate post-release check; the 27 local camera assertions above remain local functional evidence.
+
+- `/marker` returned HTTP 200 with the newly released fixed dictionary/ID/100 mm content, correct selected navigation and a loaded SVG preview. Actual Download marker PDF interaction produced `pigweigh-aruco-4x4-50-id-0-100mm.pdf` and bytes matching the committed asset.
+- Served PDF returned `application/pdf`, 2,360 bytes, SHA-256 `2939159788a5e633eab4ba03987aa4645b5d4a16dc56e319375fd624b5449ab1`.
+- Served SVG returned `image/svg+xml`, 1,565 bytes, SHA-256 `18837c1d8581d4ed20e2853eff9ec44b3d6dc3090056698401ca2f30a92ac8d3`.
+- Continue to photos navigated to the released Estimate page with both new Take photo controls and correct selected navigation. Camera/dialog/video did not start on page load. Headless static smoke guarded `getUserMedia` against access and recorded zero calls. It made no estimate/authentication/price write requests.
+- Headless production marker and Estimate pages fit actual **390 × 844** viewport without horizontal overflow. These are responsive browser checks, not physical-phone checks.
+- Fresh graphical Browser Use/CUA inspection used Chrome browser `3`, the same approved `Your Chrome` session/extension, and QA-owned tab `1347458664`. The marker page measured **1920 × 945**; the subsequent Estimate observation measured **1920 × 889**. Both layouts were inspected and screenshots retained. No camera button was clicked and no permission prompt appeared. Existing published content was read-only.
+
+Reproduction uses the existing bundled Playwright and installed Chrome, with no added dependency:
+
+```powershell
+node C:/Users/ajapa/AppData/Local/Temp/pigweigh-marker-camera-qa-00c06d21/production-smoke.cjs
+# 7 PASS assertions; production-results.json
+```
+
+Public-only evidence remains outside Git in the same task-owned evidence directory: `production-results.json`, `production-smoke.cjs`, `production-chrome-marker.jpg`, `production-chrome-estimate.jpg`, `production-desktop-marker.png`, `production-desktop-estimate.png`, `production-phone-marker.png`, `production-phone-estimate.png`, `production-marker.pdf`, `production-marker.svg`, and `production-clicked-download.pdf`.
+
+The owned graphical tab and headless browser/context were closed. No app source, credential, administrator session, database record, price or cloud configuration was changed. This static production check does not establish production camera capture, physical camera/phone behavior, actual print size, model accuracy or live inference correctness. The local simulated-camera lifecycle and capture proof is described separately above.
