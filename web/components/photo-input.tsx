@@ -1,16 +1,25 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { CameraModal } from "@/components/camera-modal";
+import { photoValidationError } from "@/lib/camera";
 
 type PhotoInputProps = { view: "top" | "side"; file: File | null; disabled: boolean; onChange: (file: File | null) => void };
 
 export function PhotoInput({ view, file, disabled, onChange }: PhotoInputProps): React.JSX.Element {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraButtonRef = useRef<HTMLButtonElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
   const [error, setError] = useState("");
   const label = view === "top" ? "Top view" : "Side view";
+  const closeCamera = useCallback((reason: "close" | "upload"): void => {
+    setCameraOpen(false);
+    if (reason === "upload") inputRef.current?.focus();
+    else cameraButtonRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (!file) return;
@@ -34,20 +43,27 @@ export function PhotoInput({ view, file, disabled, onChange }: PhotoInputProps):
         )}
       </div>
       <div className="photo-controls">
-        <label className="field-label" htmlFor={id}>{file ? `Replace ${label.toLowerCase()} photo` : `Choose ${label.toLowerCase()} photo`}</label>
+        <button ref={cameraButtonRef} type="button" className="button button-secondary photo-camera-button" disabled={disabled}
+          aria-haspopup="dialog" onClick={() => setCameraOpen(true)}>Take photo<span className="sr-only"> for {label.toLowerCase()}</span></button>
+        <label className="field-label" htmlFor={id}>{file ? `Or upload a replacement ${label.toLowerCase()} photo` : `Or upload a ${label.toLowerCase()} photo`}</label>
         <input ref={inputRef} id={id} name={`${view}_image`} type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled}
           aria-invalid={Boolean(error)} aria-describedby={`${id}-help${error ? ` ${id}-error` : ""}`}
           onChange={(event) => {
             const selected = event.target.files?.[0];
             if (!selected) return;
-            if (selected.size > 10 * 1024 * 1024) { setError("This photo is too large. Choose one under 10 MB."); event.target.value = ""; return; }
-            if (selected.type && !["image/jpeg", "image/png", "image/webp"].includes(selected.type)) { setError("Choose a JPEG, PNG, or WebP photo."); event.target.value = ""; return; }
+            const validationError = photoValidationError(selected);
+            if (validationError) { setError(validationError); event.target.value = ""; return; }
             setError(""); onChange(selected);
           }} />
         <p id={`${id}-help`} className="field-help">{view === "top" ? "Attach the flat ArUco card on the pig’s back." : "Attach the flat ArUco card on the pig’s visible flank."} JPEG, PNG or WebP. Up to 10 MB.</p>
         {error && <p id={`${id}-error`} className="field-error" role="alert">{error}{file ? " Your previous photo is still selected." : ""}</p>}
         {file && <div className="selected-file"><span title={file.name}>{file.name}</span><button className="text-button" type="button" disabled={disabled} onClick={() => { onChange(null); setError(""); if (inputRef.current) inputRef.current.value = ""; }}>Remove<span className="sr-only"> {label.toLowerCase()} photo</span></button></div>}
       </div>
+      {cameraOpen && <CameraModal view={view} disabled={disabled} onClose={closeCamera} onCapture={(photo) => {
+        setError("");
+        if (inputRef.current) inputRef.current.value = "";
+        onChange(photo);
+      }} />}
     </div>
   );
 }

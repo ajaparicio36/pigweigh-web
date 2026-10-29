@@ -1,0 +1,3 @@
+# Preserve the printable PDF byte offsets and stable SVG line endings on checkout.
+/public/markers/pigweigh-aruco-4x4-50-id-0-100mm.pdf binary
+/public/markers/pigweigh-aruco-4x4-50-id-0-100mm.svg text eol=lf
