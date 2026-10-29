@@ -118,6 +118,59 @@ No API or PostgreSQL deployment, migration, account operation or price publicati
 
 These release checks establish deployment health, marker-page content and asset delivery. Local marker geometry/render recognition checks are documented in [marker assets](marker-assets.md). They do not establish physical printer scale, physical phone camera support or weight accuracy. The web-only release did not repeat inference/photo POSTs, admin login or price publication.
 
+## API and web update: per-photo validation, 2026-10-30
+
+The reviewed application source for every upload was commit `c6641a504bd170ee1f324b46a02f0f623d37d675` (`feat: validate individual photos before estimation`). The initial uploads used a clean checkout after local QA and independent review. Later uploads had only this excluded deployment record modified; application source remained unchanged. The authenticated native CLI uploaded the repository root with the existing `.railwayignore` and explicit production project/environment/service IDs. The connected Railway plugin independently confirmed the account, redacted configurations and deployment results. A production CSS cache failure required the two bounded web build-setting exceptions documented below.
+
+The backward-compatible API was deployed **first**. Actual new per-photo routes passed through the existing public web proxy before the matching frontend was uploaded:
+
+| Service | Deployment | Created UTC | SUCCESS UTC |
+|---|---|---|---|
+| API | `2a776bf2-2334-4142-ae60-5910aea86fc4` | `2026-10-29T16:45:44.422Z` | `2026-10-29T16:47:51.974Z` |
+| web, initial platform-successful build; superseded after UI failure | `08a5d8a2-9810-435a-937f-d95272d1d91b` | `2026-10-29T16:49:15.534Z` | `2026-10-29T16:50:42.019Z` |
+| web, final cache-corrected release | `dc50021e-fec2-43d9-8840-070fe118b042` | `2026-10-29T17:06:34.932Z` | `2026-10-29T17:07:57.054Z` |
+
+These UTC timestamps fall on October 30 in Asia/Manila. Both services run in the existing Singapore region. API retained `/server`, Dockerfile, the IPv4 listener, the existing Alembic-head pre-deploy command and `/api/health`; web retained `/web`, RAILPACK, its existing start command, `/health` and public domain. No new migration, schema or model file was part of the feature commit. The standard existing migration pre-deploy completed as part of the successful API rollout. Scoped read-only SSH returned Python `3.13.18` in API, and Node `v22.23.3` / pnpm `10.30.1` in web.
+
+### Production CSS failure and bounded repair
+
+Production UI QA rejected the initial web build despite platform SUCCESS: a loaded 1024 x 768 image rendered at 532 x 399 inside a 532 x 216 preview, clipping the selected photo. The committed and deployed `app/globals.css` contained the minmax grid track and new `.photo-check` rules, but the compiled stylesheet omitted both. The remote disk stylesheet and public response were byte-identical: `/_next/static/chunks/2_3d3_nzbq9-_.css`, 20317 bytes, SHA256 `adef80c9d79a00410e844627d0426bcd626a3d0d9c238812b7e0f047a11438f5`. A cache-busting public query returned the same bytes. Fresh Windows builds and the actual installed Linux Tailwind optimizer both preserved the rules, isolating the discrepancy to the built artifact rather than the reviewed CSS or browser/CDN cache.
+
+Each subsequent operation targeted only web, after a separate reviewed release decision:
+
+| Deployment | Outcome |
+|---|---|
+| `8b6946b6-45b8-430f-a5e4-ed220f71ca7b` | Platform SUCCESS after setting only web `NO_CACHE=1` with `skipDeploys:true`, then one explicit upload; emitted CSS remained stale. Railway's documented layer-cache bypass did not clear the mounted Next cache. |
+| `bb66935a-aff2-4429-b025-fcffe6cc02e8` | FAILED before cleaning/building: Railpack stripped inner JavaScript quotes from the scoped Node clean command, causing a syntax error. This was command transport failure, not an application compile failure. |
+| `74737932-1eaf-4e78-a880-dc5aeb379cb3` | FAILED before Next build: the quote-free absolute `/app/.next` removal reported `/app/.next/cache: Device or resource busy`, proving the generated cache was a mount that must be preserved. |
+| `dc50021e-fec2-43d9-8840-070fe118b042` | SUCCESS after deleting only descendants of that verified generated cache mount, then compiling the unchanged application source. |
+
+The final web configuration intentionally retains `NO_CACHE=1` and the mount-safe build command `find /app/.next/cache -mindepth 1 -delete && pnpm build`. The build root `/app` was verified before any clean operation. Each build-command update applied only to the next deployment; a deployment-list check confirmed no automatic rollout before the single explicit upload. No source/CSS/dependency changes were used to repair the artifact. Failed builds left the preceding healthy web deployment live; this is bounded rollout evidence, not a continuous uptime guarantee.
+
+The final clean command completed and Next compiled, typechecked, prerendered and passed health checking. The actual emitted stylesheet is now `/_next/static/chunks/0v9i7tm4kssca.css`, 20686 bytes, SHA256 `21e16ed6583a9757f8b83f800824abf1985c6724bb8ead6929bb82d6ff5694ca`, identical over public HTTPS and remote disk. It contains the minmax preview grid and all five `.photo-check` rules and matches the fresh local build. This supports stale mounted build-cache state as the cause; the framework's deeper cache-invalidation mechanism was not isolated. Seven bounded production UI checks subsequently passed against this corrected artifact; [photo-validation QA](qa-photo-validation.md) records their scope and software-camera limits.
+
+### Live route and release checks
+
+Sequential live checks used only the existing named generated-image fixtures, an in-memory blank image and an in-memory marker-only image. All multipart requests sent the exact public Origin and one `image` file; no admin or price write occurred.
+
+| Public check | Observed result |
+|---|---|
+| `POST /api/photos/top/validate`, generated top | 200 in 0.824 s; exact `status:validated`, `view:top`, `artifacts.bundle_id:attached-marker-ellipse-11900-v1-5dd3bd4779d7539a` |
+| `POST /api/photos/side/validate`, generated side | 200 in 0.516 s; same response shape and bundle with `view:side` |
+| Top validation, blank PNG | 422 `marker_missing`, `error.details.view:top` |
+| Top validation, configured ID 0 marker without a pig | 422 `pig_count`, `error.details.view:top` |
+| Validation responses | `Cache-Control:no-store`; successes contain only status, view and artifact provenance, with no weight or confidence |
+| `/`, `/admin`, `/marker` after web rollout | 200 HTML; home includes the automatic photo-check/privacy disclosure and disabled initial estimate submission |
+| `/health`, `/api/health`, `/api/inference/readiness` | 200, no-store; status ok / ready true with no blockers, before and after web rollout |
+| `/api/prices/current` before and after both deployments | 200, no-store; published revision 1 / record ID 1 preserved, with identical raw-response SHA256 `975832544557c6acec2a371b234a6e0fd0eb5d89e86eebba3b2b447bf7115fc6` |
+| Marker PDF and SVG | 200; byte-identical to the reviewed assets and hashes recorded in the October 29 release |
+
+All three deployed serving-file SHA256 values were read back over scoped API SSH and matched both the approved local files and the [original runtime hashes](#runtime-evidence): manifest `81ffd83f099a6fe1e3965b2efc2bb4a5555af5000dfcadf45ae1a9ab6d77cea2`, top ONNX `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa`, and side ONNX `ed40cb8d60da95b1f8eb1c955b7e52fc70bfb00bf798eb2a57a52a2d4e175c72`. No estimator formula or threshold changed.
+
+Final redacted inventory reports API and corrected web SUCCESS with one replica each and no staged/pending production work. PostgreSQL remains on deployment `90a1f606-6ae9-4dda-8eeb-e1ade2cd479a`, with the same 5000 MB volume. The only service-setting exceptions are web's cache variable and mount-safe build command above; API configuration, existing variables, domains, volumes, account records and price records were preserved. Health, readiness and the full price-response hash passed again after the corrected release. The older PigWeigh project received no mutations; a read-only status still reports patch `72f46ad9-4d24-40d5-a6c7-a561b0f31bd3` STAGED, 13 displayed entries and no live services.
+
+The live generated-fixture checks establish per-photo API functionality and deployment compatibility. They do not establish physical camera support, printed marker scale, correct body attachment, same-pig identity or weight accuracy. Busy/unavailable/replacement races were covered by local software QA rather than deliberately disrupting production. This release did not repeat a full estimate, admin authentication or price publication.
+
 ## Historical project: Railway staged preparation
 
 Everything below records the **old** `PigWeigh` project only. Its keep-staged decision and cancelled apply remain historical evidence and do not prohibit the separately authorized new deployment above.
