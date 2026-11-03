@@ -2,18 +2,30 @@
 
 ## Current state, 2026-11-03
 
-The dedicated [PigWeigh Production project](https://railway.com/project/cf533c71-e072-4820-93b6-0ff4eb38c9a1) is configured, but **the public application was unavailable** when checked on November 3. Read-only HTTPS requests to `/health`, `/api/health`, and `/api/inference/readiness` at [the recorded web origin](https://web-production-4d49b.up.railway.app) all returned Railway HTTP 404 **Application not found**. The latest previously successful deployments of all three services are now `REMOVED`; read-only deployment inventory recorded removal on November 2 at approximately `00:13:38–40 UTC`. The cause and database contents were not established. No restart, upload, deployment, settings change, restore, or price/authentication write was performed in this review.
+The [November 3 release](../deployment.md#14451-api-and-web-release-2026-11-03) uploaded reviewed source commit `2918bec478e43858356ec6eda5240d4f416a29db` to the dedicated [PigWeigh Production project](https://railway.com/project/cf533c71-e072-4820-93b6-0ff4eb38c9a1), API first and web second. Both reached SUCCESS. The public [web origin](https://web-production-4d49b.up.railway.app) passed health, readiness and bounded independent generated-fixture checks for method `attached-marker-ellipse-14451-v1`, bundle `attached-marker-ellipse-14451-v1-08661ffdf08ae1cc`, and Decimal valuation against the existing price. The raw current-price response remained revision 1 / record 1 with SHA-256 `975832544557c6acec2a371b234a6e0fd0eb5d89e86eebba3b2b447bf7115fc6`. See the release record for exact deployed file hashes, checks and limits.
 
-| Resource | Railway ID | Last previously successful deployment, now removed |
+| Service | Deployment | SUCCESS UTC on 2026-11-03 |
+|---|---|---|
+| API | `265a92c8-5b83-405d-ad47-9aa34ef11821` | `06:34:09.220` |
+| web | `29c0f060-2d91-4c56-905e-97ca8fe657d0` | `06:36:52.988` |
+| Postgres, already online before the release | `e8f059a8-7ae7-4b04-90f3-d653d015fcc9` | `06:28:14.515` |
+
+The existing 5000 MB Postgres volume remained attached; startup had skipped initialization of its existing data directory, and Alembic revision `0001_core` was head before and after API deployment. This release did not restart or restore PostgreSQL or introduce a migration. Backup inventory was unavailable for inspection and no backup or restore drill was performed; neither recoverability nor complete database integrity is established. Physical print and camera behavior, same-pig identity and weight accuracy remain unverified.
+
+## Earlier outage observation, 2026-11-03
+
+At the earlier read-only review, the public application was unavailable. HTTPS requests to `/health`, `/api/health`, and `/api/inference/readiness` at the recorded web origin returned Railway HTTP 404 **Application not found**. The previously successful deployments of all three services were marked `REMOVED`; deployment inventory recorded removal on November 2 at approximately `00:13:38–40 UTC`. The cause and database contents were not established at that review. No restart, upload, deployment, settings change, restore, or price/authentication write was performed during that review.
+
+| Resource | Railway ID | Previously successful deployment marked removed at that review |
 |---|---|---|
 | Project | `cf533c71-e072-4820-93b6-0ff4eb38c9a1` | — |
 | production environment | `b5867d65-7d2b-46c7-b602-539f753dbf1d` | — |
 | API | `44ef6557-1826-45dc-b452-8bad3a121e1e` | `2a776bf2-2334-4142-ae60-5910aea86fc4` |
 | web | `e9ff3554-24f5-4ac2-84fe-be4913db339b` | `dc50021e-fec2-43d9-8840-070fe118b042` |
 | Postgres | `0037c66b-b0e0-4bb9-ad68-4214ce87f1aa` | `90a1f606-6ae9-4dda-8eeb-e1ade2cd479a` |
-| Postgres volume | `e82100d3-8c13-4b2d-ae69-1a8cdf71b661` | configured 5000 MB; contents and recovery unverified |
+| Postgres volume | `e82100d3-8c13-4b2d-ae69-1a8cdf71b661` | configured 5000 MB; contents and recovery unverified at that review |
 
-The October 23–30 [deployment record](../deployment.md) describes historical successful builds and runtime checks. It is not evidence of current uptime. Its 11900 release also differs from the local 14451 method; a repository edit does not update the hosted app. The older project named **PigWeigh** is a different, staged project and is not the target here.
+The October 23–30 [deployment record](../deployment.md) describes historical successful builds and runtime checks under 11900; the later release above uses 14451. A repository edit does not update the hosted app. The older project named **PigWeigh** is a different, staged project and is not the target here.
 
 Read-only checks for an operator with the Railway CLI authenticated:
 
@@ -29,7 +41,7 @@ Repeat deployment listing with the web and Postgres service IDs. Avoid printing 
 
 ## Historical service configuration
 
-Read the current Railway settings before a future release: these are the settings recorded for the former deployment, not proof that containers are running. All three services used one replica in `asia-southeast1-eqsg3a`; only web had a public domain. API and Postgres used private networking. [Configuration](configuration.md) gives nonsecret environment examples.
+Read current Railway settings before a future release. The October settings below are historical; the [November release evidence](../deployment.md#14451-api-and-web-release-2026-11-03) records the settings and service state checked for that release. All three services used one replica in `asia-southeast1-eqsg3a`; only web had a public domain. API and Postgres used private networking. [Configuration](configuration.md) gives nonsecret environment examples.
 
 | Service | Recorded settings |
 |---|---|
@@ -43,10 +55,10 @@ The platform rejected the legacy repository `railway.toml` config-file setting a
 
 ## Future authorized deployment
 
-1. Identify the intended project/environment/service IDs and review staged changes. Investigate why deployments were removed. Confirm the existing Postgres volume is attached to the right service, assess backup/recovery options and preserve data. A volume allocation or service definition does not prove that the database is healthy. Do not create or initialize a replacement database over existing data. See [database recovery](database.md#backup-and-recovery).
-2. Review and test a single coherent API/web release, confirm the three [serving bundle hashes](models.md#release-hash-check), and ensure the new 14451 backend and frontend method contracts agree. The new local release has not been deployed. Confirm secret values and cross-service references privately; use the exact public web Origin, private database URL and build-time private API rewrite. Do not echo secrets into terminals, logs or tickets.
-3. Restore or start Postgres using the reviewed attached volume and verify connectivity and data before rolling out the API. Back up before migrations. The API pre-deploy migration must succeed; a failed deployment or rollback does not undo an already committed migration. Serialize migration/deploy activity.
-4. From the repository root, after the operator has authorized the release and verified CLI authentication and service settings, the documented prior local-upload pattern can be repeated. These commands **upload and deploy** the current checkout; they are examples for a later release and were not run during this handoff:
+1. Identify the intended project/environment/service IDs and review staged changes. Investigate any unexpected service removal. Confirm the existing Postgres volume is attached to the right service, assess backup/recovery options and preserve data. A volume allocation or service definition does not prove that the database is healthy. Do not create or initialize a replacement database over existing data. See [database recovery](database.md#backup-and-recovery).
+2. Review and test a single coherent API/web release, confirm the three [serving bundle hashes](models.md#release-hash-check), and ensure backend and frontend method contracts agree. Confirm secret values and cross-service references privately; use the exact public web Origin, private database URL and build-time private API rewrite. Do not echo secrets into terminals, logs or tickets.
+3. Verify Postgres connectivity and data on the reviewed attached volume before rolling out the API; if it is unavailable, investigate recovery options without overwriting existing data. Back up before migrations. The API pre-deploy migration must succeed; a failed deployment or rollback does not undo an already committed migration. Serialize migration/deploy activity.
+4. From the repository root, after the operator has authorized a future release and verified CLI authentication and service settings, the documented local-upload pattern can be repeated. These commands **upload and deploy** the current checkout; the November 3 release is recorded separately above:
 
    ```powershell
    railway up --project cf533c71-e072-4820-93b6-0ff4eb38c9a1 --environment b5867d65-7d2b-46c7-b602-539f753dbf1d --service 44ef6557-1826-45dc-b452-8bad3a121e1e --detach

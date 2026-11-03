@@ -46,6 +46,6 @@ web.PORT = 3000
 web.NO_CACHE = 1
 ```
 
-Only the API receives the database connection. The Docker command honors `PORT`; local Uvicorn's explicit port does not depend on it. Railway web uses its explicit start command and the build-cache repair described in [deployment](deployment.md). `NO_CACHE` is a platform build setting, not an application setting. November 3 inspection checked variable **names** and redacted service settings; secret/reference values above derive from the recorded applied deployment, not an unredacted variable dump.
+Only the API receives the database connection. The Docker command honors `PORT`; local Uvicorn's explicit port does not depend on it. Railway web uses its explicit start command and the build-cache repair described in [deployment](deployment.md). `NO_CACHE` is a platform build setting, not an application setting. The [November 3 release](../deployment.md#14451-api-and-web-release-2026-11-03) checked the relevant settings and built rewrite without recording credentials or resolved connection strings. Secret/reference templates above derive from recorded configuration, not an unredacted variable dump.
 
 After any authorized configuration release, check web `/health`, API `/api/health`, inference readiness and actual built rewrite destination. Exact Origin rejection and secure session behavior need runtime verification; a successful build alone proves neither.

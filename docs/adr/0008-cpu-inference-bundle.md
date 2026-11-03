@@ -4,7 +4,7 @@ status: accepted
 
 # Serve a versioned CPU ONNX bundle
 
-The export and deployment facts below describe the October 2026 release. [ADR-0009](0009-thesis-formula-baseline.md) supersedes its 11900 method and divisor with the locally implemented 14451 baseline; the ONNX bytes are unchanged but the manifest and content-derived bundle ID are new. The former production services were removed on November 2; see [current deployment state](../handoff/deployment.md#current-state-2026-11-03).
+The export and deployment facts below describe the October 2026 release. [ADR-0009](0009-thesis-formula-baseline.md) supersedes its 11900 method and divisor with the 14451 baseline; the ONNX bytes are unchanged but the manifest and content-derived bundle ID are new. The [November 3 release](../deployment.md#14451-api-and-web-release-2026-11-03) deployed and verified that new bundle after the [earlier outage observation](../handoff/deployment.md#earlier-outage-observation-2026-11-03).
 
 On 2026-10-23 the completed user-trained top/side pose checkpoints were exported to a private ONNX bundle for the existing FastAPI/uv Python 3.13 service. Use CPU ONNX Runtime, NumPy and one headless OpenCV provider rather than importing the global training environment into the API. Export/parity runs use the separate `D:/pigweigh-export-env`; original checkpoints/images and global training packages remain unchanged.
 

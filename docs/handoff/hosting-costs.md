@@ -1,6 +1,6 @@
 # Railway hosting costs
 
-Prices and metrics checked 2026-11-03. This is a budget model, not an invoice or a statement of this workspace's plan, credits, billing cycle, charges, taxes or balance; those were not available in the read-only review. The project was not serving on that date. [Deployment status](deployment.md#current-state-2026-11-03) explains why its past usage cannot establish its present running cost.
+Prices and metrics checked 2026-11-03. This is a budget model, not an invoice or a statement of this workspace's plan, credits, billing cycle, charges, taxes or balance; those were not available in the read-only review. The project returned 404 during that earlier review; a [later release](../deployment.md#14451-api-and-web-release-2026-11-03) was verified online. The historical samples below cannot establish its current running cost.
 
 ## Provider rates
 
@@ -10,7 +10,7 @@ The observed Postgres volume was allocated **5000 MB**, while a metrics reading 
 
 ## Observations and their limits
 
-Read-only Railway service metrics requested a seven-day window ending around `2026-11-03 04:53 UTC` with hourly samples. The CLI returned 169 aligned timestamps from `2026-10-27 04:00 UTC` through `2026-11-03 04:00 UTC`. The most recent successful API, web and Postgres deployments were removed around `2026-11-02 00:13:38–40 UTC`, and the public web routes returned 404 on November 3.
+Read-only Railway service metrics requested a seven-day window ending around `2026-11-03 04:53 UTC` with hourly samples. The CLI returned 169 aligned timestamps from `2026-10-27 04:00 UTC` through `2026-11-03 04:00 UTC`. At that review, the previously successful API, web and Postgres deployments had been removed around `2026-11-02 00:13:38–40 UTC`, and public web routes returned 404 on November 3.
 
 The **141 hourly samples timestamped through November 2 00:00 UTC**, before the removal timestamp, have the means below. The 00:00 bucket may overlap removal; precise bucket boundaries and time weighting were not established. These are a short, lightly loaded historical observation, not minute-by-minute billing data or a traffic forecast. Following removal, the next 28 hourly samples showed zero CPU and exactly repeated the same final RAM value for every service. Those points are consistent with stale or carried-forward values; their semantics were not established. They are excluded from the planning averages and are not evidence of live services or billable running RAM.
 
@@ -34,7 +34,7 @@ Replace the service ID with the web or Postgres ID in [deployment](deployment.md
 
 ## Example monthly scenarios
 
-The following assumes a 30-day equivalent month, one replica of each service running continuously after a future authorized recovery, the historical **pre-removal** mean compute, and unchanged volume usage. No recovery is implied or authorized by this arithmetic.
+The following assumes a 30-day equivalent month, one replica of each service running continuously at the historical **pre-removal** mean compute, and unchanged volume usage. This illustrative arithmetic does not measure usage or charges after the later release.
 
 | Component | Calculation | Approximate cost |
 |---|---|---:|
