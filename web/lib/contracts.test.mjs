@@ -30,14 +30,19 @@ const estimate = {
   artifacts: { bundle_id: "synthetic-parser-fixture" },
   measurements: { body_length_cm: "100.00", chest_width_cm: "30.00", chest_depth_cm: "36.00", girth_cm: "103.89" },
   method: {
-    version: "attached-marker-ellipse-11900-v1",
-    formula: "G_cm^2 * L_cm / 11900",
+    version: "attached-marker-ellipse-14451-v1",
+    formula: "G_cm^2 * L_cm / 14451",
     marker_dictionary: "DICT_4X4_50",
     marker_id: 0,
     marker_side_mm: "100",
     experimental: true,
     accuracy_evaluated: false,
   },
+};
+const previousMethod = {
+  ...estimate.method,
+  version: "attached-marker-ellipse-11900-v1",
+  formula: "G_cm^2 * L_cm / 11900",
 };
 
 test("money stays exact through the full signed-64-bit centavo range", () => {
@@ -93,8 +98,10 @@ test("success requires the configured experimental method and honest accuracy st
   for (const method of [null, [], {}, { ...estimate.method, formula: undefined }]) {
     assert.equal(isEstimate({ ...estimate, method }), false);
   }
+  assert.equal(isEstimate({ ...estimate, method: previousMethod }), false, "previous method");
   for (const [key, invalid] of [
-    ["version", "another-method"], ["formula", "G_cm^2 * L_cm / 14450.9"],
+    ["version", "another-method"], ["version", previousMethod.version],
+    ["formula", previousMethod.formula], ["formula", "G_cm^2 * L_cm / 14450.9"],
     ["marker_dictionary", "DICT_5X5_50"], ["marker_id", 1], ["marker_id", "0"],
     ["marker_side_mm", "50"], ["marker_side_mm", 100],
     ["experimental", false], ["accuracy_evaluated", true],
@@ -130,8 +137,15 @@ test("estimate requests accept measured results with and without a published pri
       globalThis.fetch = async () => Response.json({ error: { code, message } }, { status });
       await assert.rejects(request("/estimates", isEstimate), (error) => error instanceof ApiError && error.status === status && error.code === code && error.message === message);
     }
-    globalThis.fetch = async () => Response.json({ ...estimate, method: undefined });
-    await assert.rejects(request("/estimates", isEstimate), (error) => error instanceof ApiError && error.code === "invalid_response");
+    for (const method of [
+      undefined,
+      previousMethod,
+      { ...estimate.method, version: previousMethod.version },
+      { ...estimate.method, formula: previousMethod.formula },
+    ]) {
+      globalThis.fetch = async () => Response.json({ ...estimate, method });
+      await assert.rejects(request("/estimates", isEstimate), (error) => error instanceof ApiError && error.code === "invalid_response");
+    }
   } finally { globalThis.fetch = original; }
 });
 

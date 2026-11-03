@@ -12,9 +12,9 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
-from pigweigh.formula import ellipse_girth_cm, estimate_weight_kg
+from pigweigh.formula import FORMULA_DIVISOR, ellipse_girth_cm, estimate_weight_kg
 
-METHOD = "attached-marker-ellipse-11900-v1"
+METHOD = "attached-marker-ellipse-14451-v1"
 TOP_POINTS = ("snout-tip", "left-ear-base", "right-ear-base", "left-shoulder", "right-shoulder",
               "left-chest", "right-chest", "left-hip", "right-hip", "tail-base", "spine-midpoint")
 SIDE_POINTS = ("snout-tip", "eye", "ear-tip", "withers", "mid-point-peak", "loin", "tail-base",
@@ -40,6 +40,13 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def bundle_identifier(manifest: dict) -> str:
+    """Bind method and complete model configuration, matching the exporter."""
+    payload = {key: manifest[key] for key in ("schema_version", "method", "formula_divisor", "marker", "models")}
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()
+    return f"{manifest['method']}-{hashlib.sha256(canonical).hexdigest()[:16]}"
 
 
 def letterbox(image: np.ndarray) -> tuple[np.ndarray, float, int, int]:
@@ -192,12 +199,14 @@ class InferenceEngine:
             raise ValueError("Oversized model manifest")
         manifest = json.loads(path.read_text(encoding="utf-8"))
         if (manifest.get("schema_version") != 1 or manifest.get("method") != METHOD
-                or manifest.get("formula_divisor") != 11900
+                or manifest.get("formula_divisor") != FORMULA_DIVISOR
                 or manifest.get("marker") != {"dictionary":"DICT_4X4_50", "id":0, "side_mm":100}):
             raise ValueError("Incompatible method configuration")
         bundle_id = manifest.get("bundle_id")
         if not isinstance(bundle_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", bundle_id):
             raise ValueError("Invalid bundle ID")
+        if bundle_id != bundle_identifier(manifest):
+            raise ValueError("Bundle ID does not match its method and model configuration")
         options = ort.SessionOptions()
         options.intra_op_num_threads = 2
         options.inter_op_num_threads = 1
@@ -272,6 +281,6 @@ class InferenceEngine:
             raise CaptureRejected("measurements_unusable", "The photo measurements cannot produce a usable formula estimate. Retake both views.", "pair") from None
         return {"status":"estimated", "estimated_weight_kg":weight,
                 "measurements":dimensions, "artifacts":{"bundle_id":self.bundle_id},
-                "method":{"version":METHOD, "formula":"G_cm^2 * L_cm / 11900",
+                "method":{"version":METHOD, "formula":f"G_cm^2 * L_cm / {FORMULA_DIVISOR}",
                           "marker_dictionary":"DICT_4X4_50", "marker_id":0, "marker_side_mm":"100",
                           "experimental":True, "accuracy_evaluated":False}}

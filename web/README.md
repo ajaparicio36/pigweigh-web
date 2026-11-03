@@ -41,7 +41,7 @@ curl.exe -I http://localhost:3000/markers/pigweigh-aruco-4x4-50-id-0-100mm.svg
 # HTTP 200, image/svg+xml
 ```
 
-A successful request displays an experimental weight and the server-calculated PHP valuation with its exact price snapshot. Without a published price, the weight remains visible and valuation is unavailable. Expand **Measurements and formula** to inspect photo-derived body length, chest width, chest depth and ellipse-estimated girth used in `G_cm² × L_cm / 11900`. The frontend validates the explicit method and measurement payload before showing numerical results. Accuracy against scale weights has not been evaluated. No sample output or confidence is substituted. Photos are not retained.
+A successful request displays an experimental weight and the server-calculated PHP valuation with its exact price snapshot. Without a published price, the weight remains visible and valuation is unavailable. Expand **Measurements and formula** to inspect photo-derived body length, chest width, chest depth and ellipse-estimated girth used in `G_cm² × L_cm / 14451`. The frontend validates the explicit method and measurement payload before showing numerical results. Accuracy against scale weights has not been evaluated. No sample output or confidence is substituted. Photos are not retained.
 
 Open `/admin` to sign in with a provisioned account and publish a positive PHP/kg decimal with a source reference. Sessions are checked against the server. Stale publication requires review of the refreshed price; expired sessions retain the draft on this page for sign-in and review. Reloading or leaving the page discards drafts. Admin provisioning and safe terminal request examples are in the backend README; there are no default credentials.
 
@@ -68,7 +68,7 @@ curl.exe -i http://localhost:3000/health
 
 `/api/health` is a separate backend/database health check. API route examples and the live eight-route proxy smoke check are in the backend README. All browser fetches use relative `/api` paths and `cache: no-store`. No API or database is contacted during the web build.
 
-The new **PigWeigh Production** app is live at [the public web origin](https://web-production-4d49b.up.railway.app); API and PostgreSQL remain private. Railway rejected legacy `railway.toml` config, so it was not applied. Use the [actual explicit service settings](../docs/deployment.md#applied-configuration-and-source): root `/web`, RAILPACK, `pnpm build`, start `pnpm exec next start --hostname 0.0.0.0 --port $PORT` and health `/health`. Node 22 is pinned in the manifest; the deployed runtime reports Node 22.23.3 and pnpm 10.30.1. Local checks ran under Node 24.13.0 with an engine warning. The older **PigWeigh** project remains staged and untouched.
+The former **PigWeigh Production** services were removed on November 2, and their former public endpoints returned 404 on November 3. See [current deployment state](../docs/handoff/deployment.md#current-state-2026-11-03). The [October service settings](../docs/deployment.md#applied-configuration-and-source) and runtime versions are historical evidence; a future deployment requires fresh configuration and verification. Node 22 is pinned in the manifest; local checks ran under Node 24.13.0 with an engine warning.
 
 ## UI verification status
 

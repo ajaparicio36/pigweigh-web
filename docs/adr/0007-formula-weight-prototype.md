@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # Use the user-selected formula for the experimental prototype
+
+Superseded on 2026-11-03 by [ADR-0009](0009-thesis-formula-baseline.md), which accepts the thesis's 14451 baseline. The original decision and its evidence are retained below as history; its 11900 divisor is no longer the active serving contract.
 
 On 2026-10-19 the user selected `W_kg = G_cm² * L_cm / 11900` from [pigweightcalculator.org](https://pigweightcalculator.org/) with top/side pose models and flat body-attached ArUco reference cards. Time constraints favor implementing this explicit baseline before measuring its error; trained weight regression and held-out accuracy acceptance are not prerequisites to experimental numerical output.
 

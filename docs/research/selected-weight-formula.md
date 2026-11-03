@@ -1,6 +1,8 @@
 # User-selected formula prototype
 
-Verified 2026-10-19. The user selected `W_kg = G_cm² * L_cm / 11900` for a time-constrained experimental prototype using trained pose models and attached ArUco references. This supersedes mandatory regression fitting/held-out acceptance before prototype numerical output. Evaluation can follow implementation; accuracy remains unmeasured.
+Current decision, 2026-11-03: [ADR-0009](../adr/0009-thesis-formula-baseline.md) supersedes the earlier 11900 selection with the thesis baseline `W0 = G²L/14451` (cm/kg). The 11900 source inspection below is historical. Proposed `Wcal = a + b × W0` and a fold-specific median require paired pigs and scale weights; neither has fitted values nor serves as a failure fallback.
+
+Historical decision, verified 2026-10-19: the user selected `W_kg = G_cm² * L_cm / 11900` for a time-constrained experimental prototype using trained pose models and attached ArUco references. This supersedes mandatory regression fitting/held-out acceptance before prototype numerical output. Evaluation can follow implementation; accuracy remains unmeasured.
 
 ## Source inspection and discrepancy
 
@@ -14,7 +16,7 @@ However, the active calculator handler implements metric weight as:
 ((girth_cm / 2.54)^2 * (length_cm / 2.54) / 400) / 2.20462
 ```
 
-That is equivalent to divisor `400 * 2.54³ * 2.20462 = 14450.899614272`, **not 11900**. For identical inputs the selected divisor yields approximately 21.4% more weight. The site's own example follows its imperial calculation rather than the displayed metric divisor. Record this inconsistency; do not silently switch the user's selected formula to match the handler.
+That is equivalent to divisor `400 * 2.54³ * 2.20462 = 14450.899614272`, **not 11900**. For identical inputs the former 11900 divisor yields approximately 21.4% more weight than the handler. The site's own example follows its imperial calculation rather than the displayed metric divisor. The later user-approved 14451 baseline is recorded in ADR-0009.
 
 Exact public bundle excerpts (read as text, not executed), with `r` the girth input and `a` the length input:
 
@@ -39,7 +41,7 @@ The following is the proposed simple measurement definition for implementation r
 2. From the top view obtain chest width `w_cm` between the named left/right chest points. From the side view obtain chest depth `d_cm` between the reviewed dorsal thoracic anchor (initial candidate: withers) and sternum. These must correspond approximately to the same chest section; the withers–sternum pair needs explicit placement review because it may be oblique or anatomically noisy. Do not use hoof height or arbitrary lowest belly as chest depth.
 3. Approximate that cross-section as an ellipse, with semiaxes `a=w_cm/2`, `b=d_cm/2`. Use Ramanujan II: `h=((a-b)/(a+b))²`, then `G_cm ≈ π*(a+b)*(1 + 3h/(10+sqrt(4-3h)))`. This is an ellipse-model circumference proxy, not a tape measurement or a claim that pig torsos are exact ellipses.
 4. For a minimal length proxy, use the top-view midpoint of the named ear bases to tail-base distance. The source requests a path along the spine; a straight image distance is only a proxy. Apply straight-posture checks and retain this distinction. Do not substitute snout-to-tail length. Where tail-base is missing or unusable, reject that capture; do not use tail-tip as a fallback.
-5. Apply the selected expression to these actual derived centimeter features: `W_kg = G_cm² * L_cm / 11900`. Version the formula, divisor, named feature definitions and units. Once the real pipeline and configured models/markers work, a numerical result is a legitimate **experimental estimate**, with unmeasured accuracy; it need not wait for regression training.
+5. Apply the current approved baseline to these actual derived centimeter features: `W0_kg = G_cm² * L_cm / 14451`. Version the formula, divisor, named feature definitions and units. Once the real pipeline and configured models/markers work, a numerical result is a legitimate **experimental estimate**, with unmeasured accuracy; it need not wait for regression training.
 
 Flat body-attached references reduce local plane offset but do not flatten the curved pig. Two sequential images also require matching identity, section and posture. These assumptions and proxy definitions must remain visible in the method metadata and capture instructions. Keypoint confidence can gate landmark usability; it must not be relabeled as kilogram certainty.
 
@@ -49,4 +51,4 @@ For a pig with scale weight 30 kg and estimate 28 kg: signed error is `28-30=-2 
 
 Collect same-pig paired captures and contemporaneous scale weights, record the formula/configuration version, then summarize kilogram errors and bias over the tested animals. Keep repeat sessions/augmentations grouped by pig when assessing generalization. No particular sample count or acceptable error is promised. Later empirical correction or regression is optional refinement; it is not a prerequisite to implementing this selected prototype.
 
-Current blockers are missing compatible serving pose checkpoints, concrete marker/geometry configuration and pipeline integration. A failed/missing measurement still returns unavailable or rejected input. No class-label weights, invented confidence or fabricated successful output is authorized. Existing decimal-safe valuation and price provenance remain unchanged.
+The pose bundle, marker/geometry configuration and pipeline are now implemented locally; physical scale and accuracy evidence remain open. A failed/missing measurement still returns unavailable or rejected input. No class-label weights, invented confidence or fabricated successful output is authorized. Existing decimal-safe valuation and price provenance remain unchanged.

@@ -72,7 +72,7 @@ def export_bundle(output: Path, top: Path, side: Path, top_image: Path, side_ima
     staging = output / "source-copies"
     staging.mkdir()
     manifest = {"schema_version": 1,
-                "method": "attached-marker-ellipse-11900-v1", "formula_divisor": 11900,
+                "method": "attached-marker-ellipse-14451-v1", "formula_divisor": 14451,
                 "marker": {"dictionary": "DICT_4X4_50", "id": 0, "side_mm": 100},
                 "models": {}, "export": {"ultralytics": __version__, "torch": torch.__version__,
                     "onnx": onnx.__version__, "onnxruntime": ort.__version__, "device": "cpu",

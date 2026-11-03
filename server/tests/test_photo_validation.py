@@ -61,11 +61,12 @@ def validate(client, view="top", content=None):
 
 
 @pytest.mark.parametrize("view", ["top", "side"])
-def test_valid_photo_exact_response_and_no_database(photo_client, view):
+def test_valid_photo_exact_response_and_no_database(photo_client, photo_app, view):
     client, _ = photo_client
     response = validate(client, view)
     assert response.status_code == 200, response.text
-    assert response.json() == {"status": "validated", "view": view, "artifacts": {"bundle_id": "test-bundle"}}
+    assert response.json() == {"status": "validated", "view": view,
+                               "artifacts": {"bundle_id": photo_app.state.inference.bundle_id}}
     assert response.headers["cache-control"] == "no-store"
 
 

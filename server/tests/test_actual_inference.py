@@ -11,6 +11,7 @@ import pytest
 
 from pigweigh.config import Settings
 from pigweigh.main import create_app
+from pigweigh.inference import METHOD, measure, decimal_measure
 from conftest import ORIGIN, login
 from test_api import publish
 
@@ -34,6 +35,15 @@ def test_actual_onnx_pair_api_postgres_price_roundtrip(settings, app):
         assert first.status_code==200,first.text
         result = first.json()
         assert Decimal(result["estimated_weight_kg"])>0
+        assert result["method"]["version"] == METHOD == "attached-marker-ellipse-14451-v1"
+        assert result["method"]["formula"] == "G_cm^2 * L_cm / 14451"
+        # Reuse actual unrounded ONNX/marker measurements to verify the baseline;
+        # rounded display dimensions cannot reproduce the exact returned weight.
+        with Image.open(paths["top_image"]) as top, Image.open(paths["side_image"]) as side:
+            dimensions = measure(actual.state.inference._measure_view("top", top.convert("RGB")),
+                                 actual.state.inference._measure_view("side", side.convert("RGB")))
+        expected_weight = dimensions["girth_cm"] ** 2 * dimensions["body_length_cm"] / 14451
+        assert result["estimated_weight_kg"] == decimal_measure(expected_weight)
         assert result["valuation"] is None and result["valuation_unavailable_reason"]=="no_price"
         assert result["method"]["accuracy_evaluated"] is False
         assert result["artifacts"]["bundle_id"]==json.loads(manifest.read_text())["bundle_id"]

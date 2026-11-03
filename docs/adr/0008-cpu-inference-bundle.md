@@ -4,9 +4,11 @@ status: accepted
 
 # Serve a versioned CPU ONNX bundle
 
+The export and deployment facts below describe the October 2026 release. [ADR-0009](0009-thesis-formula-baseline.md) supersedes its 11900 method and divisor with the locally implemented 14451 baseline; the ONNX bytes are unchanged but the manifest and content-derived bundle ID are new. The former production services were removed on November 2; see [current deployment state](../handoff/deployment.md#current-state-2026-11-03).
+
 On 2026-10-23 the completed user-trained top/side pose checkpoints were exported to a private ONNX bundle for the existing FastAPI/uv Python 3.13 service. Use CPU ONNX Runtime, NumPy and one headless OpenCV provider rather than importing the global training environment into the API. Export/parity runs use the separate `D:/pigweigh-export-env`; original checkpoints/images and global training packages remain unchanged.
 
-Schema 1 binds `attached-marker-ellipse-11900-v1`, divisor 11900, named landmark order, model hashes and fixed input/output layouts. The settled marker is `DICT_4X4_50`, ID 0, black-square side 100 mm (10 cm), excluding the white margin. Each photo gets its own marker-plane homography. The attached marker reduces local offset; its configured size and detection do not certify print scale, whole-body coplanarity or kilogram accuracy.
+The October schema 1 bound `attached-marker-ellipse-11900-v1`, divisor 11900, named landmark order, model hashes and fixed input/output layouts. The settled marker is `DICT_4X4_50`, ID 0, black-square side 100 mm (10 cm), excluding the white margin. Each photo gets its own marker-plane homography. The attached marker reduces local offset; its configured size and detection do not certify print scale, whole-body coplanarity or kilogram accuracy.
 
 `PIGWEIGH_MODEL_BUNDLE` selects a manifest at API startup; absent/invalid bundles leave inference unavailable while core service health remains separate. No automatic model download or class-label weight fallback occurs. One CPU estimate runs per API process; a concurrent estimate gets 429. Snapshot the current price only after computation, using Decimal valuation of the rounded weight actually returned.
 

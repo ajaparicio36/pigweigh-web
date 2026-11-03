@@ -129,7 +129,7 @@ export function EstimateForm(): React.JSX.Element {
         {submission.status === "error" && <div className="notice notice-error"><h2>{submission.kind === "unavailable" ? "No estimate is available" : submission.kind === "rejected" ? "Your photo pair needs review" : submission.kind === "busy" ? "Estimation is busy" : "Your request couldn’t be completed"}</h2><p>{submission.message}</p><p className="muted">{submission.kind === "unavailable" ? "No weight or valuation was calculated. Your photos remain here for review." : submission.kind === "busy" ? "Your selected photos are still here. Wait a moment, then request the estimate again." : "Your selected photos are still here. Review them or try again."}</p></div>}
         {submission.status === "success" && <section className="result-panel" aria-labelledby="result-title">
           <h2 id="result-title">Your experimental estimate</h2>
-          <p className="field-help">Calculated from the photo pair using the 11900 formula. Accuracy against scale weights has not been evaluated.</p>
+          <p className="field-help">Calculated from the photo pair using the 14451 formula. Accuracy against scale weights has not been evaluated.</p>
           <div className="result-grid"><div><p className="field-caption">Estimated live weight</p><p className="result-value">{submission.data.estimated_weight_kg} <span>kg</span></p></div>
             <div><p className="field-caption">Estimated valuation</p><p className="result-value">{submission.data.valuation ? formatMoney(submission.data.valuation.amount_php) : "Unavailable"}</p></div></div>
           {submission.data.valuation ? <div className="result-source"><p>Calculated using {formatMoney(submission.data.valuation.price.php_per_kg)} per kg.</p><p><span className="field-caption">Source reference</span>{submission.data.valuation.price.source_reference}</p><p className="muted">Published {formatPublishedAt(submission.data.valuation.price.published_at)} (Philippine time). This price is the one used for this estimate.</p></div> : <p className="muted">There was no published price when this estimate was calculated. The estimated live weight is still shown above.</p>}
@@ -141,7 +141,7 @@ export function EstimateForm(): React.JSX.Element {
               <div><dt>Chest depth, side view</dt><dd>{submission.data.measurements.chest_depth_cm} cm</dd></div>
               <div><dt>Girth, ellipse estimate</dt><dd>{submission.data.measurements.girth_cm} cm</dd></div>
             </dl>
-            <p>Weight (kg) = girth (cm)² × body length (cm) ÷ 11900.</p>
+            <p>Weight (kg) = girth (cm)² × body length (cm) ÷ 14451.</p>
             <p>Girth approximates an ellipse using chest width and depth. Body length runs from the midpoint of the ear bases to the tail base in the top view. These photo-derived measurements are approximations.</p>
           </details>
         </section>}

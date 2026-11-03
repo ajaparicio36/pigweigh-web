@@ -7,9 +7,17 @@ from pigweigh.formula import ellipse_girth_cm, estimate_weight_kg
 
 
 def test_selected_metric_divisor_and_length_scaling():
-    assert estimate_weight_kg(100, 100) == pytest.approx(84.03361344537815)
+    assert estimate_weight_kg(100, 100) == pytest.approx(69.19936336585704)
     assert estimate_weight_kg(100, 200) == pytest.approx(2 * estimate_weight_kg(100, 100))
     assert estimate_weight_kg(200, 100) == pytest.approx(4 * estimate_weight_kg(100, 100))
+
+
+def test_thesis_baseline_approximates_imperial_unit_conversion():
+    girth_cm, length_cm = 100, 100
+    imperial_kg = ((girth_cm / 2.54) ** 2 * (length_cm / 2.54) / 400) * 0.45359237
+    baseline = estimate_weight_kg(girth_cm, length_cm)
+    assert baseline == pytest.approx(imperial_kg, rel=0.000006)
+    assert baseline != pytest.approx(girth_cm**2 * length_cm / 11900)
 
 
 def test_ellipse_circle_symmetry_and_uniform_scaling():
@@ -41,4 +49,4 @@ def test_final_overflow_and_underflow_rejected():
 
 def test_representable_extreme_calculation_avoids_intermediate_overflow():
     assert ellipse_girth_cm(1e300, 1e300) == pytest.approx(pi * 1e300)
-    assert estimate_weight_kg(1e200, 1e-200) == pytest.approx(1e200 / 11900)
+    assert estimate_weight_kg(1e200, 1e-200) == pytest.approx(1e200 / 14451)

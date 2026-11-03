@@ -11,7 +11,7 @@ import pytest
 from pigweigh.config import Settings, database_url
 from pigweigh.inference import (CaptureRejected, InferenceEngine, InferenceUnavailable, METHOD,
     SIDE_POINTS, TOP_POINTS, decimal_measure, homography_from_corners, letterbox, marker_homography,
-    measure, project_points, required_pose, sha256_file)
+    measure, project_points, required_pose, sha256_file, bundle_identifier)
 
 
 def marker_pixels(marker_id=0):
@@ -42,8 +42,9 @@ def fake_bundle(tmp_path, monkeypatch):
         path.write_bytes(f"test-model-{view}".encode())
         models[view] = {"file":path.name, "sha256":sha256_file(path), "keypoints":list(names),
                         "input_size":640, "input_shape":[1,3,640,640], "output_shape":[1,300,6+3*len(names)], "end2end":True}
-    manifest = {"schema_version":1,"bundle_id":"test-bundle","method":METHOD,"formula_divisor":11900,
+    manifest = {"schema_version":1,"bundle_id":"test-bundle","method":METHOD,"formula_divisor":14451,
                 "marker":{"dictionary":"DICT_4X4_50","id":0,"side_mm":100},"models":models}
+    manifest["bundle_id"] = bundle_identifier(manifest)
     path = tmp_path / "manifest.json"
     path.write_text(json.dumps(manifest))
     class FakeSession:
@@ -73,7 +74,7 @@ def test_projection_measurement_scale_and_physical_midpoint():
     assert values["body_length_cm"] == pytest.approx(30)
     assert values["chest_width_cm"] == pytest.approx(10)
     assert values["chest_depth_cm"] == pytest.approx(20)
-    assert values["weight_kg"] == pytest.approx(values["girth_cm"]**2 * 30 /11900)
+    assert values["weight_kg"] == pytest.approx(values["girth_cm"]**2 * 30 /14451)
 
 
 def test_marker_detection_and_ambiguity():
@@ -148,14 +149,22 @@ def test_model_validation_and_success(fake_bundle):
     assert all(value.count(".")==1 and len(value.split(".")[1])==2 for value in result["measurements"].values())
 
 
-@pytest.mark.parametrize("case",["checksum","keypoints","marker","shape","escape"])
+@pytest.mark.parametrize("case",["checksum","keypoints","marker","shape","escape","bundle_id","old_method","old_divisor","old_bundle"])
 def test_bad_manifest_is_unavailable_without_private_paths(fake_bundle,case):
     path,manifest=fake_bundle
     if case=="checksum": manifest["models"]["top"]["sha256"]="0"*64
     elif case=="keypoints": manifest["models"]["top"]["keypoints"]=list(reversed(TOP_POINTS))
     elif case=="marker":manifest["marker"]["side_mm"]=10
     elif case=="shape":manifest["models"]["top"]["output_shape"]=[1,300,38]
-    else:manifest["models"]["top"]["file"]="../outside.onnx"
+    elif case=="escape":manifest["models"]["top"]["file"]="../outside.onnx"
+    elif case=="bundle_id":manifest["bundle_id"]="attached-marker-ellipse-11900-v1-5dd3bd4779d7539a"
+    elif case=="old_method":manifest["method"]="attached-marker-ellipse-11900-v1"
+    elif case=="old_bundle":
+        manifest["method"]="attached-marker-ellipse-11900-v1"
+        manifest["formula_divisor"]=11900
+    else:manifest["formula_divisor"]=11900
+    # Keep unrelated guards valid so each malformed field reaches its own check.
+    if case != "bundle_id":manifest["bundle_id"] = bundle_identifier(manifest)
     path.write_text(json.dumps(manifest))
     runtime=InferenceEngine(path);runtime.load()
     assert runtime.readiness()["ready"] is False

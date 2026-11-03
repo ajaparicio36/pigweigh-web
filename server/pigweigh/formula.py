@@ -1,11 +1,13 @@
 """Experimental measurement arithmetic, independent of photo inference and money.
 
-The user selected G_cm**2 * L_cm / 11900. The reference describes tape girth
+The user selected G_cm**2 * L_cm / 14451. The reference describes tape girth
 behind the front legs/over the shoulder blades and length along the spine from
 ear base to tail base. An ellipse from photographic chest width/depth is a
 girth proxy, not a measured tape circumference or a validated weight method.
 """
 from math import frexp, isfinite, ldexp, pi, sqrt
+
+FORMULA_DIVISOR = 14451
 
 
 def _positive_finite(value: float, name: str) -> None:
@@ -31,7 +33,7 @@ def ellipse_girth_cm(chest_width_cm: float, chest_depth_cm: float) -> float:
 
 
 def estimate_weight_kg(girth_cm: float, body_length_cm: float) -> float:
-    """User-selected experimental G²L/11900, with inputs in cm and output kg.
+    """User-selected experimental G²L/14451, with inputs in cm and output kg.
 
     Accepts already obtained measurements; never infers dimensions from photos.
     Mantissa/exponent arithmetic avoids intermediate G² overflow when the final
@@ -42,7 +44,7 @@ def estimate_weight_kg(girth_cm: float, body_length_cm: float) -> float:
     girth_mantissa, girth_exponent = frexp(girth_cm)
     length_mantissa, length_exponent = frexp(body_length_cm)
     try:
-        weight = ldexp(girth_mantissa * girth_mantissa * length_mantissa / 11900,
+        weight = ldexp(girth_mantissa * girth_mantissa * length_mantissa / FORMULA_DIVISOR,
                        2 * girth_exponent + length_exponent)
     except OverflowError as exc:
         raise ValueError("Calculated weight is outside the finite numeric range") from exc

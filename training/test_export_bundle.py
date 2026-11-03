@@ -1,4 +1,5 @@
 import unittest
+import json
 from pathlib import Path
 import tempfile
 
@@ -6,10 +7,16 @@ from export_bundle import bundle_identifier, check_contract, export_bundle
 
 
 class ExportContractTests(unittest.TestCase):
+    def test_packaged_manifest_matches_exporter_canonical_identifier(self):
+        manifest_path = Path(__file__).resolve().parents[1] / "server/models/v1/manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["bundle_id"], "attached-marker-ellipse-14451-v1-08661ffdf08ae1cc")
+        self.assertEqual(bundle_identifier(manifest), manifest["bundle_id"])
+
     def test_bundle_identifier_binds_weights_and_configuration_not_folder_name(self):
         from copy import deepcopy
-        manifest = {"schema_version": 1, "method": "attached-marker-ellipse-11900-v1",
-                    "formula_divisor": 11900, "marker": {"id": 0, "side_mm": 100},
+        manifest = {"schema_version": 1, "method": "attached-marker-ellipse-14451-v1",
+                    "formula_divisor": 14451, "marker": {"id": 0, "side_mm": 100},
                     "models": {"top": {"sha256": "a" * 64, "keypoints": ["ear", "tail"]}}}
         identity = bundle_identifier(manifest)
         self.assertEqual(identity, bundle_identifier(dict(reversed(list(manifest.items())))))

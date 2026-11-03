@@ -1,5 +1,16 @@
 # Backend verification record
 
+## Thesis baseline and bundle — 2026-11-03
+
+The local serving method now reports `G_cm² × L_cm / 14451` as `attached-marker-ellipse-14451-v1` and identifies the canonical bundle as `attached-marker-ellipse-14451-v1-08661ffdf08ae1cc`. The manifest changed while the ONNX files retained SHA256 `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa` (top) and `ed40cb8d60da95b1f8eb1c955b7e52fc70bfb00bf798eb2a57a52a2d4e175c72` (side). The exporter and loader derive the same ID from schema, method, divisor, marker and model entries; the loader rejects a stale ID and the earlier 11900 method/divisor.
+
+- `uv run --frozen pytest -q tests/test_formula.py tests/test_inference.py tests/test_packaged_bundle.py tests/test_photo_validation.py tests/test_multipart_cleanup.py --tb=short` passed **97 tests**, with the actual bundled ONNX models and the existing generated-image fixtures explicitly configured. It covers the metric/imperial conversion, numerical baseline and geometry, canonical identity, prior-method rejection, actual per-view ONNX checks, unavailable/rejected results and cleanup boundaries.
+- `python -m unittest -v test_export_bundle` from `training/` passed **5 tests** for exporter identity, agreement with the packaged manifest and contract guards.
+- The existing `scripts/test-postgres.ps1` runner passed **126 tests** with the bundled models and generated-image pair configured. This exercised actual ONNX through the API with no price, authenticated price publication, Decimal valuation of the reported rounded weight with price provenance, marker rejection, migrations and existing backend regressions. Its isolated loopback PostgreSQL cluster stopped and was removed; no existing or cloud database was used. The existing Starlette/HTTPX deprecation warning remains.
+- PostgreSQL came from the documented official 16.2 Windows portable archive, independently checked against the previously recorded SHA256 `C510B3058C161479BFBE0AEAC878CA682B344FD9385C58A359690147A4CA1A6C`. Automatic approval rejected removal of the task-owned downloaded archive/binaries and temporary documentation script before execution with `blocked by policy`; they remain at `C:/Users/ajapa/AppData/Local/Temp/pigweigh-formula-pg-0c7cc32edf1f4ab58dc47cb62dbefc68` and `C:/Users/ajapa/AppData/Local/Temp/pigweigh-formula-docs-a364bfd2.py`. The separate test cluster path `C:/Users/ajapa/AppData/Local/Temp/pigweigh-pg-test-805fbbd872ac42b3bfac017d337e6c9a` no longer exists.
+
+These functional tests do not establish physical scale, capture suitability, model accuracy or trading fitness. The fitted correction and fold-median comparison remain proposals requiring paired scale data. No graphical QA or deployment of this local change was performed.
+
 ## Serving bundle packaging — 2026-10-23
 
 The user subsequently authorized ordinary Git inclusion of the deployable serving bundle before browser QA. Copied exactly manifest.json, top.onnx and side.onnx from `D:/pigweigh-inference-artifacts/v1` to `server/models/v1`; no training checkpoint, source export image or training-data file was included. The original export was unchanged. Each original, working-tree copy and actual staged Git blob has identical SHA256:
