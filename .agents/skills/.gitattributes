@@ -1,0 +1,5 @@
+# Keep unmodified snapshot bytes stable across checkout platforms.
+ponytail/SKILL.md -text whitespace=cr-at-eol
+emil-design-eng/SKILL.md -text whitespace=cr-at-eol
+apple-design/SKILL.md -text whitespace=cr-at-eol
+lead-orchestrator/agents/openai.yaml -text whitespace=cr-at-eol
