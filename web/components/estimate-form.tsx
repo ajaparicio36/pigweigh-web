@@ -10,6 +10,8 @@ import { PhotoInput } from "./photo-input";
 type Submission = { status: "idle" } | { status: "pending" } | { status: "error"; message: string; kind: "unavailable" | "rejected" | "busy" | "other" } | { status: "success"; data: Estimate };
 
 export function EstimateForm(): React.JSX.Element {
+  const [pigId, setPigId] = useState("");
+  const [attempt, setAttempt] = useState("1");
   const [price, setPrice] = useState<LoadState<PriceSnapshot>>({ status: "loading" });
   const [readiness, setReadiness] = useState<LoadState<Readiness>>({ status: "loading" });
   const [photoQueue] = useState(() => new PhotoCheckQueue(validatePhoto));
@@ -29,6 +31,22 @@ export function EstimateForm(): React.JSX.Element {
     if (submitting.current) return;
     photoQueue.select(view, file);
     setSubmission({ status: "idle" });
+  }
+
+  const pilotId = pigId.trim().toUpperCase();
+  const canSave = /^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(pilotId) && /^[1-9][0-9]{0,3}$/.test(attempt);
+
+  function savePilotPhoto(file: File, view: PhotoView): void {
+    if (!canSave) return;
+    const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${pilotId}_A${attempt.padStart(2, "0")}_${view}.${extension}`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
   }
 
   function retryPhoto(view: PhotoView): void {
@@ -100,6 +118,27 @@ export function EstimateForm(): React.JSX.Element {
           <PhotoInput view="top" file={top} check={checks.top} disabled={pending} onChange={(file) => selectPhoto("top", file)} onRetry={() => retryPhoto("top")} />
           <PhotoInput view="side" file={side} check={checks.side} disabled={pending} onChange={(file) => selectPhoto("side", file)} onRetry={() => retryPhoto("side")} />
         </div>
+        <fieldset className="form-panel">
+          <legend>Save pilot photos</legend>
+          <p className="field-help">Enter the Pig ID and attempt number before saving. Use a new attempt number for each new photo pair.</p>
+          <div className="publication-fields">
+            <label className="field">Pig ID
+              <input type="text" value={pigId} maxLength={32} placeholder="P01" autoComplete="off"
+                onChange={(event) => setPigId(event.target.value)} />
+            </label>
+            <label className="field">Attempt number
+              <input type="text" inputMode="numeric" value={attempt} maxLength={4}
+                onChange={(event) => setAttempt(event.target.value)} />
+            </label>
+          </div>
+          {!canSave && <p className="field-help">Use letters, numbers, hyphens or underscores for the Pig ID and a positive attempt number.</p>}
+          <div className="publish-actions">
+            <button className="button button-secondary" type="button" disabled={!canSave || !top}
+              onClick={() => { if (top) savePilotPhoto(top, "top"); }}>Save top photo</button>
+            <button className="button button-secondary" type="button" disabled={!canSave || !side}
+              onClick={() => { if (side) savePilotPhoto(side, "side"); }}>Save side photo</button>
+          </div>
+        </fieldset>
         <div className="capture-note"><p>Both views must show the same animal; PigWeigh does not verify its identity. Passing photo checks does not verify the printed marker’s size or weight accuracy. Both photos are checked again when you request an estimate.</p></div>
         <section className="readiness-panel" aria-labelledby="readiness-title" aria-busy={readiness.status === "loading"}>
           <div className="readiness-heading">
