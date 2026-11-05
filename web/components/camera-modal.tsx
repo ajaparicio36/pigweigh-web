@@ -127,21 +127,20 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
       </div>
       <div className="camera-dialog-body">
         <p id={helpId} className="camera-instructions">{view === "top"
-          ? "Look straight down from above. Keep the whole pig inside the dashed frame, with the flat marker on its back near the middle of its body."
-          : "Look straight at the pig’s side. Keep its whole profile inside the dashed frame, with the flat marker on the visible flank."}</p>
-        <div className={`camera-preview camera-preview-${view}`} style={{ aspectRatio: videoAspect, width: `min(100%, ${45 * videoAspect}dvh)` }}>
+          ? "Look straight down from above. Keep the whole pig visible, with the flat marker on its back near the middle of its body. Center the marker in the square guide."
+          : "Look straight at the pig’s side. Keep its whole profile visible, with the flat marker on the visible flank. Center the marker in the square guide."}</p>
+        <div className="camera-preview" style={{ aspectRatio: videoAspect, width: `min(100%, ${45 * videoAspect}dvh)` }}>
           <video ref={videoRef} autoPlay playsInline muted aria-label={`Live ${label} camera preview`}
             onCanPlay={markReady} onPlaying={markReady} onResize={markReady}
             onWaiting={() => { if (!sessionRef.current?.isClosed && !capturingRef.current) setState("starting"); }}
             onError={() => { if (sessionRef.current?.isClosed) return; sessionRef.current?.close(); setState("error"); setError("The live preview could not be shown. Close this window and try again, or upload a photo."); }} />
           {state !== "error" && <div className="camera-guides" aria-hidden="true">
-            <div className="camera-pig-frame"><span>{view === "top" ? "Whole pig · from above" : "Whole pig · side profile"}</span></div>
-            <div className="camera-marker-target"><span>ArUco here</span><small>{view === "top" ? "On the back" : "On the flank"}</small></div>
+            <div className="camera-marker-target" />
           </div>}
         </div>
         <p className="camera-status" role="status">{state === "starting" ? "Starting camera… Allow access if your browser asks." : state === "capturing" ? "Saving photo…" : state === "ready" ? "Keep the marker’s four corners and white margin visible. Hold still, then capture." : "Camera unavailable. You can still upload a photo."}</p>
         {error && <p className="field-error" role="alert">{error} Your selected photos have not changed.</p>}
-        <p className="field-help">Guides help with placement only; they do not detect the pig or marker and will not appear in your photo. Keep the card clear of body landmarks.</p>
+        <p className="field-help">The guide helps with placement only; it does not detect the pig or marker and will not appear in your photo. Keep the card clear of body landmarks.</p>
       </div>
       <div className="camera-actions">
         <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>

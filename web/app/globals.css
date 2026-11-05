@@ -103,18 +103,21 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; back
 .camera-dialog-heading .text-button { min-height: 2.75rem; padding-inline: 0.5rem; }
 .camera-dialog-body { padding: 1.25rem 1.5rem; }
 .camera-instructions { font-size: 0.9375rem; max-width: 70ch; margin-bottom: 1rem; }
-.camera-preview { position: relative; display: grid; place-items: center; margin-inline: auto; max-height: 45dvh; overflow: hidden; border-radius: 8px; background: #211b17; }
+.camera-preview { position: relative; display: grid; place-items: center; container-type: size; margin-inline: auto; max-height: 45dvh; overflow: hidden; border-radius: 8px; background: #211b17; }
 .camera-preview video { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
-.camera-guides { position: absolute; inset: 0; pointer-events: none; color: #fff; font-size: 0.8125rem; }
-.camera-pig-frame { position: absolute; border: 2px dashed #fff; outline: 1px solid rgb(0 0 0 / 60%); border-radius: 24%; }
-.camera-preview-top .camera-pig-frame { inset: 10% 24%; }
-.camera-preview-side .camera-pig-frame { inset: 20% 7%; }
-.camera-pig-frame > span { position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%); padding: 0.25rem 0.5rem; white-space: nowrap; background: #211b17; border-radius: 4px; font-weight: 600; }
-.camera-marker-target { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 6rem; min-height: 4.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem; padding: 0.375rem; border: 2px dashed #fff; background: rgb(24 17 14 / 85%); }
-.camera-marker-target span { font-weight: 650; }
-.camera-marker-target small { font-size: 0.6875rem; }
+.camera-guides { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.camera-marker-target { width: min(6rem, 80cqw, 80cqh); aspect-ratio: 1; border: 2px dashed #fff; outline: 1px solid rgb(0 0 0 / 60%); }
 .camera-status { margin-top: 0.875rem; font-size: 0.875rem; }
 .camera-actions { display: flex; justify-content: space-between; gap: 1rem; position: sticky; bottom: 0; padding: 1rem 1.5rem max(1rem, env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .camera-dialog[open] { display: flex; flex-direction: column; }
+  .camera-dialog-heading, .camera-actions { flex-shrink: 0; }
+  .camera-dialog-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; column-gap: 1rem; }
+  .camera-preview { grid-column: 1; grid-row: 1 / span 4; }
+  .camera-instructions, .camera-status, .camera-dialog-body > .field-error, .camera-dialog-body > .field-help { grid-column: 2; }
+  .camera-actions { position: static; }
+}
 
 .marker-print-layout { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: 2.5rem; padding: 1.75rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .marker-preview { margin: 0; display: grid; justify-items: center; gap: 0.75rem; }
@@ -235,7 +238,6 @@ details li + li { margin-top: 0.375rem; }
   .camera-dialog-body { padding: 1rem; }
   .camera-actions { padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom)); gap: 0.75rem; }
   .camera-actions .button { padding-inline: 0.75rem; font-size: 0.875rem; white-space: normal; flex: 1; }
-  .camera-marker-target { width: 5.5rem; min-height: 4rem; }
 }
 
 @media (max-width: 399px) {
