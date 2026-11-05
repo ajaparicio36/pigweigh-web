@@ -4,6 +4,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ApiError, errorMessage, validatePhoto } from "@/lib/api";
 import { CameraSession, cameraErrorMessage, canCaptureVideo, capturePhoto } from "@/lib/camera";
 
+type TorchConstraint = MediaTrackConstraintSet & { torch: boolean };
+
 type CameraModalProps = {
   view: "top" | "side";
   disabled: boolean;
@@ -23,6 +25,10 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
   const capturingRef = useRef(false);
   const [state, setState] = useState<"starting" | "ready" | "capturing" | "error">("starting");
   const [error, setError] = useState("");
+  const [torchTrack, setTorchTrack] = useState<MediaStreamTrack | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchBusy, setTorchBusy] = useState(false);
+  const [torchError, setTorchError] = useState("");
   const [videoAspect, setVideoAspect] = useState(4 / 3);
   const label = view === "top" ? "top view" : "side view";
 
@@ -66,6 +72,9 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
             setError("The camera stopped. Close this window and try again, or upload a photo.");
           }, { once: true });
         }
+        const track = stream.getVideoTracks()[0];
+        const capabilities = track?.getCapabilities?.();
+        if (capabilities && "torch" in capabilities && capabilities.torch === true) setTorchTrack(track);
         video.srcObject = stream;
         await video.play();
       } catch (failure: unknown) {
@@ -104,6 +113,26 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
     }
   }
 
+  async function toggleTorch(): Promise<void> {
+    const session = sessionRef.current;
+    if (!torchTrack || !session || session.isClosed || torchBusy || capturingRef.current || autoRef.current) return;
+    const torch = !torchOn;
+    const constraint: TorchConstraint = { torch };
+    setTorchBusy(true);
+    setTorchError("");
+    try {
+      await torchTrack.applyConstraints({ ...torchTrack.getConstraints(), advanced: [constraint] });
+      if (session.isClosed) return;
+      const settings = torchTrack.getSettings();
+      if ("torch" in settings && settings.torch !== torch) throw new Error("Camera light did not change.");
+      setTorchOn(torch);
+    } catch {
+      if (!session.isClosed) setTorchError("The browser could not change the camera light. You can still capture a photo.");
+    } finally {
+      if (!session.isClosed) setTorchBusy(false);
+    }
+  }
+
   function stopAuto(): void {
     autoRef.current?.abort();
     autoRef.current = null;
@@ -113,7 +142,7 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
   async function autoCapture(): Promise<void> {
     const video = videoRef.current;
     const session = sessionRef.current;
-    if (!video || !session || session.isClosed || capturingRef.current || autoRef.current) return;
+    if (!video || !session || session.isClosed || torchBusy || capturingRef.current || autoRef.current) return;
     const controller = new AbortController();
     autoRef.current = controller;
     const { signal } = controller;
@@ -151,7 +180,7 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
   async function takePhoto(): Promise<void> {
     const session = sessionRef.current;
     const video = videoRef.current;
-    if (disabled || !session || session.isClosed || !video || state !== "ready" || capturingRef.current) return;
+    if (disabled || !session || session.isClosed || !video || state !== "ready" || torchBusy || capturingRef.current) return;
     stopAuto();
     capturingRef.current = true;
     const controller = new AbortController();
@@ -197,14 +226,18 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
           </div>}
         </div>
         <p className="camera-status" role="status">{autoStatus || (state === "starting" ? "Starting camera… Allow access if your browser asks." : state === "capturing" ? "Checking photo…" : state === "ready" ? "Keep the marker’s four corners and white margin visible. Hold still, then capture." : "Camera unavailable. You can still upload a photo.")}</p>
+        {torchTrack && state !== "error" && <button type="button" className="button button-secondary"
+          aria-pressed={torchOn} disabled={disabled || state !== "ready" || torchBusy || Boolean(autoStatus)}
+          onClick={() => void toggleTorch()}>Camera light</button>}
+        {torchError && <p className="field-error" role="alert">{torchError}</p>}
         {error && <p className="field-error" role="alert">{error} Your selected photos have not changed.</p>}
         <p className="field-help">Guides help with placement only; they do not detect the pig or marker and will not appear in your photo. Keep the card clear of body landmarks.</p>
       </div>
       <div className="camera-actions">
         <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>
-        <button type="button" className="button button-secondary" disabled={disabled || (!autoStatus && state !== "ready")}
+        <button type="button" className="button button-secondary" disabled={disabled || torchBusy || (!autoStatus && state !== "ready")}
           onClick={() => autoStatus ? stopAuto() : void autoCapture()}>{autoStatus ? "Stop auto" : "Auto capture"}</button>
-        <button type="button" className="button button-primary" disabled={disabled || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Checking photo…" : "Capture photo"}</button>
+        <button type="button" className="button button-primary" disabled={disabled || torchBusy || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Checking photo…" : "Capture photo"}</button>
       </div>
     </dialog>
   );
