@@ -53,7 +53,9 @@ export function canCaptureVideo(video: Pick<HTMLVideoElement, "videoWidth" | "vi
   return video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2 && !video.paused;
 }
 
-export async function capturePhoto(video: HTMLVideoElement, view: "top" | "side"): Promise<File> {
+export function capturePhoto(video: HTMLVideoElement, view: "top" | "side"): Promise<File>;
+export function capturePhoto(video: HTMLVideoElement, view: "top" | "side", accept: (context: CanvasRenderingContext2D) => boolean): Promise<File | null>;
+export async function capturePhoto(video: HTMLVideoElement, view: "top" | "side", accept?: (context: CanvasRenderingContext2D) => boolean): Promise<File | null> {
   if (!canCaptureVideo(video)) throw new Error("Wait for the live preview before taking a photo.");
   const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
@@ -62,6 +64,7 @@ export async function capturePhoto(video: HTMLVideoElement, view: "top" | "side"
   if (!context) throw new Error("This browser could not save the photo. Upload a photo instead.");
   // Draw only the original video pixels; the on-screen guides are separate DOM.
   context.drawImage(video, 0, 0);
+  if (accept && !accept(context)) return null;
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((result) => result ? resolve(result) : reject(new Error("The photo could not be saved. Try again or upload a photo.")), "image/jpeg", 0.92);
   });

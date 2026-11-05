@@ -136,10 +136,21 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
     setError("");
     setAutoStatus("Looking for the pig and ArUco marker…");
     try {
+      const { createGuideDetector } = await import("@/lib/aruco-guide");
+      const isAligned = await createGuideDetector();
       while (!signal.aborted && !session.isClosed) {
         if (canCaptureVideo(video)) {
           const guide = guideBounds(video);
-          const photo = await capturePhoto(video, view);
+          const photo = await capturePhoto(video, view, (context) => isAligned(context, guide));
+          if (!photo) {
+            if (signal.aborted || session.isClosed) return;
+            setMisaligned(true);
+            setAutoStatus("Align all four black corners with the ArUco square.");
+            await new Promise<void>((resolve) => setTimeout(resolve, 100));
+            continue;
+          }
+          setMisaligned(false);
+          setAutoStatus("Marker aligned. Checking pig landmarks…");
           if (signal.aborted || session.isClosed) return;
           try {
             await validatePhoto(view, photo, signal, guide);
@@ -155,10 +166,10 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
             setAutoStatus(failure.message);
           }
         }
-        await new Promise<void>((resolve) => setTimeout(resolve, 850));
+        await new Promise<void>((resolve) => setTimeout(resolve, 150));
       }
     } catch (failure: unknown) {
-      if (!signal.aborted && !session.isClosed) setError(errorMessage(failure));
+      if (!signal.aborted && !session.isClosed) setError(failure instanceof Error && !(failure instanceof ApiError) ? failure.message : errorMessage(failure));
     } finally {
       if (autoRef.current === controller) {
         autoRef.current = null;
@@ -217,7 +228,7 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
             onError={() => { if (sessionRef.current?.isClosed) return; autoRef.current?.abort(); sessionRef.current?.close(); setState("error"); setError("The live preview could not be shown. Close this window and try again, or upload a photo."); }} />
           {state !== "error" && <div className="camera-guides" aria-hidden="true">
             <div className="camera-pig-frame"><span>{view === "top" ? "Whole pig · from above" : "Whole pig · side profile"}</span></div>
-            <div ref={guideRef} className={`camera-marker-target${misaligned ? " camera-marker-misaligned" : ""}`}><span>{misaligned ? "Adjust marker" : autoStatus ? "Checking alignment" : "Align ArUco corners"}</span></div>
+            <div ref={guideRef} className={`camera-marker-target${misaligned ? " camera-marker-misaligned" : ""}`}><span>{misaligned ? "Adjust marker" : autoStatus.startsWith("Marker aligned") ? "Marker aligned" : autoStatus ? "Checking alignment" : "Align ArUco corners"}</span></div>
           </div>}
         </div>
         <p className="camera-status" role="status">{autoStatus || (state === "starting" ? "Starting camera… Allow access if your browser asks." : state === "capturing" ? "Checking photo…" : state === "ready" ? "Keep the marker’s four corners and white margin visible. Hold still, then capture." : "Camera unavailable. You can still upload a photo.")}</p>
