@@ -8,6 +8,7 @@ Reviewed 2026-11-03 against application manifests, settings, schema, Dockerfile,
 | How Railway was configured and uploaded; release checks | [Deployment](deployment.md) |
 | Local and hosted environment examples; origins and cookies | [Configuration](configuration.md) |
 | ONNX storage, loading, hash checks and replacement | [Models](models.md) |
+| Correcting source pose labels and preparing a new model | [Roboflow keypoint corrections](roboflow-keypoint-corrections.md) |
 | Persistent data, migrations, sessions, backup and recovery | [Database](database.md) |
 | Thesis chapters, formula evidence and proposed research | [Thesis review](thesis-review.md) |
 

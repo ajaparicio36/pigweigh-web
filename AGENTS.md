@@ -14,6 +14,10 @@ The user trains pose models. Keep source checkpoints, private images, training d
 
 Use the chosen Next.js/Tailwind frontend without ShadCN and FastAPI/SQLAlchemy backend managed through uv. Read actual manifests and scripts before running commands.
 
+## Commits
+
+Use Conventional Commits: `<type>[optional scope]: <description>`. Choose a type such as `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`, or `style`; for example, `feat: add photo review`, `fix(inference): reject invalid landmarks`, or `docs: clarify model export`. Mark a breaking change with `!` before the colon or a `BREAKING CHANGE:` footer.
+
 ## Parallel work and integration
 
 Before parallel implementation tasks that could affect the same checkout or conflict, invoke `using-git-worktrees`. Give each task its own branch and isolated worktree, and record the branch it forked from. Reuse existing isolation rather than nesting worktrees. Read-only or clearly non-conflicting work needs no worktree.
