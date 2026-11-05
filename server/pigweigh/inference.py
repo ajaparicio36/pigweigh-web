@@ -14,7 +14,8 @@ from PIL import Image
 
 from pigweigh.formula import ellipse_girth_cm, estimate_weight_kg
 
-METHOD = "attached-marker-ellipse-11900-v1"
+METHOD = "attached-marker-ellipse-14451-v2"
+POSE_BUNDLE_METHOD = "attached-marker-ellipse-11900-v1"
 TOP_POINTS = ("snout-tip", "left-ear-base", "right-ear-base", "left-shoulder", "right-shoulder",
               "left-chest", "right-chest", "left-hip", "right-hip", "tail-base", "spine-midpoint")
 SIDE_POINTS = ("snout-tip", "eye", "ear-tip", "withers", "mid-point-peak", "loin", "tail-base",
@@ -191,7 +192,7 @@ class InferenceEngine:
         if path.stat().st_size > 128 * 1024:
             raise ValueError("Oversized model manifest")
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        if (manifest.get("schema_version") != 1 or manifest.get("method") != METHOD
+        if (manifest.get("schema_version") != 1 or manifest.get("method") != POSE_BUNDLE_METHOD
                 or manifest.get("formula_divisor") != 11900
                 or manifest.get("marker") != {"dictionary":"DICT_4X4_50", "id":0, "side_mm":100}):
             raise ValueError("Incompatible method configuration")
@@ -272,6 +273,6 @@ class InferenceEngine:
             raise CaptureRejected("measurements_unusable", "The photo measurements cannot produce a usable formula estimate. Retake both views.", "pair") from None
         return {"status":"estimated", "estimated_weight_kg":weight,
                 "measurements":dimensions, "artifacts":{"bundle_id":self.bundle_id},
-                "method":{"version":METHOD, "formula":"G_cm^2 * L_cm / 11900",
+                "method":{"version":METHOD, "formula":"G_cm^2 * L_cm / 14451",
                           "marker_dictionary":"DICT_4X4_50", "marker_id":0, "marker_side_mm":"100",
                           "experimental":True, "accuracy_evaluated":False}}

@@ -9,7 +9,7 @@ from PIL import Image
 import pytest
 
 from pigweigh.config import Settings, database_url
-from pigweigh.inference import (CaptureRejected, InferenceEngine, InferenceUnavailable, METHOD,
+from pigweigh.inference import (CaptureRejected, InferenceEngine, InferenceUnavailable, METHOD, POSE_BUNDLE_METHOD,
     SIDE_POINTS, TOP_POINTS, decimal_measure, homography_from_corners, letterbox, marker_homography,
     measure, project_points, required_pose, sha256_file)
 
@@ -42,7 +42,7 @@ def fake_bundle(tmp_path, monkeypatch):
         path.write_bytes(f"test-model-{view}".encode())
         models[view] = {"file":path.name, "sha256":sha256_file(path), "keypoints":list(names),
                         "input_size":640, "input_shape":[1,3,640,640], "output_shape":[1,300,6+3*len(names)], "end2end":True}
-    manifest = {"schema_version":1,"bundle_id":"test-bundle","method":METHOD,"formula_divisor":11900,
+    manifest = {"schema_version":1,"bundle_id":"test-bundle","method":POSE_BUNDLE_METHOD,"formula_divisor":11900,
                 "marker":{"dictionary":"DICT_4X4_50","id":0,"side_mm":100},"models":models}
     path = tmp_path / "manifest.json"
     path.write_text(json.dumps(manifest))
@@ -73,7 +73,7 @@ def test_projection_measurement_scale_and_physical_midpoint():
     assert values["body_length_cm"] == pytest.approx(30)
     assert values["chest_width_cm"] == pytest.approx(10)
     assert values["chest_depth_cm"] == pytest.approx(20)
-    assert values["weight_kg"] == pytest.approx(values["girth_cm"]**2 * 30 /11900)
+    assert values["weight_kg"] == pytest.approx(values["girth_cm"]**2 * 30 /14451)
 
 
 def test_marker_detection_and_ambiguity():

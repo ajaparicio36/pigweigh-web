@@ -7,7 +7,7 @@ from pigweigh.formula import ellipse_girth_cm, estimate_weight_kg
 
 
 def test_selected_metric_divisor_and_length_scaling():
-    assert estimate_weight_kg(100, 100) == pytest.approx(84.03361344537815)
+    assert estimate_weight_kg(100, 100) == pytest.approx(1000000 / 14451)
     assert estimate_weight_kg(100, 200) == pytest.approx(2 * estimate_weight_kg(100, 100))
     assert estimate_weight_kg(200, 100) == pytest.approx(4 * estimate_weight_kg(100, 100))
 
@@ -41,4 +41,4 @@ def test_final_overflow_and_underflow_rejected():
 
 def test_representable_extreme_calculation_avoids_intermediate_overflow():
     assert ellipse_girth_cm(1e300, 1e300) == pytest.approx(pi * 1e300)
-    assert estimate_weight_kg(1e200, 1e-200) == pytest.approx(1e200 / 11900)
+    assert estimate_weight_kg(1e200, 1e-200) == pytest.approx(1e200 / 14451)

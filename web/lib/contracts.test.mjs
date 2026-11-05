@@ -30,8 +30,8 @@ const estimate = {
   artifacts: { bundle_id: "synthetic-parser-fixture" },
   measurements: { body_length_cm: "100.00", chest_width_cm: "30.00", chest_depth_cm: "36.00", girth_cm: "103.89" },
   method: {
-    version: "attached-marker-ellipse-11900-v1",
-    formula: "G_cm^2 * L_cm / 11900",
+    version: "attached-marker-ellipse-14451-v2",
+    formula: "G_cm^2 * L_cm / 14451",
     marker_dictionary: "DICT_4X4_50",
     marker_id: 0,
     marker_side_mm: "100",

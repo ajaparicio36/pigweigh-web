@@ -13,8 +13,8 @@ export type EstimateMeasurements = {
   girth_cm: string;
 };
 export type EstimateMethod = {
-  version: "attached-marker-ellipse-11900-v1";
-  formula: "G_cm^2 * L_cm / 11900";
+  version: "attached-marker-ellipse-14451-v2";
+  formula: "G_cm^2 * L_cm / 14451";
   marker_dictionary: "DICT_4X4_50";
   marker_id: 0;
   marker_side_mm: "100";
@@ -87,8 +87,8 @@ function isEstimateMeasurements(value: unknown): value is EstimateMeasurements {
 }
 
 function isEstimateMethod(value: unknown): value is EstimateMethod {
-  return isRecord(value) && value.version === "attached-marker-ellipse-11900-v1"
-    && value.formula === "G_cm^2 * L_cm / 11900" && value.marker_dictionary === "DICT_4X4_50"
+  return isRecord(value) && value.version === "attached-marker-ellipse-14451-v2"
+    && value.formula === "G_cm^2 * L_cm / 14451" && value.marker_dictionary === "DICT_4X4_50"
     && value.marker_id === 0 && value.marker_side_mm === "100"
     && value.experimental === true && value.accuracy_evaluated === false;
 }
