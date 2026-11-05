@@ -83,3 +83,28 @@ node C:/Users/ajapa/AppData/Local/Temp/pigweigh-aruco-square-qa-M4o7f3/retest.cj
 All owned Chrome contexts closed, and the owned Next server stopped. A listener check found no process listening on 3037. No application source, dependencies, Git state, cloud service or database content was changed by QA; this report is the only repository file owned by QA.
 
 These are native desktop Chrome responsive-layout and synthetic-video results. They do not establish physical-phone orientation handling, device field of view, camera calibration, marker distance, print scale, live recognition, same-pig identity, inference quality or weight accuracy. No physical camera, microphone, private image, credentials or test weights were used.
+
+## Production guide smoke — 2026-11-05
+
+Result: **2 representative deployed cases passed**, separately from the ten initial local cases and ten corrected-build observations above. After the release coordinator reported web deployment `fc7c38cc-2b0c-4b5f-8552-5412e199d9e5` SUCCESS at `2026-11-05T05:23:12.963Z`, from source commit `f660cae8b9882942abf67aac723c2a625f9854a5`, QA checked the public app at [the deployed origin](https://web-production-4d49b.up.railway.app/). Browser observations completed at **05:25:03–05:25:05 UTC**.
+
+Only two initial-open camera overlays were exercised, both at actual **844 × 390** viewport, using the same installed Chrome **156.0.8078.80**, task-owned profiles and native fake-device/file flags. No local server, rebuild, capture, photo upload, estimate, authentication or price-publication flow was used. Background app GETs were allowed without mocking success. There were zero write requests and no uncaught page exceptions.
+
+| Deployed case | Actual native video | Preview (CSS px) | Square (CSS px) | Square vertical bounds | Visible body bounds | Action-bar top |
+| --- | --- | --- | --- | --- | --- | --- |
+| Top view, landscape video | 640 × 360 | 312 × 175.5 | 96 × 96 | 153.75–249.75 | 94–293.5 | 293.5 |
+| Side view, portrait video | 360 × 640 | 98.71875 × 175.5 | 78.96875 × 78.96875 | 162.265625–241.234375 | 94–293.5 | 293.5 |
+
+Both served pages returned HTTP 200. Actual rectangles and screenshot pixels confirmed a single transparent, empty **1:1** square, fully inside the visible video/body region and above the action bar, without pig-outline elements. The preview retained the native video aspect with `object-fit: contain`; checker cells remained square and the circle round. Legible placement instructions stayed beside and outside the preview. Both owned Chrome contexts closed after the checks; no shared user tab or physical camera/microphone was used.
+
+Production-only evidence remains outside Git in the same exact evidence directory:
+
+- `production.cjs`, `production-results.json`: the two-case harness, timestamps, native dimensions, full rectangles and request/error logs.
+- `production-landscape-top.png`, `production-portrait-side.png`: viewport-only deployed screenshots, both visually inspected.
+- `production-landscape-chrome-profile/`, `production-portrait-chrome-profile/`: closed task-owned browser profiles.
+
+```powershell
+node C:/Users/ajapa/AppData/Local/Temp/pigweigh-aruco-square-qa-M4o7f3/production.cjs
+```
+
+This narrow deployed smoke confirms these two overlay layouts only. It does not repeat all local cases or establish physical camera/phone behavior, calibration, marker distance, model correctness or weight accuracy.
