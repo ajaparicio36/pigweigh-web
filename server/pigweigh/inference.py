@@ -87,7 +87,7 @@ def required_pose(output: np.ndarray, image_shape: tuple[int, ...], names: tuple
     return selected
 
 
-def marker_homography(image: np.ndarray, view: str) -> np.ndarray:
+def marker_homography(image: np.ndarray, view: str, guide: tuple[float, ...] | None = None) -> np.ndarray:
     detector = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50),
                                       cv2.aruco.DetectorParameters())
     corners, ids, _ = detector.detectMarkers(cv2.cvtColor(image, cv2.COLOR_RGB2GRAY))
@@ -95,7 +95,17 @@ def marker_homography(image: np.ndarray, view: str) -> np.ndarray:
         raise CaptureRejected("marker_missing", "Show the complete configured ArUco ID 0 card and its white margin.", view)
     if len(ids) != 1 or int(ids[0,0]) != 0:
         raise CaptureRejected("marker_ambiguous", "Show only one DICT_4X4_50 marker with ID 0 in this view.", view)
-    return homography_from_corners(np.asarray(corners[0]).reshape(4,2), image.shape, view)
+    detected = np.asarray(corners[0]).reshape(4, 2)
+    if guide is not None:
+        height, width = image.shape[:2]
+        left, top, right, bottom = np.asarray(guide) * [width, height, width, height]
+        target = np.array([[left, top], [right, top], [right, bottom], [left, bottom]])
+        tolerance = 0.06 * min(right - left, bottom - top)
+        # OpenCV orders corners by marker orientation. Match any cyclic rotation.
+        if not any(np.all(np.linalg.norm(np.roll(detected, shift, axis=0) - target, axis=1) <= tolerance)
+                   for shift in range(4)):
+            raise CaptureRejected("marker_misaligned", "Align all four black corners with the ArUco square.", view)
+    return homography_from_corners(detected, image.shape, view)
 
 
 def homography_from_corners(corners: np.ndarray, image_shape: tuple[int, ...], view: str) -> np.ndarray:
@@ -233,7 +243,7 @@ class InferenceEngine:
             models[view] = PoseSession(session, names, output_shape)
         self.models, self.bundle_id, self.blocker = models, bundle_id, None
 
-    def _measure_view(self, view: str, image: Image.Image) -> dict[str, np.ndarray]:
+    def _measure_view(self, view: str, image: Image.Image, guide: tuple[float, ...] | None = None) -> dict[str, np.ndarray]:
         """Shared photo gates; preflight never bypasses final paired validation."""
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
@@ -242,7 +252,7 @@ class InferenceEngine:
             tensor, scale, left, top = letterbox(pixels)
         except ValueError:
             raise CaptureRejected("image_aspect_unusable", "The photo is too narrow to process. Use a normal camera photo.", view) from None
-        transform = marker_homography(pixels, view)
+        transform = marker_homography(pixels, view, guide) if guide is not None else marker_homography(pixels, view)
         model = self.models[view]
         try:
             output = model.session.run(None, {model.session.get_inputs()[0].name: tensor})[0]
@@ -255,8 +265,11 @@ class InferenceEngine:
         points = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
         return project_points(points, transform, view)
 
-    def validate_photo(self, view: str, image: Image.Image) -> dict:
-        self._measure_view(view, image)
+    def validate_photo(self, view: str, image: Image.Image, guide: tuple[float, ...] | None = None) -> dict:
+        if guide is None:
+            self._measure_view(view, image)
+        else:
+            self._measure_view(view, image, guide)
         return {"status": "validated", "view": view, "artifacts": {"bundle_id": self.bundle_id}}
 
     def estimate(self, images: dict[str, Image.Image]) -> dict:

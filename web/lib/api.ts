@@ -63,10 +63,11 @@ export function isPhotoValidation(value: unknown): value is PhotoValidation {
     && value.artifacts.bundle_id.trim().length > 0;
 }
 
-export async function validatePhoto(view: PhotoView, file: File, signal: AbortSignal): Promise<PhotoValidation> {
+export async function validatePhoto(view: PhotoView, file: File, signal: AbortSignal, guide?: readonly number[]): Promise<PhotoValidation> {
   const body = new FormData();
   body.set("image", file);
-  return request(`/photos/${view}/validate`, (value): value is PhotoValidation => isPhotoValidation(value) && value.view === view,
+  const query = guide ? `?guide=${encodeURIComponent(guide.join(","))}` : "";
+  return request(`/photos/${view}/validate${query}`, (value): value is PhotoValidation => isPhotoValidation(value) && value.view === view,
     { method: "POST", body, signal });
 }
 

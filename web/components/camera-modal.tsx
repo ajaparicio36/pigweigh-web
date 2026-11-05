@@ -15,10 +15,12 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
   const titleId = useId();
   const helpId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const guideRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const sessionRef = useRef<CameraSession | null>(null);
   const dismissedRef = useRef(false);
   const autoRef = useRef<AbortController | null>(null);
+  const [misaligned, setMisaligned] = useState(false);
   const [autoStatus, setAutoStatus] = useState("");
   const capturingRef = useRef(false);
   const [state, setState] = useState<"starting" | "ready" | "capturing" | "error">("starting");
@@ -108,6 +110,20 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
     autoRef.current?.abort();
     autoRef.current = null;
     setAutoStatus("");
+    setMisaligned(false);
+  }
+
+  function guideBounds(video: HTMLVideoElement): readonly number[] {
+    const target = guideRef.current?.getBoundingClientRect();
+    const box = video.getBoundingClientRect();
+    if (!target) throw new Error("The camera guide is unavailable. Reopen the camera.");
+    const scale = Math.min(box.width / video.videoWidth, box.height / video.videoHeight);
+    const width = video.videoWidth * scale;
+    const height = video.videoHeight * scale;
+    const left = box.left + (box.width - width) / 2;
+    const top = box.top + (box.height - height) / 2;
+    return [(target.left - left) / width, (target.top - top) / height,
+      (target.right - left) / width, (target.bottom - top) / height];
   }
 
   async function autoCapture(): Promise<void> {
@@ -122,17 +138,20 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
     try {
       while (!signal.aborted && !session.isClosed) {
         if (canCaptureVideo(video)) {
+          const guide = guideBounds(video);
           const photo = await capturePhoto(video, view);
           if (signal.aborted || session.isClosed) return;
           try {
-            await validatePhoto(view, photo, signal);
+            await validatePhoto(view, photo, signal, guide);
             if (signal.aborted || session.isClosed) return;
+            setAutoStatus("ArUco aligned. Photo captured.");
             onCapture(photo);
             dismiss();
             return;
           } catch (failure: unknown) {
             if (signal.aborted || session.isClosed) return;
-            if (!(failure instanceof ApiError) || ![422, 429].includes(failure.status)) throw failure;
+            if (!(failure instanceof ApiError) || (![422, 429].includes(failure.status) || failure.code === "invalid_guide")) throw failure;
+            setMisaligned(failure.code === "marker_misaligned" || failure.code === "marker_missing");
             setAutoStatus(failure.message);
           }
         }
@@ -157,12 +176,22 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
     setState("capturing");
     setError("");
     try {
+      const guide = guideBounds(video);
       const photo = await capturePhoto(video, view);
+      if (session.isClosed) return;
+      const controller = new AbortController();
+      autoRef.current = controller;
+      try {
+        await validatePhoto(view, photo, controller.signal, guide);
+      } finally {
+        if (autoRef.current === controller) autoRef.current = null;
+      }
       if (session.isClosed) return;
       onCapture(photo);
       dismiss();
     } catch (failure: unknown) {
       if (session.isClosed) return;
+      setMisaligned(failure instanceof ApiError && ["marker_misaligned", "marker_missing"].includes(failure.code));
       setError(failure instanceof Error ? failure.message : "The photo could not be saved. Try again or upload a photo.");
       setState(canCaptureVideo(video) ? "ready" : "starting");
     } finally {
@@ -188,10 +217,10 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
             onError={() => { if (sessionRef.current?.isClosed) return; autoRef.current?.abort(); sessionRef.current?.close(); setState("error"); setError("The live preview could not be shown. Close this window and try again, or upload a photo."); }} />
           {state !== "error" && <div className="camera-guides" aria-hidden="true">
             <div className="camera-pig-frame"><span>{view === "top" ? "Whole pig · from above" : "Whole pig · side profile"}</span></div>
-            <div className="camera-marker-target"><span>ArUco here</span></div>
+            <div ref={guideRef} className={`camera-marker-target${misaligned ? " camera-marker-misaligned" : ""}`}><span>{misaligned ? "Adjust marker" : autoStatus ? "Checking alignment" : "Align ArUco corners"}</span></div>
           </div>}
         </div>
-        <p className="camera-status" role="status">{autoStatus || (state === "starting" ? "Starting camera… Allow access if your browser asks." : state === "capturing" ? "Saving photo…" : state === "ready" ? "Keep the marker’s four corners and white margin visible. Hold still, then capture." : "Camera unavailable. You can still upload a photo.")}</p>
+        <p className="camera-status" role="status">{autoStatus || (state === "starting" ? "Starting camera… Allow access if your browser asks." : state === "capturing" ? "Checking photo…" : state === "ready" ? "Keep the marker’s four corners and white margin visible. Hold still, then capture." : "Camera unavailable. You can still upload a photo.")}</p>
         {error && <p className="field-error" role="alert">{error} Your selected photos have not changed.</p>}
         <p className="field-help">Guides help with placement only; they do not detect the pig or marker and will not appear in your photo. Keep the card clear of body landmarks.</p>
       </div>
@@ -199,7 +228,7 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
         <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>
         <button type="button" className="button button-secondary" disabled={disabled || (!autoStatus && state !== "ready")}
           onClick={() => autoStatus ? stopAuto() : void autoCapture()}>{autoStatus ? "Stop auto" : "Auto capture"}</button>
-        <button type="button" className="button button-primary" disabled={disabled || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Saving photo…" : "Capture photo"}</button>
+        <button type="button" className="button button-primary" disabled={disabled || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Checking photo…" : "Capture photo"}</button>
       </div>
     </dialog>
   );

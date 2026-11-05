@@ -294,6 +294,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/photos/{view}/validate")
     async def validate_photo(view: Literal["top", "side"], request: Request):
+        raw_guide = request.query_params.get("guide") if request.scope.get("query_string") else None
+        guide = None
+        if raw_guide is not None:
+            try:
+                guide = tuple(float(value) for value in raw_guide.split(","))
+                left, top, right, bottom = guide
+                if not (0 <= left < right <= 1 and 0 <= top < bottom <= 1):
+                    raise ValueError
+            except ValueError:
+                raise APIError(422, "invalid_guide", "The camera guide is unavailable. Reopen the camera.") from None
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the image as multipart form data.")
         if inference_slot.locked():
@@ -312,7 +322,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         raise APIError(exc.status, exc.code, exc.message, {"view": view}) from None
                     # Both decoded image and spool outlive any cancelled CPU work.
                     with closing(image):
-                        return inference.validate_photo(view, image)
+                        return inference.validate_photo(view, image, guide) if guide is not None else inference.validate_photo(view, image)
                 try:
                     return await complete_cpu_work(compute)
                 except CaptureRejected as exc:
