@@ -288,16 +288,31 @@ class InferenceEngine:
         required = ("left-ear-base", "right-ear-base", "tail-base", "left-chest", "right-chest") if view == "top" else ("withers", "sternum")
         points = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
         check_measurement_pose(points, view)
-        detected = {name: point.tolist() for name, point in points.items()}
+        reference_points = {}
+        if diagnostics is not None:
+            row = output[0][output[0, :, 4] >= PIG_THRESHOLD][0]
+            keypoints = row[6:].reshape(len(model.names), 3)
+            extra = ("spine-midpoint",) if view == "top" else ("front-shoulder-joint", "belly-lowest-part")
+            for name in extra:
+                x, y, confidence = keypoints[model.names.index(name)]
+                px, py = float((x - left) / scale), float((y - top) / scale)
+                if KEYPOINT_THRESHOLD <= confidence <= 1 and 0 <= px < image.width and 0 <= py < image.height:
+                    reference_points[name] = [px, py]
+        detected = {name: point.tolist() for name, point in points.items()} | reference_points
+        editable = set(points)
+        if "front-shoulder-joint" in reference_points:
+            editable.add("front-shoulder-joint")
         if corrections is not None:
             if not isinstance(corrections, dict) or any(
-                name not in points or not isinstance(point, list) or len(point) != 2
+                name not in editable or not isinstance(point, list) or len(point) != 2
                 or any(type(value) not in (float, int) for value in point)
                 or not (0 <= point[0] < image.width and 0 <= point[1] < image.height)
                 for name, point in corrections.items()
             ):
                 raise CaptureRejected("invalid_landmark_corrections", "Adjust only measurement points inside the photo.", view)
-            points.update({name: np.array(point, dtype=np.float64) for name, point in corrections.items()})
+            points.update({name: np.array(point, dtype=np.float64) for name, point in corrections.items() if name in points})
+            if "front-shoulder-joint" in corrections:
+                reference_points["front-shoulder-joint"] = corrections["front-shoulder-joint"]
             check_measurement_pose(points, view)
         projected = project_points(points, transform, view)
         if diagnostics is not None and corners is not None:
@@ -308,14 +323,9 @@ class InferenceEngine:
                 start = cv2.perspectiveTransform(midpoint.reshape(1, 1, 2), np.linalg.inv(transform))[0, 0]
                 lines["body_length"] = [start.tolist(), points["tail-base"].tolist()]
             overlay_points = {name: point.tolist() for name, point in points.items()}
-            row = output[0][output[0, :, 4] >= PIG_THRESHOLD][0]
-            keypoints = row[6:].reshape(len(model.names), 3)
-            extra = ("spine-midpoint",) if view == "top" else ("front-shoulder-joint", "belly-lowest-part")
-            for name in extra:
-                x, y, confidence = keypoints[model.names.index(name)]
-                px, py = float((x - left) / scale), float((y - top) / scale)
-                if KEYPOINT_THRESHOLD <= confidence <= 1 and 0 <= px < image.width and 0 <= py < image.height:
-                    overlay_points[name] = [px, py]
+            overlay_points.update(reference_points)
+            if view == "side" and "front-shoulder-joint" in reference_points:
+                lines["shoulder_reference"] = [overlay_points["withers"], overlay_points["front-shoulder-joint"]]
             diagnostics[view] = {"width": image.width, "height": image.height, "marker": corners.tolist(),
                                  "landmarks": overlay_points, "lines": lines,
                                  **({"detected_landmarks": detected} if corrections else {})}

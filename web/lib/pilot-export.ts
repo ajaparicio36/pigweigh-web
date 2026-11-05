@@ -39,8 +39,8 @@ async function renderInspection(file: File, data: unknown): Promise<Uint8Array> 
     data.marker.forEach(([x, y], index) => index === 0 ? context.moveTo(x, y) : context.lineTo(x, y));
     context.closePath();
     context.stroke();
-    context.strokeStyle = "#42f5e9";
-    for (const [[x1, y1], [x2, y2]] of Object.values(data.lines)) {
+    for (const [name, [[x1, y1], [x2, y2]]] of Object.entries(data.lines)) {
+      context.strokeStyle = name === "shoulder_reference" ? "#ffb02f" : "#42f5e9";
       context.beginPath();
       context.moveTo(x1, y1);
       context.lineTo(x2, y2);

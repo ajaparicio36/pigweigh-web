@@ -225,7 +225,7 @@ export function EstimateForm(): React.JSX.Element {
         {review && top && side && <section className="measurement-details" aria-label="Review pose points">
           <h2>Review pose points</h2>
           <p>Drag the measurement points on each saved photo. Match the top and side chest lines just behind the front legs.</p>
-          <p>Shoulder, spine and lowest-belly markers are visual references.</p>
+          <p>In the side view, cyan W–S measures chest depth. Drag W and F to compare the orange shoulder line. F is a visual reference.</p>
           {(["top", "side"] as const).map((view) => <MeasurementOverlay key={view}
             file={view === "top" ? top : side} data={review[view]} view={view === "top" ? "Top view" : "Side view"}
             corrections={corrections[view]} onMove={pending ? undefined : (name, point) =>

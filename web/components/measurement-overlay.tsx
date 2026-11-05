@@ -24,6 +24,7 @@ export function MeasurementOverlay({ file, data, view, corrections, onMove }: { 
   if (onMove) {
     if (lines.chest_width) lines.chest_width = [landmarks["left-chest"], landmarks["right-chest"]];
     if (lines.chest_depth) lines.chest_depth = [landmarks.withers, landmarks.sternum];
+    if (lines.shoulder_reference) lines.shoulder_reference = [landmarks.withers, landmarks["front-shoulder-joint"]];
     if (lines.body_length) {
       const [leftX, leftY] = landmarks["left-ear-base"];
       const [rightX, rightY] = landmarks["right-ear-base"];
@@ -36,12 +37,12 @@ export function MeasurementOverlay({ file, data, view, corrections, onMove }: { 
       <image href={preview.url} width={data.width} height={data.height} />
       <polygon points={data.marker.map((point) => point.join(",")).join(" ")} fill="none" stroke="#ffc849" strokeWidth={3} vectorEffect="non-scaling-stroke" />
       {Object.entries(lines).map(([name, [[x1, y1], [x2, y2]]]) =>
-        <line key={name} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#42f5e9" strokeWidth={3} vectorEffect="non-scaling-stroke">
+        <line key={name} x1={x1} y1={y1} x2={x2} y2={y2} stroke={name === "shoulder_reference" ? "#ffb02f" : "#42f5e9"} strokeWidth={3} vectorEffect="non-scaling-stroke">
           <title>{name.replaceAll("_", " ")}</title>
         </line>,
       )}
       {Object.entries(landmarks).map(([name, [x, y]]) => {
-        const move = ["spine-midpoint", "front-shoulder-joint", "belly-lowest-part"].includes(name) ? undefined : onMove;
+        const move = ["spine-midpoint", "belly-lowest-part"].includes(name) ? undefined : onMove;
         return <g key={name}>
           <title>{name.replaceAll("-", " ")}</title>
           <circle cx={x} cy={y} r={size / 4} fill="#fff" stroke="#222" strokeWidth={2} vectorEffect="non-scaling-stroke" />
@@ -65,7 +66,7 @@ export function MeasurementOverlay({ file, data, view, corrections, onMove }: { 
         </g>;
       })}
     </svg>
-    <figcaption>{view}. Yellow shows the detected ArUco boundary. {onMove ? "Cyan previews the measurement segments." : "Cyan shows the measured segments."} White dots show pose landmarks.
+    <figcaption>{view}. Yellow shows the detected ArUco boundary. {onMove ? "Cyan previews the measurement segments." : "Cyan shows the measured segments."} {lines.shoulder_reference && "Orange connects W and F for comparison. "}White dots show pose landmarks.
       <ul>{Object.keys(data.landmarks).map((name) =>
         <li key={name}><strong>{labels[name] ?? name}</strong> {name.replaceAll("-", " ")}</li>,
       )}</ul>
