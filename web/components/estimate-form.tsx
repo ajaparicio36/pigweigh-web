@@ -6,6 +6,7 @@ import { formatMoney, formatPublishedAt } from "@/lib/format";
 import { PhotoCheckQueue, photosReady } from "@/lib/photo-checks";
 import { createPilotArchive, downloadPilotFile, pilotPhotoName } from "@/lib/pilot-export";
 import { isPoseReview, type Diagnostic, type PointCorrections } from "@/lib/measurement-diagnostics";
+import { readPilotPair } from "@/lib/pilot-import";
 import { CurrentPrice } from "./current-price";
 import { MeasurementOverlay } from "./measurement-overlay";
 import { PhotoInput } from "./photo-input";
@@ -13,6 +14,8 @@ import { PhotoInput } from "./photo-input";
 type Submission = { status: "idle" } | { status: "pending" } | { status: "error"; message: string; kind: "unavailable" | "rejected" | "busy" | "other" } | { status: "success"; data: Estimate };
 
 export function EstimateForm(): React.JSX.Element {
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
   const [pigId, setPigId] = useState("");
@@ -40,6 +43,22 @@ export function EstimateForm(): React.JSX.Element {
     setReview(null);
     setCorrections({});
     setSubmission({ status: "idle" });
+  }
+
+  async function importPilotPair(file: File): Promise<void> {
+    setImporting(true);
+    setImportError("");
+    try {
+      const pair = await readPilotPair(file);
+      selectPhoto("top", pair.top);
+      selectPhoto("side", pair.side);
+      setPigId(pair.id);
+      setAttempt(pair.attempt);
+    } catch (error: unknown) {
+      setImportError(error instanceof Error && error.message.startsWith("Choose") ? error.message : "Could not read the pilot ZIP. Check that it contains both original photos.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   const pilotId = pigId.trim().toUpperCase();
@@ -98,7 +117,7 @@ export function EstimateForm(): React.JSX.Element {
   async function submit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     const current = photoQueue.getSnapshot();
-    if (!photosReady(current) || !current.top.file || !current.side.file || submitting.current || readiness.status === "loading") return;
+    if (importing || !photosReady(current) || !current.top.file || !current.side.file || submitting.current || readiness.status === "loading") return;
     submitting.current = true;
     setSubmission({ status: "pending" });
     const body = new FormData();
@@ -148,9 +167,18 @@ export function EstimateForm(): React.JSX.Element {
           <p className="muted">Keep the whole marker and white margin visible without covering body landmarks. Review each photo before submitting.</p>
           <p className="muted">Each photo you select or capture is sent automatically for pig and marker checks and is not retained. Camera video stays on your device; only a captured photo is sent.</p>
         </div>
+        <label className="field">Open a saved pilot attempt (.zip)
+          <input type="file" accept=".zip,application/zip" disabled={pending || importing} onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (file) void importPilotPair(file);
+          }} />
+        </label>
+        {importing && <p role="status">Opening pilot attempt…</p>}
+        {importError && <p role="alert" className="field-error">{importError}</p>}
         <div className="photo-grid">
-          <PhotoInput view="top" file={top} check={checks.top} disabled={pending} onChange={(file) => selectPhoto("top", file)} onRetry={() => retryPhoto("top")} />
-          <PhotoInput view="side" file={side} check={checks.side} disabled={pending} onChange={(file) => selectPhoto("side", file)} onRetry={() => retryPhoto("side")} />
+          <PhotoInput view="top" file={top} check={checks.top} disabled={pending || importing} onChange={(file) => selectPhoto("top", file)} onRetry={() => retryPhoto("top")} />
+          <PhotoInput view="side" file={side} check={checks.side} disabled={pending || importing} onChange={(file) => selectPhoto("side", file)} onRetry={() => retryPhoto("side")} />
         </div>
         <fieldset className="form-panel">
           <legend>Save pilot photos and data</legend>
@@ -209,7 +237,7 @@ export function EstimateForm(): React.JSX.Element {
             <p className="submit-status">{!top && !side ? "Add both photos to continue." : !top ? "Add the top-view photo to continue." : !side ? "Add the side-view photo to continue." : checks.running ? "Checking your photos before estimation…" : photosReady(checks) ? "Both photos passed checks. Ready to submit." : "Both photos must pass checks before estimation."}</p>
             <p className="field-help">Two views, one pig. No account needed.</p>
           </div>
-          <button className="button button-primary" type="submit" disabled={!photosReady(checks) || pending || readiness.status === "loading"}>
+          <button className="button button-primary" type="submit" disabled={importing || !photosReady(checks) || pending || readiness.status === "loading"}>
             {pending ? (review ? "Calculating…" : "Detecting points…") : review ? "Calculate weight" : "Review points"}
           </button>
         </div>
