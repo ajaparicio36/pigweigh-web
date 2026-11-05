@@ -107,3 +107,14 @@ QA closed its owned tabs, reset the viewport and stopped Next/API/PostgreSQL; re
 The deployed Railway delivery path uses the approved Git files: backend Docker `COPY models ./models` includes the bundle and `ENV PIGWEIGH_MODEL_BUNDLE=/app/models/v1/manifest.json` selects it at runtime. No external artifact mount, public download URL or LFS fetch is required for this version. A developer `D:/…` path does not exist in the image. Keep database credentials and source training data excluded. The new production API passed its Linux Docker build, pre-deploy migration and platform health check; deployed bundle hashes match the release. Its Docker listener uses `0.0.0.0` on the current private network after an IPv6-only listener failed the initial health probe. Use the [actual service settings](deployment.md#applied-configuration-and-source): legacy `railway.toml` configuration was rejected by the platform and was not applied.
 
 Independent [production headless checks](deployment.md#runtime-evidence) through the public HTTPS web proxy verified loaded readiness, actual inference on the unchanged generated fixture (149.25 kg, experimental and unevaluated), no-price output, missing-marker rejection and Origin enforcement, plus admin login/session/logout with secure cookie attributes. No production price was published. This is HTTP functional evidence; it does not close physical capture/accuracy or graphical QA gaps above.
+
+## Review measurement points before estimating
+
+In v2.5, select **Review points** after both photos pass capture validation. Drag the measurement dots on the saved photos, then select **Calculate weight**. Reset points restores the detected positions. The estimate JSON records the landmarks used for each view and includes the original detected measurement landmarks for any adjusted view.
+
+API example for a local server with the default development Origin. First post the pair with `review=true` to receive the point coordinates without calculating a weight. Then submit the same photos, supplying only the points changed in the review. Coordinates are pixels in the decoded image. Replace the example coordinates with positions in your photo.
+
+```sh
+curl -H 'Origin: http://localhost:3000' -F top_image=@top.jpg -F side_image=@side.jpg 'http://localhost:8000/api/estimates?review=true'
+curl -H 'Origin: http://localhost:3000' -F top_image=@top.jpg -F side_image=@side.jpg --form-string 'corrections={"side":{"sternum":[420,610]}}' 'http://localhost:8000/api/estimates?diagnostics=true'
+```

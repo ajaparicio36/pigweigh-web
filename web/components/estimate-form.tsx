@@ -5,6 +5,7 @@ import { ApiError, errorMessage, estimateAgreesWithMeasurements, isEstimate, isP
 import { formatMoney, formatPublishedAt } from "@/lib/format";
 import { PhotoCheckQueue, photosReady } from "@/lib/photo-checks";
 import { createPilotArchive, downloadPilotFile, pilotPhotoName } from "@/lib/pilot-export";
+import { isPoseReview, type Diagnostic, type PointCorrections } from "@/lib/measurement-diagnostics";
 import { CurrentPrice } from "./current-price";
 import { MeasurementOverlay } from "./measurement-overlay";
 import { PhotoInput } from "./photo-input";
@@ -23,6 +24,8 @@ export function EstimateForm(): React.JSX.Element {
   const top = checks.top.file;
   const side = checks.side.file;
   const [submission, setSubmission] = useState<Submission>({ status: "idle" });
+  const [review, setReview] = useState<{ top: Diagnostic; side: Diagnostic } | null>(null);
+  const [corrections, setCorrections] = useState<Partial<Record<PhotoView, PointCorrections>>>({});
   const submitting = useRef(false);
   const outcome = useRef<HTMLDivElement>(null);
 
@@ -34,6 +37,8 @@ export function EstimateForm(): React.JSX.Element {
   function selectPhoto(view: PhotoView, file: File | null): void {
     if (submitting.current) return;
     photoQueue.select(view, file);
+    setReview(null);
+    setCorrections({});
     setSubmission({ status: "idle" });
   }
 
@@ -100,10 +105,19 @@ export function EstimateForm(): React.JSX.Element {
     body.set("top_image", current.top.file);
     body.set("side_image", current.side.file);
     try {
+      if (!review) {
+        const data = await request("/estimates?review=true", isPoseReview, { method: "POST", body });
+        setReview(data.diagnostics);
+        setSubmission({ status: "idle" });
+        return;
+      }
+      if (Object.keys(corrections).length) body.set("corrections", JSON.stringify(corrections));
       const data = await request("/estimates?diagnostics=true", isEstimate, { method: "POST", body });
       if (!estimateAgreesWithMeasurements(data)) {
         throw new ApiError(500, "inconsistent_estimate", "The returned weight does not agree with the reported length, girth and formula. Save the photos for review and try again.");
       }
+      setReview(null);
+      setCorrections({});
       setSubmission({ status: "success", data });
     } catch (error: unknown) {
       const kind = error instanceof ApiError
@@ -122,6 +136,11 @@ export function EstimateForm(): React.JSX.Element {
   return (
     <div className="flow-stack">
       <CurrentPrice state={price} onRetry={() => void refreshPrice()} />
+      <section className="notice" aria-labelledby="weight-formula">
+        <h2 id="weight-formula">Weight formula</h2>
+        <p><strong>Estimated weight (kg) = chest girth (cm)² × body length (cm) ÷ 14,451</strong></p>
+        <p>The 10 cm ArUco marker provides the scale in each photo. YOLO Pose locates the body landmarks. The app estimates chest girth from chest width and depth.</p>
+      </section>
       <form onSubmit={(event) => void submit(event)}>
         <div className="section-heading">
           <h2>Your photo pair</h2>
@@ -158,7 +177,7 @@ export function EstimateForm(): React.JSX.Element {
             onClick={() => void exportPilotAttempt()}>
             {exporting ? "Preparing ZIP…" : "Export pilot attempt (.zip)"}
           </button>
-          <p className="field-help">Run an estimate to export both photos, measurements and formula details in one ZIP.</p>
+          <p className="field-help">Run an estimate to export the original photos, inspected photos, measurements and formula details in one ZIP.</p>
           {exportError && <p role="alert" className="field-error">{exportError}</p>}
         </fieldset>
         <div className="capture-note"><p>Both views must show the same animal; PigWeigh does not verify its identity. Passing photo checks does not verify the printed marker’s size or weight accuracy. Both photos are checked again when you request an estimate.</p></div>
@@ -175,13 +194,23 @@ export function EstimateForm(): React.JSX.Element {
           </>}
           {readiness.status === "ready" && readiness.data.ready && <p>Experimental estimation is available. Your photos still need to pass capture validation.</p>}
         </section>
+        {review && top && side && <section className="measurement-details" aria-label="Review pose points">
+          <h2>Review pose points</h2>
+          <p>Drag the measurement points on each saved photo. Match the top and side chest lines just behind the front legs.</p>
+          <p>Shoulder, spine and lowest-belly markers are visual references.</p>
+          {(["top", "side"] as const).map((view) => <MeasurementOverlay key={view}
+            file={view === "top" ? top : side} data={review[view]} view={view === "top" ? "Top view" : "Side view"}
+            corrections={corrections[view]} onMove={pending ? undefined : (name, point) =>
+              setCorrections((previous) => ({ ...previous, [view]: { ...previous[view], [name]: point } }))} />)}
+          <button className="button" type="button" disabled={pending} onClick={() => setCorrections({})}>Reset points</button>
+        </section>}
         <div className="submit-row">
           <div>
             <p className="submit-status">{!top && !side ? "Add both photos to continue." : !top ? "Add the top-view photo to continue." : !side ? "Add the side-view photo to continue." : checks.running ? "Checking your photos before estimation…" : photosReady(checks) ? "Both photos passed checks. Ready to submit." : "Both photos must pass checks before estimation."}</p>
             <p className="field-help">Two views, one pig. No account needed.</p>
           </div>
           <button className="button button-primary" type="submit" disabled={!photosReady(checks) || pending || readiness.status === "loading"}>
-            {pending ? "Submitting photos…" : "Request estimate"}
+            {pending ? (review ? "Calculating…" : "Detecting points…") : review ? "Calculate weight" : "Review points"}
           </button>
         </div>
       </form>
@@ -210,7 +239,7 @@ export function EstimateForm(): React.JSX.Element {
               <div><dt>Chest depth, side view</dt><dd>{submission.data.measurements.chest_depth_cm} cm</dd></div>
               <div><dt>Girth, ellipse estimate</dt><dd>{submission.data.measurements.girth_cm} cm</dd></div>
             </dl>
-            <p>Weight (kg) = girth (cm)² × body length (cm) ÷ 14451.</p>
+            <p>Weight (kg) = girth (cm)² × body length (cm) ÷ 14,451.</p>
             <p>Girth approximates an ellipse using chest width and depth. Body length runs from the midpoint of the ear bases to the tail base in the top view. These photo-derived measurements are approximations.</p>
           </details>
         </section>}

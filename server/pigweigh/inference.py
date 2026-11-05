@@ -265,7 +265,7 @@ class InferenceEngine:
             models[view] = PoseSession(session, names, output_shape)
         self.models, self.bundle_id, self.blocker = models, bundle_id, None
 
-    def _measure_view(self, view: str, image: Image.Image, diagnostics: dict | None = None) -> dict[str, np.ndarray]:
+    def _measure_view(self, view: str, image: Image.Image, diagnostics: dict | None = None, corrections: object = None) -> dict[str, np.ndarray]:
         """Shared photo gates; preflight never bypasses final paired validation."""
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
@@ -288,6 +288,17 @@ class InferenceEngine:
         required = ("left-ear-base", "right-ear-base", "tail-base", "left-chest", "right-chest") if view == "top" else ("withers", "sternum")
         points = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
         check_measurement_pose(points, view)
+        detected = {name: point.tolist() for name, point in points.items()}
+        if corrections is not None:
+            if not isinstance(corrections, dict) or any(
+                name not in points or not isinstance(point, list) or len(point) != 2
+                or any(type(value) not in (float, int) for value in point)
+                or not (0 <= point[0] < image.width and 0 <= point[1] < image.height)
+                for name, point in corrections.items()
+            ):
+                raise CaptureRejected("invalid_landmark_corrections", "Adjust only measurement points inside the photo.", view)
+            points.update({name: np.array(point, dtype=np.float64) for name, point in corrections.items()})
+            check_measurement_pose(points, view)
         projected = project_points(points, transform, view)
         if diagnostics is not None and corners is not None:
             segments = {"chest_width": ("left-chest", "right-chest")} if view == "top" else {"chest_depth": ("withers", "sternum")}
@@ -296,21 +307,40 @@ class InferenceEngine:
                 midpoint = (projected["left-ear-base"] + projected["right-ear-base"]) / 2
                 start = cv2.perspectiveTransform(midpoint.reshape(1, 1, 2), np.linalg.inv(transform))[0, 0]
                 lines["body_length"] = [start.tolist(), points["tail-base"].tolist()]
+            overlay_points = {name: point.tolist() for name, point in points.items()}
+            row = output[0][output[0, :, 4] >= PIG_THRESHOLD][0]
+            keypoints = row[6:].reshape(len(model.names), 3)
+            extra = ("spine-midpoint",) if view == "top" else ("front-shoulder-joint", "belly-lowest-part")
+            for name in extra:
+                x, y, confidence = keypoints[model.names.index(name)]
+                px, py = float((x - left) / scale), float((y - top) / scale)
+                if KEYPOINT_THRESHOLD <= confidence <= 1 and 0 <= px < image.width and 0 <= py < image.height:
+                    overlay_points[name] = [px, py]
             diagnostics[view] = {"width": image.width, "height": image.height, "marker": corners.tolist(),
-                                 "landmarks": {name: point.tolist() for name, point in points.items()}, "lines": lines}
+                                 "landmarks": overlay_points, "lines": lines,
+                                 **({"detected_landmarks": detected} if corrections else {})}
         return projected
 
     def validate_photo(self, view: str, image: Image.Image) -> dict:
         self._measure_view(view, image)
         return {"status": "validated", "view": view, "artifacts": {"bundle_id": self.bundle_id}}
 
-    def estimate(self, images: dict[str, Image.Image], *, include_diagnostics: bool = False) -> dict:
+    def estimate(self, images: dict[str, Image.Image], *, include_diagnostics: bool = False,
+                 review: bool = False, corrections: dict | None = None) -> dict:
         # Preserve unavailable behavior even when the input mapping is empty.
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
-        diagnostics = {} if include_diagnostics else None
-        measured = {view: self._measure_view(view, images[view], diagnostics) if diagnostics is not None
-                    else self._measure_view(view, images[view]) for view in ("top", "side")}
+        diagnostics = {} if include_diagnostics or review or corrections else None
+        measured = {}
+        for view in ("top", "side"):
+            if corrections and view in corrections:
+                measured[view] = self._measure_view(view, images[view], diagnostics, corrections[view])
+            elif diagnostics is not None:
+                measured[view] = self._measure_view(view, images[view], diagnostics)
+            else:
+                measured[view] = self._measure_view(view, images[view])
+        if review:
+            return {"status": "review", "diagnostics": diagnostics}
         try:
             values = measure(measured["top"], measured["side"])
             weight = decimal_measure(values.pop("weight_kg"))

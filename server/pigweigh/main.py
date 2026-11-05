@@ -1,6 +1,7 @@
 from contextlib import ExitStack, asynccontextmanager, closing
 from datetime import datetime, timedelta, timezone
 import asyncio
+import json
 import secrets
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -323,15 +324,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             inference_slot.release()
 
     @app.post("/api/estimates")
-    async def estimate(request: Request, diagnostics: bool = False):
+    async def estimate(request: Request, diagnostics: bool = False, review: bool = False):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the two images as multipart form data.")
         if inference_slot.locked():
             raise APIError(429, "inference_busy", "An estimate is already running. Try again shortly.")
         await inference_slot.acquire()
         try:
-            async with capture_form(request) as form:
-                items = list(form.multi_items())
+            async with capture_form(request, max_fields=1) as form:
+                items = [(key, value) for key, value in form.multi_items() if key != "corrections"]
+                corrections = None
+                if "corrections" in form:
+                    try:
+                        raw = form["corrections"]
+                        if review or not isinstance(raw, str):
+                            raise ValueError
+                        corrections = json.loads(raw)
+                        if not isinstance(corrections, dict) or any(
+                            view not in ("top", "side") or not isinstance(points, dict)
+                            for view, points in corrections.items()
+                        ):
+                            raise ValueError
+                    except (ValueError, RecursionError):
+                        raise APIError(422, "invalid_landmark_corrections", "Provide valid measurement point corrections.") from None
                 if len(items) != 2 or {key for key, _ in items} != {"top_image", "side_image"}:
                     raise APIError(422, "invalid_capture_pair", "Provide exactly one top image and one side image.")
                 if any(not isinstance(upload, UploadFile) for _,upload in items):
@@ -347,6 +362,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                 images[view.removesuffix("_image")] = decoded
                             except InvalidImage as exc:
                                 raise APIError(exc.status, exc.code, exc.message, {"view":view}) from None
+                        if review or corrections:
+                            return inference.estimate(images, review=review, corrections=corrections)
                         return inference.estimate(images, include_diagnostics=True) if diagnostics else inference.estimate(images)
                 try:
                     result = await complete_cpu_work(compute)
@@ -354,6 +371,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     raise APIError(422, exc.code, exc.message, {"view": exc.view}) from None
                 except InferenceUnavailable:
                     raise APIError(503, "inference_unavailable", "Estimation requires a verified local model bundle and marker configuration.") from None
+            if review:
+                return result
             # This short read occurs only after CPU inference; no DB transaction spans it.
             def priced_result():
                 with Session(engine) as session:
