@@ -316,3 +316,22 @@ def test_actual_bundled_onnx_photo_endpoint_without_database(monkeypatch, view, 
         assert response.status_code == 200, response.text
         assert response.json() == {"status":"validated","view":view,"artifacts":{"bundle_id":json.loads(manifest.read_text())["bundle_id"]}}
         assert app.state.engine.pool.checkedout() == 0
+
+@pytest.mark.parametrize("view,problem,code", [
+    ("top", "same_side", "chest_landmarks_misaligned"),
+    ("side", "reversed_depth", "chest_landmarks_misaligned"),
+    ("top", "cropped", "pig_clipped"),
+])
+def test_photo_preflight_rejects_bad_measurement_pose(photo_client, photo_app, monkeypatch, view, problem, code):
+    client, _ = photo_client
+    prediction = output(view)
+    if problem == "same_side":
+        prediction[0, 0, 6 + 3 * TOP_POINTS.index("left-chest")] = 230 * 1.28
+    elif problem == "reversed_depth":
+        prediction[0, 0, 7 + 3 * SIDE_POINTS.index("sternum")] = 80 * 1.28
+    else:
+        prediction[0, 0, 0] = 0
+    monkeypatch.setattr(photo_app.state.inference.models[view].session, "run", lambda *_: [prediction])
+    result = validate(client, view)
+    assert result.status_code == 422
+    assert result.json()["error"]["code"] == code

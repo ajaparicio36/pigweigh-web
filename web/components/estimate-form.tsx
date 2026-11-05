@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ApiError, errorMessage, isEstimate, isPriceSnapshot, isReadiness, request, validatePhoto, type Estimate, type LoadState, type PhotoView, type PriceSnapshot, type Readiness } from "@/lib/api";
+import { ApiError, errorMessage, estimateAgreesWithMeasurements, isEstimate, isPriceSnapshot, isReadiness, request, validatePhoto, type Estimate, type LoadState, type PhotoView, type PriceSnapshot, type Readiness } from "@/lib/api";
 import { formatMoney, formatPublishedAt } from "@/lib/format";
 import { PhotoCheckQueue, photosReady } from "@/lib/photo-checks";
+import { createPilotArchive, downloadPilotFile, pilotPhotoName } from "@/lib/pilot-export";
 import { CurrentPrice } from "./current-price";
+import { MeasurementOverlay } from "./measurement-overlay";
 import { PhotoInput } from "./photo-input";
 
 type Submission = { status: "idle" } | { status: "pending" } | { status: "error"; message: string; kind: "unavailable" | "rejected" | "busy" | "other" } | { status: "success"; data: Estimate };
 
 export function EstimateForm(): React.JSX.Element {
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   const [pigId, setPigId] = useState("");
   const [attempt, setAttempt] = useState("1");
   const [price, setPrice] = useState<LoadState<PriceSnapshot>>({ status: "loading" });
@@ -36,17 +40,25 @@ export function EstimateForm(): React.JSX.Element {
   const pilotId = pigId.trim().toUpperCase();
   const canSave = /^[A-Z0-9][A-Z0-9_-]{0,31}$/.test(pilotId) && /^[1-9][0-9]{0,3}$/.test(attempt);
 
+  const pilotPrefix = `${pilotId}_A${attempt.padStart(2, "0")}`;
+
   function savePilotPhoto(file: File, view: PhotoView): void {
     if (!canSave) return;
-    const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${pilotId}_A${attempt.padStart(2, "0")}_${view}.${extension}`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    downloadPilotFile(file, pilotPhotoName(pilotPrefix, file, view));
+  }
+
+  async function exportPilotAttempt(): Promise<void> {
+    if (!canSave || !top || !side || submission.status !== "success" || exporting) return;
+    setExporting(true);
+    setExportError("");
+    try {
+      const archive = await createPilotArchive(pilotId, attempt, top, side, submission.data);
+      downloadPilotFile(archive, `${pilotPrefix}.zip`);
+    } catch {
+      setExportError("The ZIP could not be prepared. Try again or save the photos individually.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   function retryPhoto(view: PhotoView): void {
@@ -88,7 +100,10 @@ export function EstimateForm(): React.JSX.Element {
     body.set("top_image", current.top.file);
     body.set("side_image", current.side.file);
     try {
-      const data = await request("/estimates", isEstimate, { method: "POST", body });
+      const data = await request("/estimates?diagnostics=true", isEstimate, { method: "POST", body });
+      if (!estimateAgreesWithMeasurements(data)) {
+        throw new ApiError(500, "inconsistent_estimate", "The returned weight does not agree with the reported length, girth and formula. Save the photos for review and try again.");
+      }
       setSubmission({ status: "success", data });
     } catch (error: unknown) {
       const kind = error instanceof ApiError
@@ -119,7 +134,7 @@ export function EstimateForm(): React.JSX.Element {
           <PhotoInput view="side" file={side} check={checks.side} disabled={pending} onChange={(file) => selectPhoto("side", file)} onRetry={() => retryPhoto("side")} />
         </div>
         <fieldset className="form-panel">
-          <legend>Save pilot photos</legend>
+          <legend>Save pilot photos and data</legend>
           <p className="field-help">Enter the Pig ID and attempt number before saving. Use a new attempt number for each new photo pair.</p>
           <div className="publication-fields">
             <label className="field">Pig ID
@@ -138,6 +153,13 @@ export function EstimateForm(): React.JSX.Element {
             <button className="button button-secondary" type="button" disabled={!canSave || !side}
               onClick={() => { if (side) savePilotPhoto(side, "side"); }}>Save side photo</button>
           </div>
+          <button className="button button-primary" type="button"
+            disabled={!canSave || !top || !side || submission.status !== "success" || exporting}
+            onClick={() => void exportPilotAttempt()}>
+            {exporting ? "Preparing ZIP…" : "Export pilot attempt (.zip)"}
+          </button>
+          <p className="field-help">Run an estimate to export both photos, measurements and formula details in one ZIP.</p>
+          {exportError && <p role="alert" className="field-error">{exportError}</p>}
         </fieldset>
         <div className="capture-note"><p>Both views must show the same animal; PigWeigh does not verify its identity. Passing photo checks does not verify the printed marker’s size or weight accuracy. Both photos are checked again when you request an estimate.</p></div>
         <section className="readiness-panel" aria-labelledby="readiness-title" aria-busy={readiness.status === "loading"}>
@@ -168,10 +190,18 @@ export function EstimateForm(): React.JSX.Element {
         {submission.status === "error" && <div className="notice notice-error"><h2>{submission.kind === "unavailable" ? "No estimate is available" : submission.kind === "rejected" ? "Your photo pair needs review" : submission.kind === "busy" ? "Estimation is busy" : "Your request couldn’t be completed"}</h2><p>{submission.message}</p><p className="muted">{submission.kind === "unavailable" ? "No weight or valuation was calculated. Your photos remain here for review." : submission.kind === "busy" ? "Your selected photos are still here. Wait a moment, then request the estimate again." : "Your selected photos are still here. Review them or try again."}</p></div>}
         {submission.status === "success" && <section className="result-panel" aria-labelledby="result-title">
           <h2 id="result-title">Your experimental estimate</h2>
+          {(Number(submission.data.estimated_weight_kg) < 20 || Number(submission.data.estimated_weight_kg) > 30) &&
+            <p className="field-help">Review this attempt. The prediction is outside the 20–30 kg thesis study range.</p>}
+          <p className="field-help">Compare the marked points with the pig’s anatomy and record its scale weight before judging this estimate.</p>
           <p className="field-help">Calculated from the photo pair using the uncalibrated 14451 baseline. Accuracy against scale weights has not been evaluated.</p>
           <div className="result-grid"><div><p className="field-caption">Estimated live weight</p><p className="result-value">{submission.data.estimated_weight_kg} <span>kg</span></p></div>
             <div><p className="field-caption">Estimated valuation</p><p className="result-value">{submission.data.valuation ? formatMoney(submission.data.valuation.amount_php) : "Unavailable"}</p></div></div>
           {submission.data.valuation ? <div className="result-source"><p>Calculated using {formatMoney(submission.data.valuation.price.php_per_kg)} per kg.</p><p><span className="field-caption">Source reference</span>{submission.data.valuation.price.source_reference}</p><p className="muted">Published {formatPublishedAt(submission.data.valuation.price.published_at)} (Philippine time). This price is the one used for this estimate.</p></div> : <p className="muted">There was no published price when this estimate was calculated. The estimated live weight is still shown above.</p>}
+          {submission.data.diagnostics && top && side && <details className="measurement-details">
+            <summary>Inspect measurement overlays</summary>
+            <MeasurementOverlay file={top} data={submission.data.diagnostics.top} view="Top view" />
+            <MeasurementOverlay file={side} data={submission.data.diagnostics.side} view="Side view" />
+          </details>}
           <details className="measurement-details">
             <summary>Measurements and formula</summary>
             <dl className="measurement-list">

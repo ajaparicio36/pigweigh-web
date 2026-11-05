@@ -105,6 +105,7 @@ def test_letterbox_inverse_non_square_and_thin_boundary():
     tensor, scale, left, top = letterbox(image)
     assert tensor.shape == (1,3,640,640) and tensor.dtype == np.float32
     raw = output("top")
+    raw[0,0,:4] = [80*scale+left, 80*scale+top, 600*scale+left, 350*scale+top]
     for index in range(len(TOP_POINTS)):
         raw[0,0,6+3*index:8+3*index] = [123*scale+left,234*scale+top]
         raw[0,0,8+3*index] = .9

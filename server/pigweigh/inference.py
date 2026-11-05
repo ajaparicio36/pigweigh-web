@@ -76,6 +76,9 @@ def required_pose(output: np.ndarray, image_shape: tuple[int, ...], names: tuple
         raise CaptureRejected("invalid_pose", "The pig outline is unusable. Retake this view.", view)
     points = row[6:].reshape(len(names), 3).astype(np.float64)
     height, width = image_shape[:2]
+    # A box reaching the image boundary is evidence the pig may be cropped.
+    if box[0] <= 0 or box[1] <= 0 or box[2] >= width - 1 or box[3] >= height - 1:
+        raise CaptureRejected("pig_clipped", "Keep the whole pig inside the image with space around it.", view)
     selected = {}
     for name in required:
         x, y, confidence = points[names.index(name)]
@@ -88,7 +91,31 @@ def required_pose(output: np.ndarray, image_shape: tuple[int, ...], names: tuple
     return selected
 
 
-def marker_homography(image: np.ndarray, view: str) -> np.ndarray:
+def check_measurement_pose(points: dict[str, np.ndarray], view: str) -> None:
+    """Reject visibly inconsistent measurement landmarks in image coordinates."""
+    if view == "top":
+        head = (points["left-ear-base"] + points["right-ear-base"]) / 2
+        axis = points["tail-base"] - head
+        left = points["left-chest"] - head
+        right = points["right-chest"] - head
+        axis_length_squared = float(axis @ axis)
+        left_side = axis[0] * left[1] - axis[1] * left[0]
+        right_side = axis[0] * right[1] - axis[1] * right[0]
+        if left_side * right_side >= 0 or not all(0 < axis @ point < axis_length_squared for point in (left, right)):
+            raise CaptureRejected(
+                "chest_landmarks_misaligned",
+                "The chest points could not be placed across the pig’s body. Retake from straight above with the whole pig visible.",
+                view,
+            )
+    elif points["sternum"][1] <= points["withers"][1]:
+        raise CaptureRejected(
+            "chest_landmarks_misaligned",
+            "The chest depth points are out of order. Retake with the phone level and the pig’s side visible.",
+            view,
+        )
+
+
+def detect_marker_corners(image: np.ndarray, view: str) -> np.ndarray:
     detector = cv2.aruco.ArucoDetector(cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50),
                                       cv2.aruco.DetectorParameters())
     corners, ids, _ = detector.detectMarkers(cv2.cvtColor(image, cv2.COLOR_RGB2GRAY))
@@ -96,7 +123,11 @@ def marker_homography(image: np.ndarray, view: str) -> np.ndarray:
         raise CaptureRejected("marker_missing", "Show the complete configured ArUco ID 0 card and its white margin.", view)
     if len(ids) != 1 or int(ids[0,0]) != 0:
         raise CaptureRejected("marker_ambiguous", "Show only one DICT_4X4_50 marker with ID 0 in this view.", view)
-    return homography_from_corners(np.asarray(corners[0]).reshape(4,2), image.shape, view)
+    return np.asarray(corners[0]).reshape(4, 2)
+
+
+def marker_homography(image: np.ndarray, view: str) -> np.ndarray:
+    return homography_from_corners(detect_marker_corners(image, view), image.shape, view)
 
 
 def homography_from_corners(corners: np.ndarray, image_shape: tuple[int, ...], view: str) -> np.ndarray:
@@ -234,7 +265,7 @@ class InferenceEngine:
             models[view] = PoseSession(session, names, output_shape)
         self.models, self.bundle_id, self.blocker = models, bundle_id, None
 
-    def _measure_view(self, view: str, image: Image.Image) -> dict[str, np.ndarray]:
+    def _measure_view(self, view: str, image: Image.Image, diagnostics: dict | None = None) -> dict[str, np.ndarray]:
         """Shared photo gates; preflight never bypasses final paired validation."""
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
@@ -243,7 +274,9 @@ class InferenceEngine:
             tensor, scale, left, top = letterbox(pixels)
         except ValueError:
             raise CaptureRejected("image_aspect_unusable", "The photo is too narrow to process. Use a normal camera photo.", view) from None
-        transform = marker_homography(pixels, view)
+        corners = detect_marker_corners(pixels, view) if diagnostics is not None else None
+        transform = (homography_from_corners(corners, pixels.shape, view) if corners is not None
+                     else marker_homography(pixels, view))
         model = self.models[view]
         try:
             output = model.session.run(None, {model.session.get_inputs()[0].name: tensor})[0]
@@ -254,17 +287,30 @@ class InferenceEngine:
             raise InferenceUnavailable() from None
         required = ("left-ear-base", "right-ear-base", "tail-base", "left-chest", "right-chest") if view == "top" else ("withers", "sternum")
         points = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
-        return project_points(points, transform, view)
+        check_measurement_pose(points, view)
+        projected = project_points(points, transform, view)
+        if diagnostics is not None and corners is not None:
+            segments = {"chest_width": ("left-chest", "right-chest")} if view == "top" else {"chest_depth": ("withers", "sternum")}
+            lines = {name: [points[start].tolist(), points[end].tolist()] for name, (start, end) in segments.items()}
+            if view == "top":
+                midpoint = (projected["left-ear-base"] + projected["right-ear-base"]) / 2
+                start = cv2.perspectiveTransform(midpoint.reshape(1, 1, 2), np.linalg.inv(transform))[0, 0]
+                lines["body_length"] = [start.tolist(), points["tail-base"].tolist()]
+            diagnostics[view] = {"width": image.width, "height": image.height, "marker": corners.tolist(),
+                                 "landmarks": {name: point.tolist() for name, point in points.items()}, "lines": lines}
+        return projected
 
     def validate_photo(self, view: str, image: Image.Image) -> dict:
         self._measure_view(view, image)
         return {"status": "validated", "view": view, "artifacts": {"bundle_id": self.bundle_id}}
 
-    def estimate(self, images: dict[str, Image.Image]) -> dict:
+    def estimate(self, images: dict[str, Image.Image], *, include_diagnostics: bool = False) -> dict:
         # Preserve unavailable behavior even when the input mapping is empty.
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
-        measured = {view: self._measure_view(view, images[view]) for view in ("top", "side")}
+        diagnostics = {} if include_diagnostics else None
+        measured = {view: self._measure_view(view, images[view], diagnostics) if diagnostics is not None
+                    else self._measure_view(view, images[view]) for view in ("top", "side")}
         try:
             values = measure(measured["top"], measured["side"])
             weight = decimal_measure(values.pop("weight_kg"))
@@ -272,6 +318,7 @@ class InferenceEngine:
         except (ValueError, ArithmeticError, OverflowError):
             raise CaptureRejected("measurements_unusable", "The photo measurements cannot produce a usable formula estimate. Retake both views.", "pair") from None
         return {"status":"estimated", "estimated_weight_kg":weight,
+                **({"diagnostics": diagnostics} if diagnostics is not None else {}),
                 "measurements":dimensions, "artifacts":{"bundle_id":self.bundle_id},
                 "method":{"version":METHOD, "formula":"G_cm^2 * L_cm / 14451",
                           "marker_dictionary":"DICT_4X4_50", "marker_id":0, "marker_side_mm":"100",

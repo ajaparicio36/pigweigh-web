@@ -323,7 +323,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             inference_slot.release()
 
     @app.post("/api/estimates")
-    async def estimate(request: Request):
+    async def estimate(request: Request, diagnostics: bool = False):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the two images as multipart form data.")
         if inference_slot.locked():
@@ -347,7 +347,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                 images[view.removesuffix("_image")] = decoded
                             except InvalidImage as exc:
                                 raise APIError(exc.status, exc.code, exc.message, {"view":view}) from None
-                        return inference.estimate(images)
+                        return inference.estimate(images, include_diagnostics=True) if diagnostics else inference.estimate(images)
                 try:
                     result = await complete_cpu_work(compute)
                 except CaptureRejected as exc:

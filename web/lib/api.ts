@@ -26,6 +26,7 @@ export type Estimate = {
   estimated_weight_kg: string;
   artifacts: { bundle_id: string };
   measurements: EstimateMeasurements;
+  diagnostics?: { top: unknown; side: unknown };
   method: EstimateMethod;
 } & (
   | { valuation: { amount_php: string; price: Price }; valuation_unavailable_reason?: never }
@@ -97,10 +98,23 @@ export function isEstimate(value: unknown): value is Estimate {
   if (!isRecord(value) || value.status !== "estimated" || !isPositiveMeasurement(value.estimated_weight_kg)
     || !isRecord(value.artifacts) || typeof value.artifacts.bundle_id !== "string"
     || value.artifacts.bundle_id.trim().length === 0 || !isEstimateMeasurements(value.measurements)
-    || !isEstimateMethod(value.method)) return false;
+    || !isEstimateMethod(value.method)
+    || (value.diagnostics !== undefined && !isRecord(value.diagnostics))) return false;
   if (value.valuation === null) return value.valuation_unavailable_reason === "no_price";
   return value.valuation_unavailable_reason === undefined && isRecord(value.valuation)
     && isMoney(value.valuation.amount_php) && isPrice(value.valuation.price);
+}
+
+export function estimateAgreesWithMeasurements(estimate: Estimate): boolean {
+  const length = Number(estimate.measurements.body_length_cm);
+  const girth = Number(estimate.measurements.girth_cm);
+  const weight = Number(estimate.estimated_weight_kg);
+  if (![length, girth, weight].every(Number.isFinite)) return false;
+  // Each displayed input and the result can be rounded by half a hundredth.
+  const halfCent = 0.00500001;
+  const lower = (girth - halfCent) ** 2 * (length - halfCent) / 14451 - halfCent;
+  const upper = (girth + halfCent) ** 2 * (length + halfCent) / 14451 + halfCent;
+  return weight >= lower && weight <= upper;
 }
 
 export class ApiError extends Error {

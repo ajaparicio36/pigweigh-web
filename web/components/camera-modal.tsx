@@ -154,11 +154,15 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
     if (disabled || !session || session.isClosed || !video || state !== "ready" || capturingRef.current) return;
     stopAuto();
     capturingRef.current = true;
+    const controller = new AbortController();
+    autoRef.current = controller;
     setState("capturing");
     setError("");
     try {
       const photo = await capturePhoto(video, view);
       if (session.isClosed) return;
+      await validatePhoto(view, photo, controller.signal);
+      if (controller.signal.aborted || session.isClosed) return;
       onCapture(photo);
       dismiss();
     } catch (failure: unknown) {
@@ -166,6 +170,7 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
       setError(failure instanceof Error ? failure.message : "The photo could not be saved. Try again or upload a photo.");
       setState(canCaptureVideo(video) ? "ready" : "starting");
     } finally {
+      if (autoRef.current === controller) autoRef.current = null;
       capturingRef.current = false;
     }
   }
@@ -191,7 +196,7 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
             <div className="camera-marker-target"><span>ArUco here</span></div>
           </div>}
         </div>
-        <p className="camera-status" role="status">{autoStatus || (state === "starting" ? "Starting camera… Allow access if your browser asks." : state === "capturing" ? "Saving photo…" : state === "ready" ? "Keep the marker’s four corners and white margin visible. Hold still, then capture." : "Camera unavailable. You can still upload a photo.")}</p>
+        <p className="camera-status" role="status">{autoStatus || (state === "starting" ? "Starting camera… Allow access if your browser asks." : state === "capturing" ? "Checking photo…" : state === "ready" ? "Keep the marker’s four corners and white margin visible. Hold still, then capture." : "Camera unavailable. You can still upload a photo.")}</p>
         {error && <p className="field-error" role="alert">{error} Your selected photos have not changed.</p>}
         <p className="field-help">Guides help with placement only; they do not detect the pig or marker and will not appear in your photo. Keep the card clear of body landmarks.</p>
       </div>
@@ -199,7 +204,7 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
         <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>
         <button type="button" className="button button-secondary" disabled={disabled || (!autoStatus && state !== "ready")}
           onClick={() => autoStatus ? stopAuto() : void autoCapture()}>{autoStatus ? "Stop auto" : "Auto capture"}</button>
-        <button type="button" className="button button-primary" disabled={disabled || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Saving photo…" : "Capture photo"}</button>
+        <button type="button" className="button button-primary" disabled={disabled || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Checking photo…" : "Capture photo"}</button>
       </div>
     </dialog>
   );
