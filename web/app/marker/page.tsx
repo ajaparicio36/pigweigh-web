@@ -37,7 +37,7 @@ export default function MarkerPage(): React.JSX.Element {
             <ol className="marker-steps">
               <li><strong>Print the downloaded PDF on A4.</strong> Choose 100% or Actual size. Turn off Fit to page and any scaling.</li>
               <li><strong>Measure the black square.</strong> Each side must be 100 mm. Do not include the white margin in your measurement.</li>
-              <li><strong>Keep the card flat and the margin intact.</strong> Put it on the back for the top photo, then on the visible flank for the side photo. Keep all four corners visible and avoid covering body landmarks.</li>
+              <li><strong>Keep the card flat and the margin intact.</strong> Use a stand beside the pig. For the top view, set the marker face up at back height beside the shoulder. For the side view, set it upright in front of the chest, facing the camera at the same depth as the visible flank. Keep all four corners visible and avoid covering body landmarks.</li>
             </ol>
             <Link href="/" className="button button-secondary">Continue to photos</Link>
           </section>

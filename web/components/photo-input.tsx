@@ -57,7 +57,7 @@ export function PhotoInput({ view, file, check, disabled, onChange, onRetry }: P
             if (validationError) { setError(validationError); event.target.value = ""; return; }
             setError(""); onChange(selected);
           }} />
-        <p id={`${id}-help`} className="field-help">{view === "top" ? "Attach the flat ArUco card on the pig’s back." : "Attach the flat ArUco card on the pig’s visible flank."} JPEG, PNG or WebP. Up to 10 MB.</p>
+        <p id={`${id}-help`} className="field-help">{view === "top" ? "Place the marker face up on a stand beside the shoulder at back height." : "Place the marker upright in front of the chest, facing the camera at the same depth as the visible flank."} JPEG, PNG or WebP. Up to 10 MB.</p>
         {error && <p id={`${id}-error`} className="field-error" role="alert">{error}{file ? " Your previous photo is still selected." : ""}</p>}
         {file && <div className="selected-file"><span title={file.name}>{file.name}</span><button className="text-button" type="button" disabled={disabled} onClick={() => { onChange(null); setError(""); if (inputRef.current) inputRef.current.value = ""; }}>Remove<span className="sr-only"> {label.toLowerCase()} photo</span></button></div>}
         <div id={`${id}-check`} className={`photo-check${rejected ? " photo-check-rejected" : ""}`} role="status" aria-live="polite" aria-atomic="true">

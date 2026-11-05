@@ -213,8 +213,8 @@ export function CameraModal({ view, disabled, onCapture, onClose }: CameraModalP
       </div>
       <div className="camera-dialog-body">
         <p id={helpId} className="camera-instructions">{view === "top"
-          ? "Look straight down from above. Keep the whole pig inside the dashed frame, with the flat marker on its back near the middle of its body."
-          : "Look straight at the pig’s side. Keep its whole profile inside the dashed frame, with the flat marker on the visible flank."}</p>
+          ? "Look straight down from above. Keep the whole pig inside the dashed frame, with the marker face up on a stand beside the shoulder at back height."
+          : "Look straight at the pig’s side. Keep its whole profile inside the dashed frame, with the marker upright on a stand in front of the chest, facing the camera at the same depth as the visible flank."}</p>
         <div className={`camera-preview camera-preview-${view}`} style={{ aspectRatio: videoAspect, width: `min(100%, ${45 * videoAspect}dvh)` }}>
           <video ref={videoRef} autoPlay playsInline muted aria-label={`Live ${label} camera preview`}
             onCanPlay={markReady} onPlaying={markReady} onResize={markReady}

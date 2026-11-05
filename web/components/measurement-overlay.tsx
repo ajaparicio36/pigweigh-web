@@ -27,7 +27,16 @@ export function MeasurementOverlay({ file, data, view, corrections, onMove }: { 
     if (lines.body_length) {
       const [leftX, leftY] = landmarks["left-ear-base"];
       const [rightX, rightY] = landmarks["right-ear-base"];
-      lines.body_length = [[(leftX + rightX) / 2, (leftY + rightY) / 2], landmarks["tail-base"]];
+      const start: Point = [(leftX + rightX) / 2, (leftY + rightY) / 2];
+      const tail = landmarks["tail-base"];
+      landmarks["spine-midpoint"] ??= [(start[0] + tail[0]) / 2, (start[1] + tail[1]) / 2];
+      if (corrections?.["spine-midpoint"]) {
+        delete lines.body_length;
+        lines.body_length_front = [start, landmarks["spine-midpoint"]];
+        lines.body_length_rear = [landmarks["spine-midpoint"], tail];
+      } else {
+        lines.body_length = [start, tail];
+      }
     }
   }
   const size = data.width / 24;
@@ -41,7 +50,7 @@ export function MeasurementOverlay({ file, data, view, corrections, onMove }: { 
         </line>,
       )}
       {Object.entries(landmarks).map(([name, [x, y]]) => {
-        const move = ["spine-midpoint", "front-shoulder-joint", "belly-lowest-part"].includes(name) ? undefined : onMove;
+        const move = ["front-shoulder-joint", "belly-lowest-part"].includes(name) ? undefined : onMove;
         return <g key={name}>
           <title>{name.replaceAll("-", " ")}</title>
           <circle cx={x} cy={y} r={size / 4} fill="#fff" stroke="#222" strokeWidth={2} vectorEffect="non-scaling-stroke" />
@@ -66,7 +75,7 @@ export function MeasurementOverlay({ file, data, view, corrections, onMove }: { 
       })}
     </svg>
     <figcaption>{view}. Yellow shows the detected ArUco boundary. {onMove ? "Cyan previews the measurement segments." : "Cyan shows the measured segments."} White dots show pose landmarks.
-      <ul>{Object.keys(data.landmarks).map((name) =>
+      <ul>{Object.keys(landmarks).map((name) =>
         <li key={name}><strong>{labels[name] ?? name}</strong> {name.replaceAll("-", " ")}</li>,
       )}</ul>
     </figcaption>

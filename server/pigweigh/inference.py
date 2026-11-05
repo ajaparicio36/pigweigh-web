@@ -170,7 +170,10 @@ def project_points(points: dict[str, np.ndarray], transform: np.ndarray, view: s
 
 def measure(top: dict[str, np.ndarray], side: dict[str, np.ndarray]) -> dict[str, float]:
     ear_midpoint = (top["left-ear-base"] + top["right-ear-base"]) / 2
-    length = float(np.linalg.norm(ear_midpoint - top["tail-base"]))
+    tail = top["tail-base"]
+    spine = top.get("spine-midpoint")
+    length = float(np.linalg.norm(ear_midpoint - tail) if spine is None else
+                   np.linalg.norm(ear_midpoint - spine) + np.linalg.norm(spine - tail))
     width = float(np.linalg.norm(top["left-chest"] - top["right-chest"]))
     depth = float(np.linalg.norm(side["withers"] - side["sternum"]))
     girth = ellipse_girth_cm(width, depth)
@@ -291,7 +294,8 @@ class InferenceEngine:
         detected = {name: point.tolist() for name, point in points.items()}
         if corrections is not None:
             if not isinstance(corrections, dict) or any(
-                name not in points or not isinstance(point, list) or len(point) != 2
+                (name not in points and not (view == "top" and name == "spine-midpoint"))
+                or not isinstance(point, list) or len(point) != 2
                 or any(type(value) not in (float, int) for value in point)
                 or not (0 <= point[0] < image.width and 0 <= point[1] < image.height)
                 for name, point in corrections.items()
@@ -300,13 +304,24 @@ class InferenceEngine:
             points.update({name: np.array(point, dtype=np.float64) for name, point in corrections.items()})
             check_measurement_pose(points, view)
         projected = project_points(points, transform, view)
+        if "spine-midpoint" in projected:
+            head = (projected["left-ear-base"] + projected["right-ear-base"]) / 2
+            axis = projected["tail-base"] - head
+            along = float((projected["spine-midpoint"] - head) @ axis)
+            if not 0 < along < float(axis @ axis):
+                raise CaptureRejected("invalid_spine_midpoint", "Place M on the back between the ears and tail base.", view)
         if diagnostics is not None and corners is not None:
             segments = {"chest_width": ("left-chest", "right-chest")} if view == "top" else {"chest_depth": ("withers", "sternum")}
             lines = {name: [points[start].tolist(), points[end].tolist()] for name, (start, end) in segments.items()}
             if view == "top":
                 midpoint = (projected["left-ear-base"] + projected["right-ear-base"]) / 2
                 start = cv2.perspectiveTransform(midpoint.reshape(1, 1, 2), np.linalg.inv(transform))[0, 0]
-                lines["body_length"] = [start.tolist(), points["tail-base"].tolist()]
+                if "spine-midpoint" in points:
+                    spine = points["spine-midpoint"].tolist()
+                    lines["body_length_front"] = [start.tolist(), spine]
+                    lines["body_length_rear"] = [spine, points["tail-base"].tolist()]
+                else:
+                    lines["body_length"] = [start.tolist(), points["tail-base"].tolist()]
             overlay_points = {name: point.tolist() for name, point in points.items()}
             row = output[0][output[0, :, 4] >= PIG_THRESHOLD][0]
             keypoints = row[6:].reshape(len(model.names), 3)
@@ -315,7 +330,8 @@ class InferenceEngine:
                 x, y, confidence = keypoints[model.names.index(name)]
                 px, py = float((x - left) / scale), float((y - top) / scale)
                 if KEYPOINT_THRESHOLD <= confidence <= 1 and 0 <= px < image.width and 0 <= py < image.height:
-                    overlay_points[name] = [px, py]
+                    detected[name] = [px, py]
+                    overlay_points.setdefault(name, [px, py])
             diagnostics[view] = {"width": image.width, "height": image.height, "marker": corners.tolist(),
                                  "landmarks": overlay_points, "lines": lines,
                                  **({"detected_landmarks": detected} if corrections else {})}
@@ -349,7 +365,9 @@ class InferenceEngine:
             raise CaptureRejected("measurements_unusable", "The photo measurements cannot produce a usable formula estimate. Retake both views.", "pair") from None
         return {"status":"estimated", "estimated_weight_kg":weight,
                 **({"diagnostics": diagnostics} if diagnostics is not None else {}),
-                "measurements":dimensions, "artifacts":{"bundle_id":self.bundle_id},
+                "measurements":dimensions,
+                **({"length_method": "spine_midpoint_polyline"} if "spine-midpoint" in measured["top"] else {}),
+                "artifacts":{"bundle_id":self.bundle_id},
                 "method":{"version":METHOD, "formula":"G_cm^2 * L_cm / 14451",
                           "marker_dictionary":"DICT_4X4_50", "marker_id":0, "marker_side_mm":"100",
                           "experimental":True, "accuracy_evaluated":False}}
