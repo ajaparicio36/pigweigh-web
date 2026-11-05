@@ -106,7 +106,7 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; back
 .camera-preview { position: relative; display: grid; place-items: center; container-type: size; margin-inline: auto; max-height: 45dvh; overflow: hidden; border-radius: 8px; background: #211b17; }
 .camera-preview video { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
 .camera-guides { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
-.camera-marker-target { width: min(6rem, 80cqw, 80cqh); aspect-ratio: 1; border: 2px dashed #fff; outline: 1px solid rgb(0 0 0 / 60%); }
+.camera-marker-target { width: min(3rem, 40cqw, 40cqh); aspect-ratio: 1; border: 2px dashed #fff; outline: 1px solid rgb(0 0 0 / 60%); }
 .camera-status { margin-top: 0.875rem; font-size: 0.875rem; }
 .camera-actions { display: flex; justify-content: space-between; gap: 1rem; position: sticky; bottom: 0; padding: 1rem 1.5rem max(1rem, env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
 
