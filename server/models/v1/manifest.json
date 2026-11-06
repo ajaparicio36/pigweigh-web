@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "bundle_id": "attached-marker-ellipse-14451-v1-08661ffdf08ae1cc",
+  "bundle_id": "attached-marker-ellipse-14451-v1-35164d7e48c146d1",
   "method": "attached-marker-ellipse-14451-v1",
   "formula_divisor": 14451,
   "marker": {
@@ -42,7 +42,7 @@
     },
     "side": {
       "file": "side.onnx",
-      "sha256": "ed40cb8d60da95b1f8eb1c955b7e52fc70bfb00bf798eb2a57a52a2d4e175c72",
+      "sha256": "948c2c9d9849d84003a69f43f91cb1aa483d5afdd7752781acd24dc10fc0640f",
       "keypoints": [
         "snout-tip",
         "eye",
@@ -71,7 +71,230 @@
         45
       ],
       "end2end": true,
-      "source_checkpoint_sha256": "40ed648a5bbfd25ad36cebe328fbaaf77ce93dafc7fabbed5439701bb8e74331"
+      "source_checkpoint_sha256": "fca640f495f39e5f63d4bf8fc52ee41f7445e59a3f0aaf54072ae4cec30618c9",
+      "adapter": {
+        "version": "side-roboflow-v2-class-map-v1",
+        "mapping_sha256": "4d77082038fa94c8c972054277f9b27a202336a20cd8f2e373a9ecc302f295b6",
+        "source_policy_sha256": "96af2f3c90e472d64dcd2d3743bc83d93f8c0e0901a2108b95f5c9c396a7212f",
+        "json_hash_canonicalization": "sorted compact JSON, ASCII-escaped UTF-8",
+        "source_dataset_yaml_sha256": "32b65cd3eb48de241da4564152f9184238885746ba5cb9627ca614f3718a2984",
+        "source_dataset_readme_sha256": "32885ff2451b805595056bed6cd7bce03c39daaf70663d1939b0eba17c08376e",
+        "source_onnx_sha256": "3b4f7298e389f79754198e43175449f21281e244161d2ad6b954a0fcad7c9acc",
+        "source_classes": [
+          "16_side",
+          "17_side",
+          "18_side",
+          "19_side",
+          "20_side",
+          "23_side",
+          "27_side",
+          "28_side",
+          "29_side",
+          "34_side",
+          "35_side",
+          "36_side",
+          "38_side"
+        ],
+        "output_to_source": [
+          [
+            0,
+            1,
+            2,
+            3,
+            6,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ]
+        ],
+        "score_semantics": "source weight-class score preserved; not pig certainty",
+        "evidence": "current class names and v1-v2 coordinate continuity; frozen v2 names not exhaustively verified"
+      }
     }
   },
   "export": {
@@ -87,7 +310,25 @@
     "simplify": false,
     "nms": false,
     "end2end": true,
-    "opset": 17
+    "opset": 17,
+    "side_adapter": {
+      "ultralytics": "8.4.9",
+      "torch": "2.10.0+cu128",
+      "onnx": "1.23.2",
+      "onnxruntime": "1.24.4",
+      "device": "cpu",
+      "opset": 17,
+      "raw_flags": {
+        "imgsz": 640,
+        "batch": 1,
+        "dynamic": false,
+        "half": false,
+        "simplify": false,
+        "nms": false,
+        "end2end": true
+      },
+      "graph": "class-indexed ONNX point permutation"
+    }
   },
   "parity": {
     "top": {
@@ -99,12 +340,14 @@
       "scope": "functional fixture; not measurement/weight accuracy"
     },
     "side": {
-      "image_sha256": "2ae47e8fe70a227859821276c3f921161195daa9f34a7feb625eb178945743b0",
-      "matching_detections_at_score_0_5": 1,
-      "max_abs_difference_input_pixels_or_score": 4.57763671875e-05,
+      "samples": 13,
+      "known_classes": 13,
+      "samples_with_selected_rows": 13,
+      "raw_torch_onnx_max_abs_selected": 0.0001068115234375,
+      "raw_adapter_max_abs": 0.0,
       "rtol": 0.0001,
       "atol": 0.05,
-      "scope": "functional fixture; not measurement/weight accuracy"
+      "scope": "selected source rows and exact row remapping; not anatomical or weight accuracy"
     }
   }
 }

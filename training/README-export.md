@@ -1,6 +1,50 @@
 # CPU ONNX serving bundle
 
-The original private export and October parity evidence below used the 11900 method. The local serving manifest was subsequently revised to the 14451 baseline; the ONNX model bytes and historical parity evidence are unchanged. Future exports use the current 14451 method and generate a new canonical ID.
+## Side-only v2 candidate (2026-11-06)
+
+The local candidate replaces only `side.onnx`; `top.onnx` is copied unchanged from the existing bundle. The candidate ID is `attached-marker-ellipse-14451-v1-35164d7e48c146d1`, with side SHA-256 `948c2c9d9849d84003a69f43f91cb1aa483d5afdd7752781acd24dc10fc0640f` and top SHA-256 `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa`. It has not been deployed by this export. The earlier November 3 release remains historical deployment evidence.
+
+`export_side_adapter.py` validates the trusted checkpoint, source YAML/README and existing top hashes, copies the checkpoint into a fresh private directory, and exports a CPU ONNX source model with auto-install disabled. It appends an ONNX graph that chooses a canonical point permutation from the source prediction's class. It preserves row order, bounding boxes, scores and point values; it emits class 0 for valid source classes and a non-finite class sentinel for invalid IDs so the existing capture gate rejects them. It does not apply NMS, combine scores, deduplicate rows, infer weight from class, or relax the exactly-one threshold. The manifest binds the mapping, source checkpoint, dataset metadata and reviewed source policy hashes into the bundle ID. Mapping and policy hashes use sorted compact JSON with ASCII-escaped UTF-8, independent of line endings; checkpoint and dataset YAML/README hashes cover the exact private source bytes. The source classes and permutations are in `training/config/side-adapter-v2.json`.
+
+The checkpoint was trained with 13 weight-class labels and one shared keypoint head, not the previous prepared single-class dataset. Current named Roboflow class templates, matched v1/v2 coordinate lineage for 839 source images and a frozen v2 class-34 raw annotation support the mapping. Frozen v2 names were not exhaustively proved. A wrong predicted class can select a wrong point order; the preserved source score is a weight-class score, not pig certainty or weight accuracy. Multiple high-scoring source class rows remain multiple rows and are rejected by the existing gate.
+
+The private candidate was made in `D:/pigweigh-inference-artifacts/side-adapter-v2-canonical-20261106`; its `source-copies/` and `parity-private.json` are not serving artifacts and stay out of Git. Reproduce only with a new output directory, the same audited source inputs, the isolated export environment, and an existing verified manifest:
+
+```powershell
+& 'D:/pigweigh-export-env/Scripts/python.exe' -B training/export_side_adapter.py `
+  --output 'D:/pigweigh-inference-artifacts/<new-private-directory>' `
+  --source 'D:/pigweigh-pose-runs/side-roboflow-canonical-v2/weights/best.pt' `
+  --dataset 'D:/pigweigh-pose-data/side-view-v2' `
+  --existing-manifest 'server/models/v1/manifest.json'
+```
+
+The raw model and wrapped model passed ONNX checker, CPU metadata/shape checks and the unchanged backend loader warmup. On one validation image per source class, all 13 selected exactly one row at score ≥0.5, predicted the same class as the label, and passed the existing side pose gate. These image-level checks do not establish marker/capture validity or accuracy. Selected-row raw PyTorch/ONNX parity had maximum absolute difference `0.0001068115234375` (`rtol=1e-4`, `atol=0.05`); all 300 wrapped rows matched the NumPy remapping oracle exactly for each sample. Full raw 300-row arrays were not elementwise equal because low-score top-k ordering/class rows differed; no full-output parity is claimed. The detailed private report stores source image/label hashes and individual results without adding the images to Git.
+
+| Known source class | Predicted source class | Rows ≥0.5 | Side pose gate |
+|---|---|---:|---|
+| `16_side` | `16_side` | 1 | passed |
+| `17_side` | `17_side` | 1 | passed |
+| `18_side` | `18_side` | 1 | passed |
+| `19_side` | `19_side` | 1 | passed |
+| `20_side` | `20_side` | 1 | passed |
+| `23_side` | `23_side` | 1 | passed |
+| `27_side` | `27_side` | 1 | passed |
+| `28_side` | `28_side` | 1 | passed |
+| `29_side` | `29_side` | 1 | passed |
+| `34_side` | `34_side` | 1 | passed |
+| `35_side` | `35_side` | 1 | passed |
+| `36_side` | `36_side` | 1 | passed |
+| `38_side` | `38_side` | 1 | passed |
+
+The two generated-photo validation endpoints also passed against this candidate as part of 46 focused photo-validation tests. A separate `POST /api/estimates` TestClient check on the same hash-verified generated pair used actual models, marker detection, projection and formula but stubbed the price read as absent. It returned `56.27` kg with length `96.44` cm, width `30.62` cm, depth `27.81` cm and girth `91.83` cm; the unrounded projected values reproduced the 14451 formula. A blank top image returned `422 marker_missing`. This is a functional fixture result, not an animal measurement or database/price integration proof. Original checkpoint, dataset YAML/README, selected sample files, existing manifest and original top model hashes were checked before and after export; the private and worktree top hashes match the approved bytes. These are software/fixture checks, not physical-scale, same-pig, landmark-placement or weight-accuracy validation.
+
+```powershell
+& 'D:/pigweigh-export-env/Scripts/python.exe' -B -m unittest discover -s training -p test_side_adapter.py -v
+```
+
+## Earlier two-checkpoint export
+
+The original private export and October parity evidence below used the 11900 method. The manifest was subsequently revised to the 14451 baseline without changing those original ONNX model bytes. This section describes the historical two-checkpoint exporter.
 
 `export_bundle.py` exports the user's trusted local top/side pose checkpoints into a new private directory outside this repository. It copies checkpoints before exporting, preserves originals, disables Ultralytics auto-installation through process-local `YOLO_AUTOINSTALL=false`, and runs CPU only with bounded threads. It refuses existing output directories and publishes `manifest.json` only after both models pass validation, mock-image parity, and original-file hash checks. A partial output without a manifest is not a serving bundle; use a new directory name after fixing an export failure.
 

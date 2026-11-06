@@ -1,3 +1,5 @@
+> Local candidate, 2026-11-06: the side-only adapter and current bundle are recorded in the [export evidence](../training/README-export.md#side-only-v2-candidate-2026-11-06). The following November 3 bundle details are historical; the new candidate has not been deployed by this verification.
+
 # Backend verification record
 
 ## Thesis baseline and bundle — 2026-11-03

@@ -1,3 +1,5 @@
+> Local candidate, 2026-11-06: the repository side model is now the [class-conditioned v2 adapter](../../training/README-export.md#side-only-v2-candidate-2026-11-06), bundle `attached-marker-ellipse-14451-v1-35164d7e48c146d1`. The November 3 production bundle and hashes described below remain historical until a later release.
+
 # Models and production inference
 
 The repository contains the approved CPU serving export in `server/models/v1/`: `manifest.json`, `top.onnx` and `side.onnx`. They are the **only** model artifacts approved for ordinary Git, without LFS. Source `.pt` checkpoints, original photographs, datasets, credentials and export intermediates stay outside Git and deployment archives. See [export provenance](../../training/README-export.md) for the isolated export workflow.

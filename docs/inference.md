@@ -1,15 +1,15 @@
 # CPU inference runbook
 
-Current method, 2026-11-03: the API runs top/side ONNX pose inference, detects the configured attached ArUco marker, measures named proxies and applies the approved 14451 baseline. The [Railway release](deployment.md#14451-api-and-web-release-2026-11-03) verified this method with generated fixtures after an [earlier 404 observation](handoff/deployment.md#earlier-outage-observation-2026-11-03). A server with no usable configured bundle remains unavailable.
+The 2026-11-06 local candidate retains the method below and replaces only the side model with a class-conditioned adapter. The November 3 production release remains the earlier bundle until separately deployed. The API runs top/side ONNX pose inference, detects the configured attached ArUco marker, measures named proxies and applies the approved 14451 baseline. The [Railway release](deployment.md#14451-api-and-web-release-2026-11-03) verified this method with generated fixtures after an [earlier 404 observation](handoff/deployment.md#earlier-outage-observation-2026-11-03). A server with no usable configured bundle remains unavailable.
 
 ## Versioned serving bundle and isolated export environment
 
-The user-trained checkpoints were first exported into the private directory below under the earlier 11900 method. The repository release manifest updates the method and canonical ID; the ONNX model bytes remain unchanged:
+The repository candidate uses the private side-only export below. The top ONNX bytes are unchanged. The earlier November 3 production bundle used the original side model:
 
 ```text
-D:/pigweigh-inference-artifacts/v1/manifest.json
-repository release: server/models/v1/{manifest.json,top.onnx,side.onnx}
-release bundle_id: attached-marker-ellipse-14451-v1-08661ffdf08ae1cc
+D:/pigweigh-inference-artifacts/side-adapter-v2-canonical-20261106/manifest.json
+repository candidate: server/models/v1/{manifest.json,top.onnx,side.onnx}
+candidate bundle_id: attached-marker-ellipse-14451-v1-35164d7e48c146d1
 ```
 
 The API loads `top.onnx` and `side.onnx` relative to the manifest, not original `.pt` files. The user's narrow exception permits exactly these three release files in **ordinary Git, no LFS**; both ONNX files are under 41 MB each. Verify ONNX hashes against the private export and verify the current manifest identity before release. Keep source images/checkpoints, `source-copies/`, other export artifacts and credentials excluded. Future exports still use a fresh private output directory before verified release copies. [Export instructions/evidence](../training/README-export.md) record the isolated `D:/pigweigh-export-env` and unchanged originals/global training environment.
@@ -75,7 +75,7 @@ For each EXIF-oriented decoded image, OpenCV detects exactly one marker, maps it
 
 These are marker-plane proxies. A straight ear-to-tail chord differs from the tape's path along the spine; the chest section is approximated by an ellipse. The curved body, cross-view posture and residual marker/body offset are not reconstructed in 3D. The earlier formula source displays 11900 while its calculator uses an imperial conversion near 14450.9; [source inspection](research/selected-weight-formula.md) records that discrepancy. The user-approved 14451 baseline approximates the converted divisor; this does not validate the proxies or add an accuracy claim.
 
-Exactly one class-0 pig at score ≥0.5 must be detected in each view, and each required landmark must score ≥0.5 and lie within the image. These are engineering usability gates, not “50% weight accuracy” or a confidence interval. Missing/extra/wrong markers, missing/multiple pigs, unusable points and unstable/invalid projections return 422 with a view and actionable rejection. The software does not verify same-pig identity, card attachment location or anatomical correctness of every prediction. One CPU photo check or estimate is admitted at a time; a competing request gets `429 inference_busy` (separate bounded upload admission can return `upload_busy`). Existing image/body limits and temporary-file cleanup still apply.
+Exactly one class-0 row at score ≥0.5 must be detected in each view, and each required landmark must score ≥0.5 and lie within the image. The side adapter preserves the source weight-class score; it is not a calibrated pig-objectness probability. It maps each row by its predicted source class, so a wrong class can produce a wrong point order. It does not combine or deduplicate rows; multiple qualifying rows are rejected. These are engineering usability gates, not “50% weight accuracy” or a confidence interval. Missing/extra/wrong markers, missing/multiple pigs, unusable points and unstable/invalid projections return 422 with a view and actionable rejection. The software does not verify same-pig identity, card attachment location or anatomical correctness of every prediction. One CPU photo check or estimate is admitted at a time; a competing request gets `429 inference_busy` (separate bounded upload admission can return `upload_busy`). Existing image/body limits and temporary-file cleanup still apply.
 
 Success returns decimal strings for rounded weight and four measurements, plus bundle ID and method metadata: version, formula, dictionary, ID, `marker_side_mm:"100"`, `experimental:true`, `accuracy_evaluated:false`. The current price is read once **after** CPU computation; no database transaction spans inference. Valuation uses Decimal on the two-decimal reported weight and keeps that snapshot's provenance. With no price, keep the weight, `valuation:null` and `valuation_unavailable_reason:"no_price"`.
 
@@ -90,7 +90,7 @@ side: snout-tip, eye, ear-tip, withers, mid-point-peak, loin, tail-base,
       front-shoulder-joint, front-hoof, rear-hip-joint, rear-hoof, sternum, belly-lowest-part
 ```
 
-The exporter and loader independently derive the bundle ID from sorted compact JSON containing schema version, method, divisor, marker and complete model entries; the loader rejects a stale or mismatched ID and verifies the model hashes. Private source-checkpoint hashes and parity evidence remain in the manifest; they are provenance, not biological accuracy.
+The exporter and loader independently derive the bundle ID from sorted compact JSON containing schema version, method, divisor, marker and complete model entries; the loader rejects a stale or mismatched ID and verifies the model hashes. Private source-checkpoint hashes and parity evidence remain in the manifest; they are provenance, not biological accuracy. The side entry also binds the source checkpoint, class mapping, dataset metadata and mapping-policy hashes. The output metadata describes the adapter’s canonical serving interface, while its recorded source model has 13 classes and generic point names. See the [side-only export and parity record](../training/README-export.md#side-only-v2-candidate-2026-11-06) for its evidence and limitations.
 
 ## Evidence and remaining work
 
