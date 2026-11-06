@@ -23,6 +23,16 @@ export function cameraErrorMessage(error: unknown): string {
   }
 }
 
+export type TorchState = "unsupported" | "off" | "on" | "unconfirmed";
+function torchFlag(value: unknown): boolean | null {
+  if (typeof value !== "object" || value === null || !("torch" in value)) return null;
+  return typeof value.torch === "boolean" ? value.torch : null;
+}
+function trackEnded(track: MediaStreamTrack): boolean { return track.readyState === "ended"; }
+function supportedTorch(track: MediaStreamTrack): boolean {
+  try { return typeof track.getCapabilities === "function" && torchFlag(track.getCapabilities()) === true; }
+  catch { return false; }
+}
 /** Owns a single request, including a stream that arrives after its modal closes. */
 export class CameraSession {
   private stream: MediaStream | null = null;
@@ -38,6 +48,24 @@ export class CameraSession {
     }
     this.stream = stream;
     return stream;
+  }
+
+  torchState(): TorchState {
+    const track = this.stream?.getVideoTracks()[0];
+    if (this.closed || !track || trackEnded(track) || !supportedTorch(track)) return "unsupported";
+    try {
+      const value = torchFlag(track.getSettings());
+      return value === null ? "unconfirmed" : value ? "on" : "off";
+    } catch { return "unconfirmed"; }
+  }
+
+  async setTorch(enabled: boolean): Promise<TorchState> {
+    const track = this.stream?.getVideoTracks()[0];
+    if (this.closed || !track || trackEnded(track) || !supportedTorch(track)) return "unsupported";
+    const constraint: MediaTrackConstraintSet & { torch: boolean } = { torch: enabled };
+    await track.applyConstraints({ advanced: [constraint] });
+    if (this.closed || trackEnded(track) || this.stream?.getVideoTracks()[0] !== track) return "unsupported";
+    return this.torchState();
   }
 
   close(): void {

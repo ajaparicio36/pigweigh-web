@@ -4,11 +4,16 @@ import Image from "next/image";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { CameraModal } from "@/components/camera-modal";
 import { photoValidationError } from "@/lib/camera";
-import type { PhotoCheck } from "@/lib/photo-checks";
+import type { CandidatePassed, CandidateResult, PhotoCheck } from "@/lib/photo-checks";
+import type { PhotoView } from "@/lib/api";
 
-type PhotoInputProps = { view: "top" | "side"; file: File | null; check: PhotoCheck; disabled: boolean; onChange: (file: File | null) => void; onRetry: () => void };
+export type GuidedCaptureBinding = {
+  checkCandidate: (view: PhotoView, file: File, signal: AbortSignal) => Promise<CandidateResult>;
+  onAccept: (candidate: CandidatePassed) => boolean;
+};
+type PhotoInputProps = { view: PhotoView; file: File | null; check: PhotoCheck; disabled: boolean; onChange: (file: File | null) => void; onRetry: () => void; guidedCapture?: GuidedCaptureBinding };
 
-export function PhotoInput({ view, file, check, disabled, onChange, onRetry }: PhotoInputProps): React.JSX.Element {
+export function PhotoInput({ view, file, check, disabled, onChange, onRetry, guidedCapture }: PhotoInputProps): React.JSX.Element {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
@@ -72,7 +77,15 @@ export function PhotoInput({ view, file, check, disabled, onChange, onRetry }: P
         </div>
         {check.status === "error" && !rejected && <button type="button" className="text-button photo-check-retry" disabled={disabled} onClick={onRetry}>Retry check<span className="sr-only"> for {label.toLowerCase()}</span></button>}
       </div>
-      {cameraOpen && <CameraModal view={view} disabled={disabled} onClose={closeCamera} onCapture={(photo) => {
+      {cameraOpen && <CameraModal view={view} disabled={disabled} onClose={closeCamera} guidedCapture={guidedCapture && {
+        checkCandidate: guidedCapture.checkCandidate,
+        onAccept: (candidate) => {
+          if (!guidedCapture.onAccept(candidate)) return false;
+          setError("");
+          if (inputRef.current) inputRef.current.value = "";
+          return true;
+        },
+      }} onCapture={(photo) => {
         setError("");
         if (inputRef.current) inputRef.current.value = "";
         onChange(photo);

@@ -126,7 +126,7 @@ test("capture rejection preserves the photo, requires replacement, and never ena
   assert.equal(photosReady(queue.getSnapshot()), false);
 });
 
-test("unmount aborts the active fetch, drops queued work and suppresses late notifications", async () => {
+test("unmount retains the active lane, drops queued work and suppresses late notifications", async () => {
   const { queue, calls } = harness();
   let notifications = 0;
   queue.subscribe(() => notifications++);
@@ -134,7 +134,7 @@ test("unmount aborts the active fetch, drops queued work and suppresses late not
   queue.select("side", photo());
   queue.dispose();
   const before = notifications;
-  assert.equal(calls[0].signal.aborted, true);
+  assert.equal(calls[0].signal.aborted, false);
   calls[0].pass(); await settle();
   queue.select("top", photo());
   assert.equal(calls.length, 1);
@@ -157,7 +157,7 @@ test("a preserved page resumes interrupted active and queued checks with explici
   queue.select("top", top);
   queue.select("side", side);
   queue.dispose(); queue.resume();
-  assert.equal(queue.getSnapshot().running, false);
+  assert.equal(queue.getSnapshot().running, true);
   assert.equal(queue.getSnapshot().top.kind, "interrupted");
   assert.equal(queue.getSnapshot().side.kind, "interrupted");
   assert.equal(queue.getSnapshot().top.file, top);
@@ -165,6 +165,7 @@ test("a preserved page resumes interrupted active and queued checks with explici
   assert.equal(calls.length, 1);
   queue.retry("top");
   queue.retry("side");
+  assert.equal(calls.length, 1);
   calls[0].pass(); await settle();
   assert.equal(queue.getSnapshot().top.status, "checking");
   assert.equal(calls.length, 2);
@@ -172,4 +173,78 @@ test("a preserved page resumes interrupted active and queued checks with explici
   assert.equal(calls.length, 3);
   calls[2].pass(); await settle();
   assert.equal(photosReady(queue.getSnapshot()), true);
+});
+
+test("guided candidates share the selected-photo lane and promote exactly once without another check", async () => {
+  const {queue,calls}=harness(); const selected=photo(), candidate=photo(); const controller=new AbortController();
+  queue.select("side",selected);
+  const pending=queue.checkCandidate("top",candidate,controller.signal);
+  assert.equal(calls.length,1); assert.equal(calls[0].file,selected);
+  calls[0].pass(); await settle(); assert.equal(calls.length,2); assert.equal(calls[1].file,candidate);
+  calls[1].pass(); const result=await pending;
+  assert.equal(result.status,"passed"); assert.equal(queue.getSnapshot().top.status,"empty");
+  assert.equal(queue.promoteCandidate({...result}),false);
+  assert.equal(queue.promoteCandidate(result),true);
+  assert.equal(queue.getSnapshot().top.status,"passed"); assert.equal(queue.getSnapshot().top.file,candidate);
+  assert.equal(photosReady(queue.getSnapshot()),true); assert.equal(queue.promoteCandidate(result),false); assert.equal(calls.length,2);
+});
+
+test("cancelled in-flight candidate stays in the lane until completion and cannot replace the manual photo", async () => {
+  const {queue,calls}=harness(); const controller=new AbortController(); const candidate=photo(), manual=photo();
+  const pending=queue.checkCandidate("top",candidate,controller.signal);
+  controller.abort(); assert.deepEqual(await pending,{status:"cancelled"});
+  assert.equal(calls[0].signal.aborted,false); queue.select("top",manual);
+  assert.equal(queue.getSnapshot().top.file,manual); assert.equal(queue.getSnapshot().running,true); assert.equal(calls.length,1);
+  calls[0].pass(); await settle(); assert.equal(calls.length,2); assert.equal(calls[1].file,manual);
+  calls[1].fail(new ApiError(503,"inference_unavailable","Unavailable")); await settle();
+  assert.equal(queue.getSnapshot().top.file,manual); assert.equal(queue.getSnapshot().top.kind,"unavailable");
+});
+
+test("replacement, cancellation and navigation invalidate candidate proofs", async () => {
+  for (const invalidate of ["replace","abort","dispose"]) {
+    const {queue,calls}=harness(); const controller=new AbortController(), candidate=photo();
+    const pending=queue.checkCandidate("top",candidate,controller.signal); calls[0].pass(); const result=await pending;
+    if (invalidate === "replace") queue.select("top",photo());
+    else if (invalidate === "abort") controller.abort();
+    else { queue.dispose(); queue.resume(); }
+    assert.equal(queue.promoteCandidate(result),false,invalidate);
+  }
+});
+
+test("a candidate completing after replacement or navigation never publishes a stale pass", async () => {
+  for (const mode of ["replace","dispose"]) {
+    const {queue,calls}=harness(); const controller=new AbortController(), candidate=photo();
+    const pending=queue.checkCandidate("top",candidate,controller.signal);
+    if (mode === "replace") queue.select("top",photo());
+    else { queue.dispose(); assert.equal(calls[0].signal.aborted,false); queue.resume(); assert.equal(queue.getSnapshot().running,true); }
+    calls[0].pass(); assert.deepEqual(await pending,{status:"cancelled"}); await settle();
+    assert.notEqual(queue.getSnapshot().top.file,candidate);
+    if (mode === "dispose") assert.equal(queue.getSnapshot().running,false);
+  }
+});
+
+test("candidate errors distinguish retake, busy, unavailable, connection and service failures", async () => {
+  for (const [error,kind] of [[new ApiError(422,"pose","Retake"),"rejected"],[new ApiError(429,"busy","Busy"),"busy"],[new ApiError(503,"unavailable","Unavailable"),"unavailable"],[new TypeError("Network"),"connection"],[new ApiError(413,"too_large","Large"),"service"]]) {
+    const {queue,calls}=harness(), controller=new AbortController(); const pending=queue.checkCandidate("side",photo(),controller.signal);
+    calls[0].fail(error); const result=await pending; assert.equal(result.status,"failed"); assert.equal(result.kind,kind); assert.equal(queue.getSnapshot().side.status,"empty");
+  }
+});
+
+test("queued candidate cancellation prevents upload and leaves the selected check undisturbed", async () => {
+  const {queue,calls}=harness(), controller=new AbortController();queue.select("top",photo());
+  const pending=queue.checkCandidate("side",photo(),controller.signal);controller.abort();
+  assert.deepEqual(await pending,{status:"cancelled"});calls[0].pass();await settle();
+  assert.equal(calls.length,1);assert.equal(queue.getSnapshot().top.status,"passed");
+});
+
+test("candidate promotion rejects mismatched view responses and freezes genuine proof identity", async () => {
+  const candidate=photo();
+  const bad=new PhotoCheckQueue(async()=>({status:"validated",view:"side",artifacts:{bundle_id:"fixture"}}));
+  const rejected=await bad.checkCandidate("top",candidate,new AbortController().signal);
+  assert.equal(rejected.status,"failed");assert.equal(rejected.kind,"service");
+  const good=new PhotoCheckQueue(async(view)=>({status:"validated",view,artifacts:{bundle_id:"fixture"}}));
+  const proof=await good.checkCandidate("top",candidate,new AbortController().signal);
+  assert.equal(proof.status,"passed");assert.equal(Object.isFrozen(proof),true);
+  assert.throws(()=>{proof.file=photo()},TypeError);
+  assert.equal(good.promoteCandidate(proof),true);assert.equal(good.getSnapshot().top.file,candidate);
 });

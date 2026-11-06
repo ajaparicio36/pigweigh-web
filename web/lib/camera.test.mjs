@@ -88,3 +88,34 @@ test("capture saves intrinsic video pixels without cropping or guide overlays, a
     else globalThis.document = previousDocument;
   }
 });
+
+test("torch is hidden for unsupported capabilities and never inferred from applyConstraints alone", async () => {
+  const { CameraSession } = require(path.join(compiled, "camera.js"));
+  let stopped=0, applied=[];
+  const track={readyState:"live",getCapabilities:()=>({}),getSettings:()=>({}),applyConstraints:async(c)=>applied.push(c),stop:()=>stopped++};
+  const session=new CameraSession(); await session.open(async()=>({getTracks:()=>[track],getVideoTracks:()=>[track]}));
+  assert.equal(session.torchState(),"unsupported"); assert.equal(await session.setTorch(true),"unsupported"); assert.equal(applied.length,0);
+  track.getCapabilities=()=>({torch:true});
+  assert.equal(session.torchState(),"unconfirmed"); assert.equal(await session.setTorch(true),"unconfirmed");
+  assert.deepEqual(applied,[{advanced:[{torch:true}]}]); session.close(); assert.equal(stopped,1);
+});
+
+test("torch on and off are reported only after track settings confirm them", async () => {
+  const { CameraSession } = require(path.join(compiled, "camera.js"));
+  let enabled=false;
+  const track={readyState:"live",getCapabilities:()=>({torch:true}),getSettings:()=>({torch:enabled}),applyConstraints:async({advanced})=>{enabled=advanced[0].torch},stop(){this.readyState="ended"}};
+  const session=new CameraSession(); await session.open(async()=>({getTracks:()=>[track],getVideoTracks:()=>[track]}));
+  assert.equal(session.torchState(),"off"); assert.equal(await session.setTorch(true),"on"); assert.equal(await session.setTorch(false),"off");
+  session.close(); assert.equal(session.torchState(),"unsupported");
+});
+
+test("rejected torch constraints and delayed completion after dismissal do not revive tracks", async () => {
+  const { CameraSession } = require(path.join(compiled, "camera.js"));
+  let finish, stopped=0;
+  const track={readyState:"live",getCapabilities:()=>({torch:true}),getSettings:()=>({torch:false}),applyConstraints:async()=>{throw new Error("denied")},stop(){stopped++;this.readyState="ended"}};
+  const session=new CameraSession(); await session.open(async()=>({getTracks:()=>[track],getVideoTracks:()=>[track]}));
+  await assert.rejects(session.setTorch(true),/denied/); assert.equal(session.torchState(),"off");
+  track.applyConstraints=()=>new Promise((resolve)=>{finish=resolve});
+  const pending=session.setTorch(true); session.close(); finish();
+  assert.equal(await pending,"unsupported"); assert.equal(stopped,1); assert.equal(session.torchState(),"unsupported");
+});
