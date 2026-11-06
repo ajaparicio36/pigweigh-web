@@ -22,6 +22,9 @@ SIDE_POINTS = ("snout-tip", "eye", "ear-tip", "withers", "mid-point-peak", "loin
 PIG_THRESHOLD = 0.5
 KEYPOINT_THRESHOLD = 0.5
 INPUT_SIZE = 640
+TOP_ANCHORS = ("left-ear-base", "right-ear-base", "tail-base", "left-chest", "right-chest")
+SIDE_ANCHORS = ("withers", "sternum")
+UPLOAD_DIGEST_KEY = "pigweigh_upload_sha256"
 cv2.setNumThreads(2)
 
 
@@ -171,6 +174,7 @@ class PoseSession:
     session: ort.InferenceSession
     names: tuple[str, ...]
     output_shape: tuple[int, ...]
+    score_semantics: str = "model_detection"
 
 
 class InferenceEngine:
@@ -239,11 +243,15 @@ class InferenceEngine:
             warmup = session.run(None, {inputs[0].name: np.zeros((1,3,640,640),dtype=np.float32)})[0]
             if warmup.shape != output_shape or not np.isfinite(warmup).all():
                 raise ValueError("ONNX CPU warmup failed")
-            models[view] = PoseSession(session, names, output_shape)
+            adapter = spec.get("adapter")
+            semantics = "source_weight_class" if view == "side" and isinstance(adapter, dict) else "model_detection"
+            models[view] = PoseSession(session, names, output_shape, semantics)
         self.models, self.bundle_id, self.blocker = models, bundle_id, None
 
-    def _measure_view(self, view: str, image: Image.Image) -> dict[str, np.ndarray]:
-        """Shared photo gates; preflight never bypasses final paired validation."""
+    def _measure_view(self, view: str, image: Image.Image, diagnostics: dict | None = None,
+                      overrides: dict[str, list[float]] | None = None, *,
+                      include_segments: bool = True) -> dict[str, np.ndarray]:
+        """Run marker, pose and original projection gates before applying any edit."""
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
         pixels = np.asarray(image)
@@ -260,27 +268,104 @@ class InferenceEngine:
         except Exception:
             self.blocker = {"code":"inference_runtime_failed", "message":"The configured model runtime failed. Restart after checking the artifacts."}
             raise InferenceUnavailable() from None
-        required = ("left-ear-base", "right-ear-base", "tail-base", "left-chest", "right-chest") if view == "top" else ("withers", "sternum")
-        points = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
-        return project_points(points, transform, view)
+        required = TOP_ANCHORS if view == "top" else SIDE_ANCHORS
+        detected = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
+        # Reject invalid original projection even if an edit would hide it.
+        original_projected = project_points(detected, transform, view)
+        row = output[0][output[0, :, 4] >= PIG_THRESHOLD][0]
+        box = row[:4].astype(np.float64).copy()
+        box[[0, 2]] = (box[[0, 2]] - left) / scale
+        box[[1, 3]] = (box[[1, 3]] - top) / scale
+        used = dict(detected)
+        changed = {}
+        for name, coordinates in (overrides or {}).items():
+            point = np.asarray(coordinates, dtype=np.float64)
+            if np.array_equal(point, detected[name]):
+                continue
+            if not (0 <= point[0] < image.width and 0 <= point[1] < image.height):
+                raise CaptureRejected("adjustment_outside_image", "Keep adjusted landmarks inside the photo.", view)
+            if not (box[0] <= point[0] <= box[2] and box[1] <= point[1] <= box[3]):
+                raise CaptureRejected("adjustment_outside_pig", "Keep adjusted landmarks inside the detected pig outline.", view)
+            used[name] = point
+            changed[name] = point.tolist()
+        projected = project_points(used, transform, view) if changed else original_projected
+        if diagnostics is not None:
+            source_points = row[6:].reshape(len(model.names), 3).astype(np.float64)
+            landmarks = {}
+            for index, name in enumerate(model.names):
+                x, y, score = source_points[index]
+                position = [float((x - left) / scale), float((y - top) / scale)]
+                landmarks[name] = {"detected": position,
+                    "used": used[name].tolist() if name in used else None,
+                    "confidence": float(score) if 0 <= score <= 1 else None,
+                    "within_image": bool(0 <= position[0] < image.width and 0 <= position[1] < image.height)}
+            if not include_segments:
+                segments = {}
+            elif view == "top":
+                marker_midpoint = (projected["left-ear-base"] + projected["right-ear-base"]) / 2
+                inverse = np.linalg.inv(transform)
+                point = inverse @ np.array([*marker_midpoint, 1.0])
+                if not np.isfinite(point).all() or abs(point[2]) <= np.finfo(np.float64).eps:
+                    raise CaptureRejected("projection_unusable", "The measurement line cannot be displayed.", view)
+                midpoint = (point[:2] / point[2]).tolist()
+                segments = {"body_length": [midpoint, used["tail-base"].tolist()],
+                            "chest_width": [used["left-chest"].tolist(), used["right-chest"].tolist()]}
+            else:
+                segments = {"chest_depth": [used["withers"].tolist(), used["sternum"].tolist()]}
+            diagnostics[view] = {"version": 1, "coordinate_space": "exif-oriented-pixels", "view": view,
+                "width": image.width, "height": image.height, "image_sha256": image.info.get(UPLOAD_DIGEST_KEY),
+                "image_to_marker": transform.reshape(-1).tolist(), "bounding_box": box.tolist(),
+                "model_score": float(row[4]), "model_score_semantics": model.score_semantics,
+                "landmarks": landmarks, "segments": segments, "overrides": changed}
+        return projected
 
-    def validate_photo(self, view: str, image: Image.Image) -> dict:
-        self._measure_view(view, image)
-        return {"status": "validated", "view": view, "artifacts": {"bundle_id": self.bundle_id}}
+    def validate_photo(self, view: str, image: Image.Image, *, include_diagnostics: bool = False) -> dict:
+        details = {} if include_diagnostics else None
+        if details is None:
+            self._measure_view(view, image)
+        else:
+            self._measure_view(view, image, details)
+        result = {"status": "validated", "view": view, "artifacts": {"bundle_id": self.bundle_id}}
+        if details is not None:
+            details[view].pop("overrides")
+            result["diagnostics"] = details[view]
+        return result
 
-    def estimate(self, images: dict[str, Image.Image]) -> dict:
-        # Preserve unavailable behavior even when the input mapping is empty.
+    def estimate(self, images: dict[str, Image.Image], *, include_diagnostics: bool = False,
+                 adjustments: dict | None = None) -> dict:
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
-        measured = {view: self._measure_view(view, images[view]) for view in ("top", "side")}
+        hashes = {view: images[view].info.get(UPLOAD_DIGEST_KEY) for view in ("top", "side")}
+        collect = include_diagnostics or adjustments is not None or all(hashes.values())
+        details = {} if collect else None
+        measured = {}
+        for view in ("top", "side"):
+            edits = adjustments["overrides"][view] if adjustments is not None else None
+            if details is None:
+                measured[view] = self._measure_view(view, images[view])
+            else:
+                measured[view] = self._measure_view(view, images[view], details, edits,
+                                                    include_segments=include_diagnostics or adjustments is not None)
         try:
             values = measure(measured["top"], measured["side"])
             weight = decimal_measure(values.pop("weight_kg"))
             dimensions = {name: decimal_measure(value) for name,value in values.items()}
         except (ValueError, ArithmeticError, OverflowError):
             raise CaptureRejected("measurements_unusable", "The photo measurements cannot produce a usable formula estimate. Retake both views.", "pair") from None
-        return {"status":"estimated", "estimated_weight_kg":weight,
+        result = {"status":"estimated", "estimated_weight_kg":weight,
                 "measurements":dimensions, "artifacts":{"bundle_id":self.bundle_id},
                 "method":{"version":METHOD, "formula":f"G_cm^2 * L_cm / {FORMULA_DIVISOR}",
                           "marker_dictionary":"DICT_4X4_50", "marker_id":0, "marker_side_mm":"100",
                           "experimental":True, "accuracy_evaluated":False}}
+        if details is not None:
+            changed = {view: details[view].pop("overrides") for view in ("top", "side")}
+            result["provenance"] = {"version": 1,
+                "source": "manually_adjusted" if any(changed.values()) else "automatic",
+                "bundle_id": self.bundle_id, "method_version": METHOD, "image_sha256": hashes,
+                "landmarks": {view: details[view]["landmarks"] for view in ("top", "side")},
+                "overrides": changed, "configuration": {"formula_divisor": FORMULA_DIVISOR,
+                    "marker_dictionary": "DICT_4X4_50", "marker_id": 0, "marker_side_mm": "100"}}
+            if include_diagnostics or adjustments is not None:
+                result["diagnostics"] = {"version": 1, "coordinate_space": "exif-oriented-pixels",
+                                         "top": details["top"], "side": details["side"]}
+        return result

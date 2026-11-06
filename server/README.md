@@ -88,6 +88,10 @@ try {
 
 Publication requires a positive decimal string with at most two fractional digits, bounded by signed 64-bit centavos (`92233720368547758.07` PHP). Source references are trimmed then checked for 1–500 characters. A stale revision returns `409 stale_price_revision`; fetch the new current price and require review before resubmission. Publication locks the singleton in PostgreSQL and commits the immutable record/current revision together. Historical records have no edit/delete endpoint and a DB trigger forbids mutation. Current-price reads use one joined snapshot. The isolated Decimal valuation helper uses ROUND_HALF_UP for centavos and retains a supplied snapshot; it is not an inference method and is not exposed as fake output.
 
+## Optional landmark review
+
+Per-photo checks can include same-pass diagnostics, and estimates accept optional hash- and bundle-bound landmark adjustments with explicit provenance. See the [review API contract and executable curl examples](../docs/landmark-review.md). Normal two-file estimates remain supported.
+
 ## Experimental measurement formula
 
 `pigweigh.formula.estimate_weight_kg(girth_cm, body_length_cm)` applies the user-approved thesis baseline `W0_kg = G_cm² × L_cm / 14451` (2026-11-03), superseding the earlier 11900 coefficient. This rounded divisor approximates the imperial tape expression's unit conversion; it does not validate photo-derived measurements. Fitted correction `Wcal = a + b × W0` and a fold-specific median remain proposed research pending paired same-pig captures and scale weights. No coefficients, calibration artifacts or accuracy claims are substituted.

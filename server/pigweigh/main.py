@@ -1,6 +1,9 @@
 from contextlib import ExitStack, asynccontextmanager, closing
 from datetime import datetime, timedelta, timezone
 import asyncio
+import json
+import math
+import re
 import secrets
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -21,9 +24,11 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from pigweigh.config import Settings
 from pigweigh.db import Admin, LoginSession, PriceRecord, PriceState, make_engine
 from pigweigh.money import MAX_BIGINT, format_price, parse_price, valuation
-from pigweigh.inference import CaptureRejected, InferenceEngine, InferenceUnavailable
+from pigweigh.inference import (CaptureRejected, InferenceEngine, InferenceUnavailable, METHOD,
+                                SIDE_ANCHORS, SIDE_POINTS, TOP_ANCHORS, TOP_POINTS, UPLOAD_DIGEST_KEY)
+from pigweigh.formula import FORMULA_DIVISOR
 from pigweigh.security import COOKIE, PASSWORDS, LoginGuard, normalize_username, token_hash
-from pigweigh.uploads import BODY_LIMIT, InvalidImage, capture_form, decode_image
+from pigweigh.uploads import BODY_LIMIT, InvalidImage, capture_form, decode_image, upload_sha256
 
 PHOTO_VALIDATION_PATHS = frozenset({"/api/photos/top/validate", "/api/photos/side/validate"})
 
@@ -36,6 +41,91 @@ class APIError(Exception):
 def error_response(status: int, code: str, message: str, details: dict | None = None) -> JSONResponse:
     return JSONResponse({"error": {"code": code, "message": message, "details": details or {}}},
                         status_code=status, headers={"Cache-Control": "no-store"})
+
+
+ADJUSTMENT_LIMIT = 8192
+
+
+def parse_adjustments(text: str) -> dict:
+    """Strictly decode the bounded, versioned identity and editable point map."""
+    def invalid():
+        raise ValueError("Invalid landmark adjustments")
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                invalid()
+            result[key] = value
+        return result
+    def bad_constant(_value):
+        invalid()
+    try:
+        if len(text.encode("utf-8")) > ADJUSTMENT_LIMIT:
+            invalid()
+        value = json.loads(text, object_pairs_hook=unique, parse_constant=bad_constant)
+        if not isinstance(value, dict) or set(value) != {"version", "bundle_id", "image_sha256", "overrides"}:
+            invalid()
+        if type(value["version"]) is not int or value["version"] != 1:
+            invalid()
+        bundle = value["bundle_id"]
+        if not isinstance(bundle, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,128}", bundle):
+            invalid()
+        hashes, overrides = value["image_sha256"], value["overrides"]
+        if not isinstance(hashes, dict) or set(hashes) != {"top", "side"}:
+            invalid()
+        if any(not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest) for digest in hashes.values()):
+            invalid()
+        if not isinstance(overrides, dict) or set(overrides) != {"top", "side"}:
+            invalid()
+        normalized = {}
+        for view, allowed in (("top", TOP_ANCHORS), ("side", SIDE_ANCHORS)):
+            points = overrides[view]
+            if not isinstance(points, dict) or any(name not in allowed for name in points):
+                invalid()
+            normalized[view] = {}
+            for name, point in points.items():
+                if not isinstance(point, list) or len(point) != 2 or any(type(item) not in (int, float) for item in point):
+                    invalid()
+                numeric = [float(item) for item in point]
+                if not all(math.isfinite(item) for item in numeric):
+                    invalid()
+                normalized[view][name] = numeric
+        return {"version": 1, "bundle_id": bundle, "image_sha256": hashes, "overrides": normalized}
+    except (ValueError, TypeError, OverflowError, RecursionError):
+        raise APIError(422, "invalid_adjustments", "Check the landmark adjustment format and review the photos again.") from None
+
+
+def verify_result_provenance(result: dict, hashes: dict[str, str], bundle_id: str,
+                             adjustments: dict | None, diagnostics: bool) -> None:
+    """Fail closed if a response drops or misstates the submitted review."""
+    try:
+        provenance = result["provenance"]
+        if (type(provenance["version"]) is not int or provenance["version"] != 1
+                or provenance["bundle_id"] != bundle_id or result["artifacts"]["bundle_id"] != bundle_id
+                or provenance["method_version"] != METHOD or result["method"]["version"] != METHOD
+                or provenance["image_sha256"] != hashes
+                or provenance["configuration"] != {"formula_divisor": FORMULA_DIVISOR,
+                    "marker_dictionary": "DICT_4X4_50", "marker_id": 0, "marker_side_mm": "100"}):
+            raise ValueError
+        landmarks = provenance["landmarks"]
+        expected = {"top": {}, "side": {}}
+        for view, names in (("top", TOP_POINTS), ("side", SIDE_POINTS)):
+            if set(landmarks[view]) != set(names):
+                raise ValueError
+            edits = adjustments["overrides"][view] if adjustments is not None else {}
+            for name, point in edits.items():
+                detected = landmarks[view][name]["detected"]
+                if detected != point:
+                    expected[view][name] = point
+                if landmarks[view][name]["used"] != point:
+                    raise ValueError
+        source = "manually_adjusted" if any(expected.values()) else "automatic"
+        if provenance["source"] != source or provenance["overrides"] != expected:
+            raise ValueError
+        if (diagnostics or adjustments is not None) and not isinstance(result.get("diagnostics"), dict):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        raise APIError(503, "review_provenance_unavailable", "The reviewed result could not be verified. Recheck the photos and try again.") from None
 
 
 async def complete_cpu_work(work: Callable[[], dict]) -> dict:
@@ -293,7 +383,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return result
 
     @app.post("/api/photos/{view}/validate")
-    async def validate_photo(view: Literal["top", "side"], request: Request):
+    async def validate_photo(view: Literal["top", "side"], request: Request, diagnostics: bool = False):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the image as multipart form data.")
         if inference_slot.locked():
@@ -307,11 +397,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 upload = items[0][1]
                 def compute():
                     try:
+                        digest = upload_sha256(upload)
                         image = decode_image(upload)
+                        image.info[UPLOAD_DIGEST_KEY] = digest
                     except InvalidImage as exc:
                         raise APIError(exc.status, exc.code, exc.message, {"view": view}) from None
                     # Both decoded image and spool outlive any cancelled CPU work.
                     with closing(image):
+                        if diagnostics:
+                            return inference.validate_photo(view, image, include_diagnostics=True)
                         return inference.validate_photo(view, image)
                 try:
                     return await complete_cpu_work(compute)
@@ -323,31 +417,55 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             inference_slot.release()
 
     @app.post("/api/estimates")
-    async def estimate(request: Request):
+    async def estimate(request: Request, diagnostics: bool = False):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the two images as multipart form data.")
         if inference_slot.locked():
             raise APIError(429, "inference_busy", "An estimate is already running. Try again shortly.")
         await inference_slot.acquire()
         try:
-            async with capture_form(request) as form:
+            async with capture_form(request, max_fields=1, max_part_size=ADJUSTMENT_LIMIT) as form:
                 items = list(form.multi_items())
-                if len(items) != 2 or {key for key, _ in items} != {"top_image", "side_image"}:
-                    raise APIError(422, "invalid_capture_pair", "Provide exactly one top image and one side image.")
-                if any(not isinstance(upload, UploadFile) for _,upload in items):
+                names = [key for key, _ in items]
+                if (len(items) not in (2, 3) or names.count("top_image") != 1 or names.count("side_image") != 1
+                        or any(name not in {"top_image", "side_image", "adjustments"} for name in names)
+                        or names.count("adjustments") > 1):
+                    raise APIError(422, "invalid_capture_pair", "Provide one top image, one side image, and optional adjustments.")
+                fields = dict(items)
+                if any(not isinstance(fields[name], UploadFile) for name in ("top_image", "side_image")):
                     raise APIError(422, "invalid_capture_pair", "Each view must be an image file.")
+                adjustment_text = fields.get("adjustments")
+                if adjustment_text is not None and not isinstance(adjustment_text, str):
+                    raise APIError(422, "invalid_adjustments", "Adjustments must be a JSON text field.")
+                adjustments = parse_adjustments(adjustment_text) if adjustment_text is not None else None
                 def compute():
                     # The worker owns decoded buffers through its entire lifetime.
                     with ExitStack() as images_owner:
-                        images = {}
-                        for view,upload in items:
+                        images, hashes = {}, {}
+                        for view in ("top", "side"):
+                            upload = fields[f"{view}_image"]
                             try:
+                                hashes[view] = upload_sha256(upload)
                                 decoded = decode_image(upload)
                                 images_owner.callback(decoded.close)
-                                images[view.removesuffix("_image")] = decoded
+                                decoded.info[UPLOAD_DIGEST_KEY] = hashes[view]
+                                images[view] = decoded
                             except InvalidImage as exc:
-                                raise APIError(exc.status, exc.code, exc.message, {"view":view}) from None
-                        return inference.estimate(images)
+                                raise APIError(exc.status, exc.code, exc.message, {"view":f"{view}_image"}) from None
+                        if adjustments is not None:
+                            if not inference.readiness()["ready"]:
+                                raise InferenceUnavailable()
+                            if adjustments["bundle_id"] != inference.bundle_id:
+                                raise APIError(409, "stale_review", "The model changed. Recheck both photos and review the points again.", {"reason":"bundle_changed"})
+                            for view in ("top", "side"):
+                                if adjustments["image_sha256"][view] != hashes[view]:
+                                    raise APIError(409, "stale_review", "A photo changed. Recheck both photos and review the points again.", {"reason":"image_changed", "view":view})
+                        if diagnostics or adjustments is not None:
+                            result = inference.estimate(images, include_diagnostics=diagnostics, adjustments=adjustments)
+                        else:
+                            result = inference.estimate(images)
+                        verify_result_provenance(result, hashes, inference.bundle_id, adjustments, diagnostics)
+                        return result
                 try:
                     result = await complete_cpu_work(compute)
                 except CaptureRejected as exc:

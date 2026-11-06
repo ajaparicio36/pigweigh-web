@@ -1,3 +1,4 @@
+import hashlib
 import warnings
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
@@ -23,8 +24,10 @@ class CaptureMultipartParser(MultiPartParser):
 
 
 @asynccontextmanager
-async def capture_form(request: Request, *, max_files: int = 2) -> AsyncIterator[FormData]:
-    parser = CaptureMultipartParser(request.headers, request.stream(), max_files=max_files, max_fields=0, max_part_size=1024)
+async def capture_form(request: Request, *, max_files: int = 2, max_fields: int = 0,
+                       max_part_size: int = 1024) -> AsyncIterator[FormData]:
+    parser = CaptureMultipartParser(request.headers, request.stream(), max_files=max_files,
+                                   max_fields=max_fields, max_part_size=max_part_size)
     form = None
     try:
         form = await parser.parse()
@@ -47,6 +50,22 @@ async def capture_form(request: Request, *, max_files: int = 2) -> AsyncIterator
 class InvalidImage(Exception):
     def __init__(self, status: int, code: str, message: str):
         self.status, self.code, self.message = status, code, message
+
+
+def upload_sha256(upload: UploadFile) -> str:
+    """Hash exact uploaded bytes with the same per-file bound used for decoding."""
+    file = upload.file
+    file.seek(0, 2)
+    if file.tell() > FILE_LIMIT:
+        raise InvalidImage(413, "image_too_large", "Each image must be at most 10 MiB.")
+    file.seek(0)
+    digest = hashlib.sha256()
+    try:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+        return digest.hexdigest()
+    finally:
+        file.seek(0)
 
 
 def decode_image(upload: UploadFile) -> Image.Image:
