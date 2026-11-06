@@ -2,6 +2,8 @@
 
 Use this guide to correct the training annotations in the user's [side project](https://app.roboflow.com/maria-antonette-efren/pigweight_side-znzvb/1) and [top project](https://app.roboflow.com/maria-antonette-efren/pigweight_top-aizjl). These are separate datasets. A label edit affects a future model only after a new export, reviewed preparation, training, ONNX export, testing and release. Nothing in this guide asserts that a particular correction improves weight accuracy.
 
+**For the annotation team:** complete [Before editing](#before-editing), then follow [the numbered editing steps](#step-by-step-edit-an-existing-image). Keep the landmark tables open beside Roboflow. Finish with the [handoff checklist](#annotation-team-handoff-checklist); the developer handles dataset preparation and model replacement afterward.
+
 The user-supplied comparison shows cyan original W–S and orange manually adjusted W–F segments. It is useful for identifying photos to inspect, but neither overlay establishes the true anatomical point, physical scale or accuracy. In the pinned v2.6 source (`fa0201f206d511be3d4871f5cf87bfea7e8126f1`), [the overlay](https://github.com/ajaparicio36/pigweigh-web/blob/fa0201f206d511be3d4871f5cf87bfea7e8126f1/web/components/measurement-overlay.tsx) calls withers **W**, sternum **S**, front shoulder joint **F** and lowest belly **B**; F and B are non-movable reference points. Its depth segment is **W–S**, not W–F. The UI's instruction to match chest lines behind the front legs does not redefine withers as any desired point on the back. These runtime adjustments are estimate-request overrides, not saved Roboflow training labels. Do not copy coordinates from the comparison or move points to produce a preferred kilogram result.
 
 ## Before editing
@@ -45,13 +47,57 @@ The serving manifest's named order and geometry are documented in [CPU inference
 
 The existing policy masks canonical top `tail-base` for `20-TOP` and `29-TOP` because their source names are `tail-tip` and `tail`, respectively. They are not verified aliases for tail base. Preserve that mask unless a separately reviewed source/schema correction establishes the intended point and updates the policy with evidence.
 
-## Correct and review the source labels
+## Step by step: edit an existing image
 
-1. Open the appropriate project, then **Annotate** and the original image (or open its existing annotation in the image editor). Select the pig and verify the class and named skeleton before changing a point. Roboflow's [keypoint tutorial](https://roboflow.com/blog/train-a-custom-yolov8-pose-estimation-model) describes opening Annotate and dragging keypoints; menus and controls can change, so follow the current editor if labels differ.
-2. Zoom in and inspect the whole pig and relevant local anatomy. Select the existing named point and drag it to the supported anatomical target above. Change only points whose intended identity and placement you can assess. Do not create a second object, replace the skeleton, use a different landmark to make a line visually vertical, or accept an auto-label without review.
-3. Apply one documented visibility policy consistently. Roboflow's [keypoint instructions](https://roboflow.com/blog/keypoint-detection-on-roboflow) describe marking an occluded point through its context menu. Use an occluded coordinate only when the location is supportable from the image and the agreed annotation policy; otherwise leave it unlabeled if the current editor/export supports that state, or flag the image/object for exclusion or later review. Do not guess a hidden point from a nearby joint, the overlay, or an expected weight. Verify on a small export how visible, occluded and unlabeled states map to YOLO `(x, y, visibility)` before applying the policy broadly.
-4. Allow the editor to save, then reopen the image and verify the name, position and visibility. Record the image ID, class, named point, before/after state, reason and reviewer in a private change log. Repeat on representative head-left/head-right images, varied poses, lighting and occlusions; resolve disagreements against the agreed definition, not against a preferred weight. Review untouched points too, especially sternum versus shoulder joint and belly.
-5. Keep reliable pig/session groups together in training, validation or test; include related photos, crops and augmentations in the same group. Use a separate held-out set for evaluation and check for duplicate/near-duplicate leakage. Random rebalancing can separate related images, so verify the final assignments by group. If identities or sessions are unknown, record that split independence is unverified; do not invent groups or claim an independent holdout.
+These steps correct points on photos already in the projects. You do not need to upload the same photos again or start annotating from scratch. Roboflow's [official editing tutorial](https://roboflow.com/blog/train-a-custom-yolov8-pose-estimation-model) documents opening **Annotate** and dragging keypoints. Exact menu positions can differ from the tutorial; this walkthrough has not been verified against the team's current signed-in editor.
+
+1. **Open the correct project.** Sign in to the workspace `maria-antonette-efren`. Start with [pigweight_side-znzvb](https://app.roboflow.com/maria-antonette-efren/pigweight_side-znzvb/1) for side photos. Use [pigweight_top-aizjl](https://app.roboflow.com/maria-antonette-efren/pigweight_top-aizjl) for top photos. The side link may land on a frozen version page; use the project navigation to reach the working images.
+
+2. **Find the original photo.** Open **Annotate** and the relevant annotation job/batch, then select the image. If an already-labeled image is absent from that queue, locate it in the project's **Dataset** image list and open its annotation editor. Match the filename or image ID, not just a similar-looking pig. Record that identifier so another person can find the correction later. If you only have a read-only viewer, ask the workspace owner for annotation access.
+
+3. **Select the pig's existing annotation.** Click its existing object/skeleton or its entry in the annotation list. Confirm the source class, such as `16_side`, and the landmark names. Keep that class unchanged: its weight information must be preserved. Do not draw a second pig annotation or use **Classes** to rebuild/reorder the skeleton. If the editor offers only new annotation placement, switch to selecting the existing annotation first.
+
+4. **Find the named point before moving it.** Use the editor's landmark labels/list or point details to identify it. Source labels may use capitalization, spaces or underscores; consult the class mapping if a name is unclear. Do not identify a point solely by its color, line connection or index. Different source classes have different orders.
+
+5. **Zoom in on the anatomy.** Keep enough of the pig visible to recognize the shoulder, chest, back and belly. Zooming changes your view of the photo; it does not change where a point belongs. Check the current point against the tables above before deciding it is wrong.
+
+6. **Drag only the misplaced point.** Select the existing keypoint handle and drag it to its supported anatomical location. Release it, then confirm its name and position. Avoid dragging the whole skeleton, box or image. If several points move together, undo that change and select the individual handle again. Leave correctly placed points alone.
+
+7. **For side photos, check W, S, F and B separately.** In the comparison supplied by the team, WS means the original web app and WF means the tweaked version. The overlay also uses letters for landmarks, so identify the actual named endpoints rather than relying on those abbreviations. Check each of these four points:
+
+   | Named point | Where to check | What to avoid |
+   |---|---|---|
+   | `withers` (W) | Top of the shoulders at the neck-to-back transition. | Moving it anywhere along the back just to straighten a line. |
+   | `sternum` (S) | Underside of the chest just behind the front leg. | Moving it onto the shoulder joint or lowest belly point. |
+   | `front-shoulder-joint` (F) | The front shoulder/leg joint. | Treating it as another name for sternum. |
+   | `belly-lowest-part` (B) | Lowest underside of the abdomen. | Using it as the chest-floor endpoint. |
+
+   The app's current side-depth proxy is **withers to sternum**. If the team actually wants a shoulder-joint endpoint instead, that is a measurement-method change to discuss with the developer, not a reason to relabel the sternum. An internal joint or hidden chest edge may not be reliably identifiable in every photo; use step 9 when uncertain.
+
+8. **For top photos, check the measurement anchors.** Verify both ear **bases**, both chest edges behind the shoulders, and the tail **base**. Ear tips and tail tips are different points. Keep the agreed left/right convention even when the pig faces the other direction; do not silently swap labels based on screen-left/screen-right. If the source point is named `tail-tip` or `tail`, flag it for schema review instead of renaming it or assuming it means tail base. The existing `20-TOP` and `29-TOP` masks remain in force until that review.
+
+9. **Handle hidden or uncertain points consistently.** If a point is obscured but its location is supportable under the agreed annotation policy, Roboflow documents right-clicking it and choosing **Mark as Occluded**. If its location cannot be established, do not guess or place it on a nearby visible joint. Use an unlabeled state only if supported and verified for this project; otherwise flag that image/object for review or exclusion. Check a small export before applying a visibility policy across the dataset.
+
+10. **Save and reopen the same image.** Use the editor's save/complete control if present; if it saves automatically, wait for saving to finish. Return to the image list, reopen the exact filename/image ID, and verify that the corrected point and visibility state persisted. Do this on the first correction before processing a batch. If it did not save, resolve access/save errors before continuing.
+
+11. **Record and review the correction.** Keep a private log with image ID, project, source class, point name, before/after description, reason, annotator and reviewer. For example: `side | <image ID> | <source class> | sternum | was on shoulder joint; moved to visible chest floor | reviewer: <name>`. Have a second person review a small batch, including both facing directions and difficult lighting/occlusion, before applying the same interpretation broadly. Resolve disagreements using anatomy rather than the expected weight.
+
+12. **Repeat on the remaining images and the other project.** Check the rest of each skeleton too; do not assume all other points are correct. Top and side projects contain different pigs, so do not pair photos because their weight classes match. Tell the developer when each reviewed batch is ready, including unresolved cases.
+
+## Annotation-team handoff checklist
+
+- [ ] Original export/schema/weight metadata are recoverable in a private backup.
+- [ ] Corrected images were reopened and checked; source classes and skeleton orders were preserved.
+- [ ] Named points follow one placement and visibility policy; unresolved images are listed.
+- [ ] A reviewer checked representative corrections in both projects.
+- [ ] The private change log identifies edited images and reasons, without credentials.
+- [ ] The developer receives the project links, reviewed batch/image IDs and any grouping information.
+
+At this point the annotation edits are ready for dataset-version review. The website will still use the currently deployed model until the remaining export, training and release steps are completed.
+
+## Preserve evaluation groups
+
+Keep reliable pig/session groups together in training, validation or test; include related photos, crops and augmentations in the same group. Use a separate held-out set for evaluation and check for duplicate/near-duplicate leakage. Random rebalancing can separate related images, so verify the final assignments by group. If identities or sessions are unknown, record that split independence is unverified; do not invent groups or claim an independent holdout.
 
 ## From corrected labels to a candidate bundle
 
