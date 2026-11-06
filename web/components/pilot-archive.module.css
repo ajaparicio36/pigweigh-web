@@ -1,0 +1,25 @@
+.panel { background: var(--surface, #fff); border: 1px solid #ccc0b0; border-radius: 12px; padding: 20px; }
+.panel > p, .record p { max-width: 72ch; }
+.panel h2, .panel h3, .panel h4 { margin: 0 0 8px; }
+.fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.fields label, .actions label { display: block; font-weight: 600; margin-bottom: 6px; }
+.fields label span { font-weight: 400; }
+.fields input { width: 100%; border: 1px solid #887a6b; border-radius: 8px; padding: 10px 12px; background: #fff; }
+.fields p { font-size: .8125rem; margin: 6px 0 0; }
+.actions { display: flex; align-items: end; gap: 20px; flex-wrap: wrap; }
+.error { color: #a40000; }
+.record { border-top: 1px solid #ccc0b0; margin-top: 20px; padding-top: 20px; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 12px; }
+.summary div { min-width: 0; }
+.summary dt { color: #675a4e; font-size: .875rem; }
+.summary dd { margin: 0; overflow-wrap: anywhere; }
+.photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.photo { position: relative; width: 100%; max-height: 28rem; overflow: hidden; background: #faf6ef; border: 1px solid #ccc0b0; }
+.photo img { width: 100%; height: 100%; object-fit: contain; }
+.overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.overlay line { stroke: #00a69b; stroke-width: 3; }
+.overlay circle { fill: #fff; stroke: #30231d; stroke-width: 2; }
+.tableScroll { overflow-x: auto; }
+.tableScroll table { border-collapse: collapse; width: 100%; text-align: left; }
+.tableScroll th, .tableScroll td { padding: 6px; border-bottom: 1px solid #ccc0b0; }
+@media (max-width: 767px) { .fields, .photos { grid-template-columns: 1fr; } .actions { align-items: stretch; flex-direction: column; } .actions button { width: 100%; } }
