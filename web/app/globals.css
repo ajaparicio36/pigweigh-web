@@ -249,3 +249,19 @@ details li + li { margin-top: 0.375rem; }
 
 .camera-tool-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .camera-tool-row > .button { flex: 1 1 auto; }
+
+.attempt-remove { min-height: 44px; padding-inline: 0.75rem; margin-inline-start: 0.5rem; }
+
+.pig-attempts, .keypoint-panel { display: grid; min-width: 0; gap: 0.875rem; }
+.pig-attempts > .field + .field { margin-top: 0; }
+.pig-attempts > .button { justify-self: start; }
+.pilot-section { display: grid; gap: 0.75rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.pilot-section .field { display: grid; gap: 0.5rem; margin-top: 0; }
+.pilot-section .field > label { min-width: 0; margin-bottom: 0; }
+.pilot-section .field input[type="file"] { padding: 0.375rem; margin-top: 0.375rem; }
+.pilot-takes { display: grid; gap: 0.75rem; padding: 0; list-style: none; }
+.pilot-takes > li { display: grid; gap: 0.625rem; padding: 0.875rem; border: 1px solid var(--border); border-radius: 8px; }
+.pig-attempts .submit-row, .keypoint-panel .submit-row { margin-top: 0; gap: 0.75rem; flex-wrap: wrap; }
+.keypoint-panel select { display: block; min-height: 44px; max-width: 100%; padding: 0.5rem; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); }
+.keypoint-panel svg { display: block; border-radius: 8px; background: var(--surface-soft); }
+.pilot-section .camera-tool-row { align-items: center; }

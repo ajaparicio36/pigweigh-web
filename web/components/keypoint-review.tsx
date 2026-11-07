@@ -89,12 +89,16 @@ export function KeypointReview({ top, side, initial, onApply, onClose, saving = 
     const transform = event.currentTarget.getScreenCTM();
     if (!transform) return;
     const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(transform.inverse());
+    place(name, p.x, p.y);
+  }
+  function place(name: string, x: number, y: number): void {
+    if (!d) return;
     const [left, upper, right, lower] = d.bounding_box;
-    const point: Point = [Math.max(0, left, Math.min(d.width - 1, right, p.x)),
-      Math.max(0, upper, Math.min(d.height - 1, lower, p.y))];
+    const point: Point = [Math.max(0, left, Math.min(d.width - 1, right, x)),
+      Math.max(0, upper, Math.min(d.height - 1, lower, y))];
     setEdits((current) => ({ ...current, [view]: { ...current[view], [name]: point } }));
   }
-  return <section className="result-panel" aria-label="Review keypoints">
+  return <section className="result-panel keypoint-panel" aria-label="Review keypoints">
     <h2>Review keypoints</h2>
     {error ? <p role="alert">{error}</p> : !data || !d || !urls ? <p role="status">Loading detected points…</p> : <>
       <p>Drag a point, or select its name and tap its new position on the photo.</p>
@@ -104,6 +108,14 @@ export function KeypointReview({ top, side, initial, onApply, onClose, saving = 
         <label>Point <select value={selected} onChange={(event) => setSelected(event.target.value)}>
           <option value="">Choose a point</option>{names[view].map((name) => <option key={name}>{name}</option>)}
         </select></label>
+      </div>
+      <div className="camera-tool-row" role="group" aria-label="Move selected point by one image pixel">
+        {([["Left", -1, 0], ["Up", 0, -1], ["Down", 0, 1], ["Right", 1, 0]] as const).map(([direction, dx, dy]) =>
+          <button key={direction} type="button" className="button button-secondary" disabled={!selected || saving}
+            onClick={() => {
+              const point = edits[view][selected] ?? d.landmarks[selected]?.used;
+              if (point) place(selected, point[0] + dx, point[1] + dy);
+            }}>Move {direction.toLowerCase()}</button>)}
       </div>
       <svg viewBox={`0 0 ${d.width} ${d.height}`} style={{ width: "100%", maxHeight: "65vh" }}
         aria-label={`Editable ${view} photo`}

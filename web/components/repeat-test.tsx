@@ -107,6 +107,8 @@ export function RepeatTest({ top, side, result, failure, disabled, canEstimate, 
     return saved;
   }
 
+  const nextBatchView = (session?.batch?.top.length ?? 0) < 10 ? "top"
+    : (session?.batch?.side.length ?? 0) < 10 ? "side" : null;
   const blocked = !ready || busy || disabled;
   const nextNumber = Math.max(0, ...(session?.attempts.map((attempt) => attempt.number) ?? [])) + 1;
   const count = session?.attempts.length ?? 0;
@@ -117,17 +119,9 @@ export function RepeatTest({ top, side, result, failure, disabled, canEstimate, 
   const average = estimatedWeights.length
     ? estimatedWeights.reduce((sum, weight) => sum + weight, 0) / estimatedWeights.length
     : null;
-  return <section id="pig-test" className="result-panel" aria-label="Repeated pig test">
+  return <section id="pig-test" className="result-panel pig-attempts" aria-label="Pig attempts">
     <h2>Pig attempts</h2>
     <p>Open a pig by ID, then save each fresh top and side pair. Open the same ID later to resume.</p>
-    <button className="button button-secondary" type="button" disabled={busy || disabled || !result || !top || !side}
-      onClick={() => void run(async () => {
-        if (!result || !top || !side) return;
-        await downloadRepeatTest({ pig: session?.pig ?? (pig.trim() || "pig"), scaleKg: session?.scaleKg ?? scale.trim(),
-          attempts: [{ number: 1, savedAt: new Date().toISOString(), top, side, result, failure: null }] }, "estimate");
-        setMessage("Pig export started.");
-      })}>Export pig</button>
-    {!result && <p className="field-help">Request an estimate to enable Export pig.</p>}
     <div className="field">
       <label htmlFor="repeat-pig-id">Pig ID</label>
       <input id="repeat-pig-id" value={pig}
@@ -157,14 +151,15 @@ export function RepeatTest({ top, side, result, failure, disabled, canEstimate, 
           setReady(true);
         })}>Open pig</button>
     </>
-    {session && <section aria-label="Batch capture">
-      <h3>Batch capture</h3>
+    {session && <section className="pilot-section" aria-label="Batch capture">
+      <h3>Batch capture · {session.pig}</h3>
+      <p role="status">{nextBatchView ? `Next: capture ${nextBatchView} photos.` : "Both batches are full. Review your photo pairs below."}</p>
       <p>Save 10 top photos, then 10 side photos. Take 1 pairs with take 1, and so on.</p>
       {(["top", "side"] as const).map((view) => {
         const count = session.batch?.[view].length ?? 0;
         return <div className="field" key={view}>
           <strong>{view === "top" ? "Top view" : "Side view"} · {count}/10</strong>
-          <button type="button" className="button button-secondary" disabled={blocked || count >= 10}
+          <button type="button" className={`button ${view === nextBatchView ? "button-primary" : "button-secondary"}`} disabled={blocked || count >= 10}
             onClick={() => setBatchCamera(view)}>Capture {view} batch</button>
           <label>Upload {view} photos <input type="file" accept="image/jpeg,image/png,image/webp" multiple
             disabled={blocked || count >= 10} onChange={(event) => {
@@ -188,24 +183,33 @@ export function RepeatTest({ top, side, result, failure, disabled, canEstimate, 
         </button>;
       })}
     </section>}
-    {(session || top || side) && <section aria-label="Current photo pair">
+    {(session || top || side) && <section className="pilot-section" aria-label="Current photo pair">
       <h3>{session ? `Attempt ${nextNumber} · In progress` : "Current photo pair"}</h3>
       <AttemptPhotos attempt={{ top, side }} />
       <p>Top photo: {top ? "Added" : "Needed"} · Side photo: {side ? "Added" : "Needed"}</p>
       {session && top && side && !result && !failure && <button type="submit" form="pig-estimate-form"
         className="button button-primary" disabled={!canEstimate || disabled}>Request estimate for attempt {nextNumber}</button>}
+      {result && top && side && <div className="camera-tool-row"><strong>{result.estimated_weight_kg} kg</strong>
+        <button className="button button-secondary" type="button" disabled={busy || disabled || !result || !top || !side}
+      onClick={() => void run(async () => {
+        if (!result || !top || !side) return;
+        await downloadRepeatTest({ pig: session?.pig ?? (pig.trim() || "pig"), scaleKg: session?.scaleKg ?? scale.trim(),
+          attempts: [{ number: 1, savedAt: new Date().toISOString(), top, side, result, failure: null }] }, "estimate");
+        setMessage("Pig export started.");
+      })}>Export pig</button>
+      </div>}
       {failure && <p role="status">{failure}</p>}
     </section>}
     {session && <>
       <p><strong>{session.pig}</strong> · {session.scaleKg && <>Scale {session.scaleKg} kg · </>}<strong>{paired} photo pairs saved</strong></p>
       {average !== null && <p><strong>Average estimated weight: {average.toFixed(2)} kg</strong> from {estimatedWeights.length} successful {estimatedWeights.length === 1 ? "pair" : "pairs"}.</p>}
-      <ol>{session.attempts.map((attempt) => <li key={attempt.number}>
+      <ol className="pilot-takes">{session.attempts.map((attempt) => <li key={attempt.number}>
         Attempt {attempt.number} · {attempt.result ? attempt.result.estimated_weight_kg + " kg" : "Failed · " + attempt.failure}
         <div className="camera-tool-row">
-          <button type="button" className="text-button" onClick={() => { setEditing(null); setViewing(viewing === attempt.number ? null : attempt.number); }}>
+          <button type="button" className="button button-secondary" onClick={() => { setEditing(null); setViewing(viewing === attempt.number ? null : attempt.number); }}>
             {viewing === attempt.number ? "Hide photos" : "View photos"}
           </button>
-          <button type="button" className="text-button" disabled={blocked} onClick={() => {
+          <button type="button" className="text-button attempt-remove" disabled={blocked} onClick={() => {
             if (!window.confirm(`Remove attempt ${attempt.number} from ${session.pig}?`)) return;
             void run(async () => {
               setSession(await editSession((current) => {
