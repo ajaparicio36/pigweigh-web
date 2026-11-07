@@ -383,7 +383,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return result
 
     @app.post("/api/photos/{view}/validate")
-    async def validate_photo(view: Literal["top", "side"], request: Request, diagnostics: bool = False):
+    async def validate_photo(view: Literal["top", "side"], request: Request, diagnostics: bool = False, preview: bool = False):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the image as multipart form data.")
         if inference_slot.locked():
@@ -404,6 +404,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         raise APIError(exc.status, exc.code, exc.message, {"view": view}) from None
                     # Both decoded image and spool outlive any cancelled CPU work.
                     with closing(image):
+                        if preview:
+                            return inference.preview_photo(view, image)
                         if diagnostics:
                             return inference.validate_photo(view, image, include_diagnostics=True)
                         return inference.validate_photo(view, image)

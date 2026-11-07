@@ -187,7 +187,11 @@ test("per-photo request sends only the selected file and rejects a mismatched re
       assert.equal(options.method, "POST");
       assert.equal(options.signal, signal);
       assert.deepEqual([...options.body.keys()], ["image"]);
-      assert.equal(options.body.get("image"), file);
+      const uploaded = options.body.get("image");
+      assert.ok(uploaded instanceof File);
+      assert.equal(uploaded.name, "image.jpg");
+      assert.equal(uploaded.type, file.type);
+      assert.equal(await uploaded.text(), await file.text());
       return Response.json({ status: "validated", view: "top", artifacts: { bundle_id: "fixture" } });
     };
     assert.equal((await validatePhoto("top", file, signal)).view, "top");

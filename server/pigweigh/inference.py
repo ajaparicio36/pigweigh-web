@@ -74,7 +74,8 @@ def required_pose(output: np.ndarray, image_shape: tuple[int, ...], names: tuple
         raise CaptureRejected("invalid_pose", "The pose model did not produce finite landmarks. Retake this view.", view)
     detections = rows[rows[:,4] >= PIG_THRESHOLD]
     if len(detections) != 1:
-        raise CaptureRejected("pig_count", "Show exactly one clearly visible pig in this view.", view)
+        message = "No clear pig detected. Keep the whole pig visible." if not len(detections) else "Multiple pigs detected. Frame one pig."
+        raise CaptureRejected("pig_count", message, view)
     row = detections[0]
     if row[5] != 0 or not 0 <= row[4] <= 1:
         raise CaptureRejected("invalid_pose", "The pose prediction does not match the configured pig model.", view)
@@ -248,6 +249,58 @@ class InferenceEngine:
             models[view] = PoseSession(session, names, output_shape, semantics)
         self.models, self.bundle_id, self.blocker = models, bundle_id, None
 
+    def _predict(self, view: str, tensor: np.ndarray):
+        model = self.models[view]
+        try:
+            output = model.session.run(None, {model.session.get_inputs()[0].name: tensor})[0]
+            if output.shape != model.output_shape:
+                raise ValueError("Runtime output changed shape")
+        except Exception:
+            self.blocker = {"code":"inference_runtime_failed", "message":"The configured model runtime failed. Restart after checking the artifacts."}
+            raise InferenceUnavailable() from None
+        return model, output
+
+    def preview_photo(self, view: str, image: Image.Image) -> dict:
+        if not self.readiness()["ready"]:
+            raise InferenceUnavailable()
+        pixels = np.asarray(image)
+        try:
+            marker_homography(pixels, view)
+            marker = "Marker found"
+        except CaptureRejected as exc:
+            marker = exc.message
+        try:
+            tensor, scale, left, top = letterbox(pixels)
+        except ValueError:
+            raise CaptureRejected("image_aspect_unusable", "Use a normal camera frame.", view) from None
+        model, output = self._predict(view, tensor)
+        rows = output[0]
+        detections = rows[rows[:, 4] >= PIG_THRESHOLD]
+        result = {"width": image.width, "height": image.height, "marker": marker,
+                  "pose": "No clear pig detected. Keep the whole pig in frame.",
+                  "box": None, "points": []}
+        if not np.isfinite(rows).all() or not len(detections):
+            return result
+        if len(detections) > 1:
+            result["pose"] = "Multiple pigs detected. Frame one pig."
+            return result
+        row = detections[0]
+        x1, y1, x2, y2 = row[:4]
+        result["box"] = [float((x1-left)/scale), float((y1-top)/scale),
+                         float((x2-left)/scale), float((y2-top)/scale)]
+        required = TOP_ANCHORS if view == "top" else SIDE_ANCHORS
+        landmarks = row[6:].reshape(len(model.names), 3)
+        unclear = []
+        for name in required:
+            x, y, score = landmarks[model.names.index(name)]
+            x, y = float((x-left)/scale), float((y-top)/scale)
+            clear = bool(KEYPOINT_THRESHOLD <= score <= 1 and 0 <= x < image.width and 0 <= y < image.height)
+            if not clear:
+                unclear.append(name.replace("-", " "))
+            result["points"].append({"name": name, "x": x, "y": y, "clear": clear})
+        result["pose"] = "Pig detected · " + (", ".join(unclear) + " unclear" if unclear else "Required points visible")
+        return result
+
     def _measure_view(self, view: str, image: Image.Image, diagnostics: dict | None = None,
                       overrides: dict[str, list[float]] | None = None, *,
                       include_segments: bool = True) -> dict[str, np.ndarray]:
@@ -260,14 +313,7 @@ class InferenceEngine:
         except ValueError:
             raise CaptureRejected("image_aspect_unusable", "The photo is too narrow to process. Use a normal camera photo.", view) from None
         transform = marker_homography(pixels, view)
-        model = self.models[view]
-        try:
-            output = model.session.run(None, {model.session.get_inputs()[0].name: tensor})[0]
-            if output.shape != model.output_shape:
-                raise ValueError("Runtime output changed shape")
-        except Exception:
-            self.blocker = {"code":"inference_runtime_failed", "message":"The configured model runtime failed. Restart after checking the artifacts."}
-            raise InferenceUnavailable() from None
+        model, output = self._predict(view, tensor)
         required = TOP_ANCHORS if view == "top" else SIDE_ANCHORS
         detected = required_pose(output, pixels.shape, model.names, required, scale, left, top, view)
         # Reject invalid original projection even if an edit would hide it.

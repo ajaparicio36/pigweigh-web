@@ -21,7 +21,8 @@ export function photosReady(checks: PhotoChecks): boolean {
 }
 function failedCheck(file: File, error: unknown): PhotoCheck {
   const kind = error instanceof ApiError
-    ? [413, 415, 422].includes(error.status) ? "rejected"
+    ? error.code === "invalid_capture" ? "service"
+      : [413, 415, 422].includes(error.status) ? "rejected"
       : error.status === 429 ? "busy" : error.status === 503 ? "unavailable" : "service"
     : "connection";
   return { status: "error", file, kind, message: errorMessage(error) };

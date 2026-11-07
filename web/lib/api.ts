@@ -63,9 +63,15 @@ export function isPhotoValidation(value: unknown): value is PhotoValidation {
     && value.artifacts.bundle_id.trim().length > 0;
 }
 
+export function attachPhoto(body: FormData, field: string, photo: Blob): void {
+  const extension = photo.type === "image/png" ? "png" : photo.type === "image/webp" ? "webp" : "jpg";
+  const filename = `${field}.${extension}`;
+  body.set(field, new File([photo.slice(0, photo.size, photo.type)], filename, { type: photo.type }), filename);
+}
+
 export async function validatePhoto(view: PhotoView, file: File, signal: AbortSignal): Promise<PhotoValidation> {
   const body = new FormData();
-  body.set("image", file);
+  attachPhoto(body, "image", file);
   return request(`/photos/${view}/validate`, (value): value is PhotoValidation => isPhotoValidation(value) && value.view === view,
     { method: "POST", body, signal });
 }
