@@ -31,6 +31,7 @@ from pigweigh.security import COOKIE, PASSWORDS, LoginGuard, normalize_username,
 from pigweigh.uploads import BODY_LIMIT, InvalidImage, capture_form, decode_image, upload_sha256
 
 PHOTO_VALIDATION_PATHS = frozenset({"/api/photos/top/validate", "/api/photos/side/validate"})
+CLOUD_UNAVAILABLE_MESSAGE = "Cloud inference is unavailable while hosted workflow verification is pending."
 
 
 class APIError(Exception):
@@ -312,7 +313,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/api/inference/readiness")
-    def readiness():
+    def readiness(provider: Literal["local", "cloud"] = "local"):
+        if provider == "cloud":
+            return {"ready": False, "blockers": [{"code": "cloud_inference_unavailable",
+                                                   "message": CLOUD_UNAVAILABLE_MESSAGE}]}
         return inference.readiness()
 
     @app.get("/api/prices/current")
@@ -383,9 +387,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return result
 
     @app.post("/api/photos/{view}/validate")
-    async def validate_photo(view: Literal["top", "side"], request: Request, diagnostics: bool = False, preview: bool = False):
+    async def validate_photo(view: Literal["top", "side"], request: Request, diagnostics: bool = False,
+                             preview: bool = False, provider: Literal["local", "cloud"] = "local"):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the image as multipart form data.")
+        if provider == "cloud":
+            raise APIError(503, "cloud_inference_unavailable", CLOUD_UNAVAILABLE_MESSAGE)
         if inference_slot.locked():
             raise APIError(429, "inference_busy", "Photo inference is already running. Try again shortly.")
         await inference_slot.acquire()
@@ -419,9 +426,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             inference_slot.release()
 
     @app.post("/api/estimates")
-    async def estimate(request: Request, diagnostics: bool = False):
+    async def estimate(request: Request, diagnostics: bool = False, provider: Literal["local", "cloud"] = "local"):
         if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "multipart/form-data":
             raise APIError(415, "unsupported_content_type", "Submit the two images as multipart form data.")
+        if provider == "cloud":
+            raise APIError(503, "cloud_inference_unavailable", CLOUD_UNAVAILABLE_MESSAGE)
         if inference_slot.locked():
             raise APIError(429, "inference_busy", "An estimate is already running. Try again shortly.")
         await inference_slot.acquire()

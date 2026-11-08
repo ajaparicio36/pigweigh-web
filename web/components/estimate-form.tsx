@@ -8,6 +8,7 @@ import { KeypointReview, type Adjustments } from "./keypoint-review";
 import { draftPhoto } from "@/lib/repeat-test";
 import { RepeatTest } from "./repeat-test";
 import { CurrentPrice } from "./current-price";
+import { EstimationMode } from "./estimation-mode";
 import { PhotoInput, type GuidedCaptureBinding } from "./photo-input";
 
 type Submission = { status: "idle" } | { status: "pending" } | { status: "error"; message: string; kind: "unavailable" | "rejected" | "busy" | "other" } | { status: "success"; data: Estimate };
@@ -121,6 +122,7 @@ export function EstimateForm(): React.JSX.Element {
   return (
     <div className="flow-stack">
       <CurrentPrice state={price} onRetry={() => void refreshPrice()} />
+      <EstimationMode />
       <RepeatTest checkCandidate={guidedCapture.checkCandidate} onLoadPair={(topFile, sideFile) => {
         selectPhoto("top", topFile); selectPhoto("side", sideFile);
         document.getElementById("manual-keypoints")?.scrollIntoView({ block: "start" });
@@ -140,7 +142,7 @@ export function EstimateForm(): React.JSX.Element {
           <h2>Your photo pair</h2>
           <p className="muted">Use the same pig for both views. Use ArUco DICT_4X4_50, ID 0, on a rigid, flat card. The printed black square must measure 100 mm per side, excluding the white margin.</p>
           <p className="muted">Keep the whole marker and white margin visible without covering body landmarks. Review each photo before submitting.</p>
-          <p className="muted">Each photo you select or capture is sent automatically for pig and marker checks and is not retained. Camera video stays on your device; only a captured photo is sent.</p>
+          <p className="muted">Camera video stays on your device. Live pose preview and guided capture send sampled still frames to our server; selected photos are also sent for pig and marker checks. The server does not retain these images. This browser may save photos as drafts or test attempts.</p>
         </div>
         <div className="photo-grid">
           <PhotoInput guidedCapture={guidedCapture} view="top" file={top} check={checks.top} disabled={pending} onChange={(file) => selectPhoto("top", file)} onRetry={() => retryPhoto("top")} />

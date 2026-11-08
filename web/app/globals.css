@@ -71,6 +71,16 @@ input, textarea { caret-color: var(--primary); }
 .field-caption { display: block; color: var(--muted); font-size: 0.8125rem; margin-bottom: 0.125rem; }
 .inline-error { font-size: 0.875rem; }
 
+.estimation-mode { min-width: 0; margin: 0; padding: 0; border: 0; }
+.estimation-mode legend { font-size: 1.125rem; line-height: 1.4; font-weight: 650; }
+.estimation-mode-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 1.5rem; margin-top: 0.75rem; }
+.estimation-mode-option { min-width: 0; }
+.estimation-mode-option label { display: flex; align-items: flex-start; gap: 0.625rem; width: fit-content; font-weight: 600; cursor: pointer; }
+.estimation-mode-option input { width: 1.125rem; height: 1.125rem; flex-shrink: 0; margin-top: 0.1875rem; accent-color: var(--primary); }
+.estimation-mode-option input:disabled + span { color: var(--muted); }
+.estimation-mode-option label:has(input:disabled) { cursor: not-allowed; }
+.estimation-mode-option p { margin: 0.25rem 0 0 1.75rem; color: var(--muted); font-size: 0.8125rem; }
+
 .photo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
 .photo-card { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 .photo-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 1rem 1.25rem; }
@@ -218,6 +228,7 @@ details li + li { margin-top: 0.375rem; }
   .flow-stack { gap: 1.5rem; }
   .price-strip { grid-template-columns: 1fr; gap: 1rem; padding: 1.25rem; }
   .price-provenance { padding-top: 1rem; border-top: 1px solid var(--border); }
+  .estimation-mode-options { grid-template-columns: 1fr; }
   .photo-grid, .result-grid, .login-layout, .publication-fields { grid-template-columns: 1fr; }
   .photo-preview { height: 12rem; }
   .readiness-heading { align-items: flex-start; }

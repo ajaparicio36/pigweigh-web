@@ -14,6 +14,8 @@ The user trains pose models. Keep source checkpoints, private images, training d
 
 Use the chosen Next.js/Tailwind frontend without ShadCN and FastAPI/SQLAlchemy backend managed through uv. Read actual manifests and scripts before running commands.
 
+For Cloud inference work, verify actual top and side workflow outputs before mapping landmarks; the current provider is unavailable. Keep any future `ROBOFLOW_API_KEY` server-side and send it only in an authorization header. See [provider availability and verification](server/README.md#inference-provider-availability).
+
 ## Commits
 
 Use Conventional Commits: `<type>[optional scope]: <description>`. Choose a type such as `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `build`, `ci`, `perf`, or `style`; for example, `feat: add photo review`, `fix(inference): reject invalid landmarks`, or `docs: clarify model export`. Mark a breaking change with `!` before the colon or a `BREAKING CHANGE:` footer.

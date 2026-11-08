@@ -44,6 +44,27 @@ curl.exe -H 'Origin: http://localhost:3000' `
 # Configured usable pair: 200 estimate; missing bundle: 503 inference_unavailable; unusable capture: 422
 ```
 
+### Inference provider availability
+
+Readiness, photo validation and pair estimation accept `provider=local|cloud`; omitting it selects `local`. Explicit Local uses the same CPU bundle and response contract as the default, including camera preview and landmark review. Unknown provider values return `422 invalid_request`.
+
+```powershell
+curl.exe 'http://localhost:3000/api/inference/readiness?provider=local'
+# Local readiness is identical to the default /api/inference/readiness.
+curl.exe 'http://localhost:3000/api/inference/readiness?provider=cloud'
+# 200 {"ready":false,"blockers":[{"code":"cloud_inference_unavailable","message":"Cloud inference is unavailable while hosted workflow verification is pending."}]}
+curl.exe -H 'Origin: http://localhost:3000' `
+  -F 'image=@D:/captures/top.jpg' 'http://localhost:3000/api/photos/top/validate?provider=cloud'
+curl.exe -H 'Origin: http://localhost:3000' `
+  -F 'top_image=@D:/captures/top.jpg' -F 'side_image=@D:/captures/side.jpg' `
+  'http://localhost:3000/api/estimates?provider=cloud'
+# Both Cloud POSTs return 503 cloud_inference_unavailable; preview and diagnostics do too.
+```
+
+Cloud is intentionally unavailable and never falls back to Local or sends images to Roboflow. Existing Origin, upload-admission, body-size and multipart content-type checks still apply before the unavailable response. The response is returned before form parsing, model inference or price access.
+
+On 2026-11-08 both hosted workflow definitions, including their inner model definitions, were retrieved, but hosted validation returned HTTP 402 `credit_cap_exceeded`. Representative top and side workflow runs both returned HTTP 500 model-package loading errors and no predictions. No response parser or Cloud inference integration is present. Restoring credits alone does not enable Cloud: representative top and side workflow runs and a verified output-to-landmark mapping remain necessary. HTTPX was approved for a future server-side implementation, but it was not added as a runtime dependency for this release. Any future `ROBOFLOW_API_KEY` belongs in private server configuration and must use header authentication; this release does not use or send it. Never place it in frontend variables, URLs or source control.
+
 Exactly one `top_image` and one `side_image` file are required. Both must depict the same pig; the software does not claim to verify identity. JPEG, PNG and WebP are decoded and EXIF-oriented, not trusted from extensions. No animation; maximum 10 MiB/file, 21 MiB/body and 20 million decoded pixels/image. Missing/extra/malformed pairs return 422; unsupported formats return 415; body/file/pixel limits return 413. The body boundary permits two uploads, while only one decoded pair/inference operation runs at a time; busy requests receive 429 without queuing CPU jobs. The body is bounded before multipart parsing, including chunked uploads. No photos are retained or logged; temporary spools and decoded images close on every outcome. Request cancellation joins the actual CPU worker before releasing its slot and resources. The API does not claim to verify anatomical card attachment or same-pig identity.
 
 ### Check one photo before estimation

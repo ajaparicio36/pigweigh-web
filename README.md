@@ -23,7 +23,7 @@ uv sync --frozen
 if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
 ```
 
-The guarded copy preserves any existing `.env`. Edit `server/.env`: replace the example database password with your local role password (URL-encode special characters), keep `PUBLIC_ORIGIN=http://localhost:3000`, and keep `PIGWEIGH_MODEL_BUNDLE=models/v1/manifest.json`. Then:
+The guarded copy preserves any existing `.env`. Edit `server/.env`: replace the example database password with your local role password (URL-encode special characters), keep `PUBLIC_ORIGIN=http://localhost:3000`, and keep `PIGWEIGH_MODEL_BUNDLE=models/v1/manifest.json`. Local inference needs no Roboflow key. Cloud inference is currently unavailable; see [provider availability](server/README.md#inference-provider-availability). Then:
 
 ```powershell
 uv run --env-file .env alembic upgrade head
@@ -59,7 +59,7 @@ curl.exe http://localhost:3000/api/prices/current
 
 Expect web/API `status:ok`, inference `ready:true` with no blockers when the packaged bundle loads, and revision 0 / `price:null` in a new database. Missing/invalid models leave inference unavailable; never replace them with sample weights. A missing database makes API health fail independently of model readiness. See [server route examples](server/README.md) for multipart requests and authenticated publication; only publish sourced prices into your local database.
 
-For photos, use the same pig in top and side views, with complete flat `DICT_4X4_50` ID 0 markers attached near the back/flank. The marker's black square must physically measure 100 mm per side, excluding the white margin. Each selected/captured photo uploads for checking; final submission rechecks both. The application has no photo or estimate persistence; temporary upload resources are closed after processing. Camera video stays local. Check passes do not verify animal identity or physical weight accuracy.
+For photos, use the same pig in top and side views, with complete flat `DICT_4X4_50` ID 0 markers attached near the back/flank. The marker's black square must physically measure 100 mm per side, excluding the white margin. Each selected/captured photo uploads for checking; final submission rechecks both. The server does not retain photos or estimates after processing. Photo drafts and saved repeat attempts are stored in the browser, and exports save them on the chosen device. Camera video stays in the browser; Local live pose preview sends sampled frames to the PigWeigh API. Check passes do not verify animal identity or physical weight accuracy.
 
 ## Development checks and operations
 
