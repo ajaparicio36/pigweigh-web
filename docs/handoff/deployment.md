@@ -1,6 +1,10 @@
 # Railway deployment and recovery handoff
 
-## Current state, 2026-11-03
+## Current release, 2026-11-08
+
+The [Local side-v3 release](../deployment.md#local-side-v3-api-and-web-release-2026-11-08) deployed source `e16451f` through the Railway CLI to the existing production project. API `f789e120-679f-4041-9e8a-40c72587bfc6` and web `8d475015-4d11-4f11-92c7-fe56a5b5a12f` reached SUCCESS, independently confirmed through the plugin. Local inference uses bundle `attached-marker-ellipse-14451-v1-845afb1a5f873783`; Cloud remains explicitly unavailable. Deployed hashes, generated-fixture inference, exact Decimal valuation, rejection paths, served radios, health and unchanged price were verified. The database deployment and volume were preserved. See the release record for evidence and limits; browser QA was intentionally skipped.
+
+## Historical release, 2026-11-03
 
 The [November 3 release](../deployment.md#14451-api-and-web-release-2026-11-03) uploaded reviewed source commit `2918bec478e43858356ec6eda5240d4f416a29db` to the dedicated [PigWeigh Production project](https://railway.com/project/cf533c71-e072-4820-93b6-0ff4eb38c9a1), API first and web second. Both reached SUCCESS. The public [web origin](https://web-production-4d49b.up.railway.app) passed health, readiness and bounded independent generated-fixture checks for method `attached-marker-ellipse-14451-v1`, bundle `attached-marker-ellipse-14451-v1-08661ffdf08ae1cc`, and Decimal valuation against the existing price. The raw current-price response remained revision 1 / record 1 with SHA-256 `975832544557c6acec2a371b234a6e0fd0eb5d89e86eebba3b2b447bf7115fc6`. See the release record for exact deployed file hashes, checks and limits.
 

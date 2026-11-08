@@ -1,5 +1,30 @@
 # Railway deployment
 
+## Local side-v3 API and web release, 2026-11-08
+
+The user deferred Cloud integration and authorized Local deployment to the existing **PigWeigh Production** project. The native CLI uploaded source commit `e16451ff30f64000afd115bcda624218cf992805` from the repository root using the existing ignore rules, API first and web after API health/readiness and deployed-file verification. The Railway plugin confirmed both deployments reached SUCCESS:
+
+| Service | Deployment | Created UTC | SUCCESS UTC |
+|---|---|---|---|
+| API | `f789e120-679f-4041-9e8a-40c72587bfc6` | `2026-11-08T01:19:31.141Z` | `2026-11-08T01:20:54.164Z` |
+| web | `8d475015-4d11-4f11-92c7-fe56a5b5a12f` | `2026-11-08T01:22:19.458Z` | `2026-11-08T01:24:12.427Z` |
+
+The API loads bundle `attached-marker-ellipse-14451-v1-845afb1a5f873783`, replacing the side model with the user's single-class canonical v3 export. Scoped SSH verified all three deployed SHA-256 values:
+
+| File | SHA-256 |
+|---|---|
+| `manifest.json` | `62063fd3f667e648fbb3367f63455dbec1a1da2c00efc7a493cbe8872e693c1e` |
+| `top.onnx`, unchanged | `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa` |
+| `side.onnx` | `558c18e39b796ca7e0f0d7de591464cf668f44a3422c8dfc7c92b2c86ca789e4` |
+
+Bounded public HTTPS checks verified default and explicit Local readiness, top/side validation and a paired estimate using the previously authorized generated fixtures. Both validations returned 200 with the new bundle. The estimate returned `58.06` kg, length `96.44`, width `30.62`, depth `28.75` and ellipse girth `93.28` cm, using the unchanged `G_cm^2 * L_cm / 14451` method. Valuation was `1741.80` PHP at the existing `30.00` PHP/kg; Decimal multiplication and the complete price snapshot matched. These generated pictures establish functional compatibility, not physical weight accuracy.
+
+Cloud readiness returned `ready:false` with `cloud_inference_unavailable`; Cloud photo-validation and estimate requests returned 503 with that code. There is no silent Local fallback. A blank photo returned 422 `marker_missing`. A small multipart request with the wrong Origin returned 403. An earlier wrong-Origin probe uploading the full fixture pair encountered a remote connection reset; the successful bounded request verifies rejection without claiming a full-body transport result. Public `/`, `/health`, `/api/health` and Local readiness returned 200 after the web rollout; health/readiness remained no-store. Served HTML contains the Local checked radio and Cloud disabled radio with the server-inference explanation. This is HTTP/HTML evidence, not browser interaction proof.
+
+The current-price response remained revision 1 / record 1 with raw SHA-256 `975832544557c6acec2a371b234a6e0fd0eb5d89e86eebba3b2b447bf7115fc6`, before inference, afterward and after the web rollout. No test price, login or account change was made. PostgreSQL retained deployment `e8f059a8-7ae7-4b04-90f3-d653d015fcc9` and its existing 5000 MB volume `e82100d3-8c13-4b2d-ae69-1a8cdf71b661`. This release introduced no schema migration or infrastructure configuration change, and did not redeploy the database. Final plugin inventory showed one running replica per service, no issues, no pending work and no staged changes. Cloud credentials were not added to Railway.
+
+Pre-release verification passed 159 PostgreSQL-backed backend tests with the actual new bundle/generated pair, 53 frontend helper tests, changed-file ESLint and the production build including TypeScript. Full-project lint still fails at the unchanged `web/components/repeat-test.tsx:52` rule `react-hooks/set-state-in-effect`; this release does not claim a full lint pass. Interactive browser/camera QA was skipped at the user's request. Physical marker scale, same-pig identity and scale-weight accuracy remain unverified. The pre-existing untracked empty handoff filename containing `#step-by-step-edit-an-existing-image` was preserved and excluded from commits and deployment by the existing docs ignore rule.
+
 ## New production project, 2026-10-23
 
 The user explicitly requested deployment into a **new** dedicated project. This supersedes the earlier keep-staged decision only for the new project below. The historical `PigWeigh` project remains untouched. Both the connected Railway plugin and authenticated native Railway CLI were used; after reconnecting the plugin, its redacted service/status/log reads confirmed the same account and infrastructure as the CLI.

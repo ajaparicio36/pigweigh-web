@@ -1,4 +1,4 @@
-> Local candidate, 2026-11-06: the side-only adapter and current bundle are recorded in the [export evidence](../training/README-export.md#side-only-v2-candidate-2026-11-06). The following November 3 bundle details are historical; the new candidate has not been deployed by this verification.
+> Current release, 2026-11-08: the single-class side-v3 bundle supersedes the v2 adapter. The combined checkout passed 159 PostgreSQL-backed backend tests with the actual new bundle and generated pair enabled. The [Railway release record](../docs/deployment.md#local-side-v3-api-and-web-release-2026-11-08) records deployed hashes, readiness, generated-fixture inference/valuation and rejection checks. The November 3 bundle details below are historical. These checks do not measure physical weight accuracy.
 
 # Backend verification record
 

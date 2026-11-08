@@ -1,15 +1,15 @@
 # CPU inference runbook
 
-The 2026-11-08 local candidate retains the method below and replaces only the side model with the user's single-class, canonical-point v3 model. The November 3 production release remains the earlier bundle until separately deployed. The API runs top/side ONNX pose inference, detects the configured attached ArUco marker, measures named proxies and applies the approved 14451 baseline. The [Railway release](deployment.md#14451-api-and-web-release-2026-11-03) verified this method with generated fixtures after an [earlier 404 observation](handoff/deployment.md#earlier-outage-observation-2026-11-03). A server with no usable configured bundle remains unavailable.
+The [2026-11-08 Local release](deployment.md#local-side-v3-api-and-web-release-2026-11-08) retains the method below and replaces only the side model with the user's single-class, canonical-point v3 model. The repository bundle is deployed to Railway, with deployed hashes, readiness and generated-fixture inference verified. The API runs top/side ONNX pose inference, detects the configured attached ArUco marker, measures named proxies and applies the approved 14451 baseline. Cloud remains explicitly unavailable. A server with no usable configured bundle remains unavailable.
 
 ## Versioned serving bundle and isolated export environment
 
-The repository candidate uses the private side-only export below. The top ONNX bytes are unchanged. The earlier November 3 production bundle used the original side model:
+The deployed repository bundle uses the private side-only export below. The top ONNX bytes are unchanged. The earlier November 3 production bundle used the original side model:
 
 ```text
 D:/pigweigh-inference-artifacts/side-v3-canonical-20261108/manifest.json
-repository candidate: server/models/v1/{manifest.json,top.onnx,side.onnx}
-candidate bundle_id: attached-marker-ellipse-14451-v1-845afb1a5f873783
+repository release: server/models/v1/{manifest.json,top.onnx,side.onnx}
+deployed bundle_id: attached-marker-ellipse-14451-v1-845afb1a5f873783
 ```
 
 The API loads `top.onnx` and `side.onnx` relative to the manifest, not original `.pt` files. The user's narrow exception permits exactly these three release files in **ordinary Git, no LFS**; both ONNX files are under 41 MB each. Verify ONNX hashes against the private export and verify the current manifest identity before release. Keep source images/checkpoints, `source-copies/`, other export artifacts and credentials excluded. Future exports still use a fresh private output directory before verified release copies. [Export instructions/evidence](../training/README-export.md) record the isolated `D:/pigweigh-export-env` and unchanged originals/global training environment.

@@ -1,10 +1,10 @@
-> Local candidate, 2026-11-08: the repository side model is the [single-class canonical v3 export](../../training/README-export.md#side-only-canonical-v3-candidate-2026-11-08), bundle `attached-marker-ellipse-14451-v1-845afb1a5f873783`. The November 3 production release remains historical until a later release is verified.
+> Deployed, 2026-11-08: the repository and Railway side model use the [single-class canonical v3 export](../../training/README-export.md#side-only-canonical-v3-candidate-2026-11-08), bundle `attached-marker-ellipse-14451-v1-845afb1a5f873783`. See the [verified Local release](../deployment.md#local-side-v3-api-and-web-release-2026-11-08).
 
 # Models and production inference
 
 The repository contains the approved CPU serving export in `server/models/v1/`: `manifest.json`, `top.onnx` and `side.onnx`. They are the **only** model artifacts approved for ordinary Git, without LFS. Source `.pt` checkpoints, original photographs, datasets, credentials and export intermediates stay outside Git and deployment archives. See [export provenance](../../training/README-export.md) for the isolated export workflow.
 
-The candidate manifest identifies `attached-marker-ellipse-14451-v1-845afb1a5f873783`, method `attached-marker-ellipse-14451-v1`, and divisor 14451. The [November 3 Railway release](../deployment.md#14451-api-and-web-release-2026-11-03) verified a prior bundle's hashes, readiness and generated-fixture inference. The earlier October release used the 11900 manifest.
+The deployed manifest identifies `attached-marker-ellipse-14451-v1-845afb1a5f873783`, method `attached-marker-ellipse-14451-v1`, and divisor 14451. The November 8 release verified all three deployed hashes, readiness and generated-fixture inference. The November 3 release used a prior bundle; the earlier October release used the 11900 manifest.
 
 ## Loading and operation
 
@@ -23,7 +23,7 @@ Get-FileHash server/models/v1/manifest.json, server/models/v1/top.onnx, server/m
   Select-Object Path, Hash
 ```
 
-| File | SHA-256 for the local v3 candidate |
+| File | SHA-256 verified in the November 8 deployment |
 |---|---|
 | `manifest.json` | `62063fd3f667e648fbb3367f63455dbec1a1da2c00efc7a493cbe8872e693c1e` |
 | `top.onnx` | `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa` |
