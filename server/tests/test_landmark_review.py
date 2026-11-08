@@ -249,7 +249,7 @@ def test_actual_candidate_pair_automatic_and_adjusted(monkeypatch):
     top, side = top_path.read_bytes(), side_path.read_bytes()
     with TestClient(app) as client:
         request, top_diag, side_diag = request_adjustments(client, top, side)
-        assert side_diag["model_score_semantics"] == "source_weight_class"
+        assert side_diag["model_score_semantics"] == "model_detection"
         assert len(top_diag["landmarks"]) == 11 and len(side_diag["landmarks"]) == 13
         automatic = submit(client, top, side, diagnostics=True)
         assert automatic.status_code == 200, automatic.text

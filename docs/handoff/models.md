@@ -1,10 +1,10 @@
-> Local candidate, 2026-11-06: the repository side model is now the [class-conditioned v2 adapter](../../training/README-export.md#side-only-v2-candidate-2026-11-06), bundle `attached-marker-ellipse-14451-v1-35164d7e48c146d1`. The November 3 production bundle and hashes described below remain historical until a later release.
+> Local candidate, 2026-11-08: the repository side model is the [single-class canonical v3 export](../../training/README-export.md#side-only-canonical-v3-candidate-2026-11-08), bundle `attached-marker-ellipse-14451-v1-845afb1a5f873783`. The November 3 production release remains historical until a later release is verified.
 
 # Models and production inference
 
 The repository contains the approved CPU serving export in `server/models/v1/`: `manifest.json`, `top.onnx` and `side.onnx`. They are the **only** model artifacts approved for ordinary Git, without LFS. Source `.pt` checkpoints, original photographs, datasets, credentials and export intermediates stay outside Git and deployment archives. See [export provenance](../../training/README-export.md) for the isolated export workflow.
 
-The manifest identifies `attached-marker-ellipse-14451-v1-08661ffdf08ae1cc`, method `attached-marker-ellipse-14451-v1`, and divisor 14451. The [November 3 Railway release](../deployment.md#14451-api-and-web-release-2026-11-03) verified the deployed bundle hashes, readiness and generated-fixture inference. The earlier October release used the 11900 manifest; the ONNX binaries are unchanged by this formula-only revision.
+The candidate manifest identifies `attached-marker-ellipse-14451-v1-845afb1a5f873783`, method `attached-marker-ellipse-14451-v1`, and divisor 14451. The [November 3 Railway release](../deployment.md#14451-api-and-web-release-2026-11-03) verified a prior bundle's hashes, readiness and generated-fixture inference. The earlier October release used the 11900 manifest.
 
 ## Loading and operation
 
@@ -23,12 +23,12 @@ Get-FileHash server/models/v1/manifest.json, server/models/v1/top.onnx, server/m
   Select-Object Path, Hash
 ```
 
-| File | SHA-256 for the 14451 release |
+| File | SHA-256 for the local v3 candidate |
 |---|---|
-| `manifest.json` | `7c17d197691d304f311a58634f985e0a0a1d9122e5c50b2fe95ae5fae017760f` |
+| `manifest.json` | `62063fd3f667e648fbb3367f63455dbec1a1da2c00efc7a493cbe8872e693c1e` |
 | `top.onnx` | `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa` |
-| `side.onnx` | `ed40cb8d60da95b1f8eb1c955b7e52fc70bfb00bf798eb2a57a52a2d4e175c72` |
+| `side.onnx` | `558c18e39b796ca7e0f0d7de591464cf668f44a3422c8dfc7c92b2c86ca789e4` |
 
-Compare the two ONNX hashes with the values inside the reviewed manifest, too. The manifest has changed with the formula version even though the binary hashes have not. The [November 3 release evidence](../deployment.md#14451-api-and-web-release-2026-11-03) records the matching deployed hashes and readiness; repeat the comparison for each later release. The loader checks model hashes and recomputes the exporter's canonical bundle ID from the schema version, method, divisor, marker and model configuration; it rejects a mismatch.
+Compare the two ONNX hashes with the values inside the reviewed manifest, too. The [November 3 release evidence](../deployment.md#14451-api-and-web-release-2026-11-03) records its prior deployed hashes and readiness; repeat the comparison for each later release. The loader checks model hashes and recomputes the exporter's canonical bundle ID from the schema version, method, divisor, marker and model configuration; it rejects a mismatch.
 
 For a future model replacement, use the documented isolated export process, retain source provenance privately, generate and review the new manifest, verify binary hashes and model/schema compatibility, test both backend and frontend contract, and only then release the approved serving files. Never add photos or checkpoints to make inference appear available. See the detailed [inference runbook](../inference.md) for inputs, gates and error handling, and [deployment](deployment.md) for operational status and history.

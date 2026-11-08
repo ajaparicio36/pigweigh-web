@@ -2,7 +2,6 @@
 from pathlib import Path
 from io import BytesIO
 import json
-import hashlib
 import os
 from types import SimpleNamespace
 
@@ -16,28 +15,29 @@ from pigweigh.main import create_app
 from pigweigh.inference import METHOD, bundle_identifier, decimal_measure, measure, sha256_file
 
 
-def test_packaged_manifest_binds_baseline_adapter_and_unchanged_top_model():
+def test_packaged_manifest_binds_canonical_side_and_unchanged_top_model():
     directory = Path(__file__).resolve().parents[1] / "models/v1"
     manifest = json.loads((directory / "manifest.json").read_text())
     assert manifest["method"] == METHOD == "attached-marker-ellipse-14451-v1"
     assert manifest["formula_divisor"] == 14451
-    assert manifest["bundle_id"] == bundle_identifier(manifest) == "attached-marker-ellipse-14451-v1-35164d7e48c146d1"
-    original_hashes = {
+    assert manifest["bundle_id"] == bundle_identifier(manifest) == "attached-marker-ellipse-14451-v1-845afb1a5f873783"
+    release_hashes = {
         "top": "370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa",
-        "side": "948c2c9d9849d84003a69f43f91cb1aa483d5afdd7752781acd24dc10fc0640f",
+        "side": "558c18e39b796ca7e0f0d7de591464cf668f44a3422c8dfc7c92b2c86ca789e4",
     }
-    for view, checksum in original_hashes.items():
+    for view, checksum in release_hashes.items():
         assert manifest["models"][view]["sha256"] == checksum
         assert sha256_file(directory / manifest["models"][view]["file"]) == checksum
-    mapping_file = directory.parents[2] / "training/config/side-adapter-v2.json"
-    mapping = json.loads(mapping_file.read_text(encoding="utf-8"))
-    adapter = manifest["models"]["side"]["adapter"]
-    canonical = json.dumps(mapping, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
-    assert adapter["mapping_sha256"] == hashlib.sha256(canonical).hexdigest()
-    assert adapter["json_hash_canonicalization"] == "sorted compact JSON, ASCII-escaped UTF-8"
-    assert adapter["source_classes"] == mapping["source_classes"]
-    assert adapter["output_to_source"] == mapping["output_to_source"]
-    assert adapter["source_dataset_yaml_sha256"] == mapping["source_dataset_yaml_sha256"]
+    side = manifest["models"]["side"]
+    assert side["source_checkpoint_sha256"] == "000dab3f05dccaa41e50de5e6b4f088318d99fb48f7571e7e5d0b39735420e91"
+    assert side["training_source"] == {
+        "prepared_dataset_yaml_sha256": "0f34637d2692e5edd10cbbeae77dfbf42302f51dea22cc3356c287fed5f2843d",
+        "prepared_dataset_manifest_sha256": "593d8c6881ada950aabaa89544264f1eb8ea9592114a6ea5c2d7310fe8de1609",
+        "preparation_policy_sha256": "d833efdb567454b00eaca17cf5a8878ea5f3fc897c5638b4718814e87f9ec107",
+        "class_names": ["pig"],
+    }
+    assert side["input_shape"] == [1, 3, 640, 640] and side["output_shape"] == [1, 300, 45]
+    assert side["end2end"] is True and "adapter" not in side
 
 
 def test_example_relative_bundle_loads_real_cpu_models(monkeypatch):

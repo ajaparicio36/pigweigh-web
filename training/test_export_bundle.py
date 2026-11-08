@@ -10,7 +10,7 @@ class ExportContractTests(unittest.TestCase):
     def test_packaged_manifest_matches_exporter_canonical_identifier(self):
         manifest_path = Path(__file__).resolve().parents[1] / "server/models/v1/manifest.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        self.assertEqual(manifest["bundle_id"], "attached-marker-ellipse-14451-v1-35164d7e48c146d1")
+        self.assertEqual(manifest["bundle_id"], "attached-marker-ellipse-14451-v1-845afb1a5f873783")
         self.assertEqual(bundle_identifier(manifest), manifest["bundle_id"])
 
     def test_bundle_identifier_binds_weights_and_configuration_not_folder_name(self):

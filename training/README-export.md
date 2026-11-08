@@ -1,8 +1,36 @@
 # CPU ONNX serving bundle
 
+## Side-only canonical v3 candidate (2026-11-08)
+
+The repository candidate replaces only the side model with the user's newly trained, single-class checkpoint. The top ONNX stays byte-for-byte unchanged. The bundle ID is `attached-marker-ellipse-14451-v1-845afb1a5f873783`, the side SHA-256 is `558c18e39b796ca7e0f0d7de591464cf668f44a3422c8dfc7c92b2c86ca789e4`, and the top SHA-256 is `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa`. This local export does not itself establish a deployed release.
+
+The checkpoint SHA-256 is `000dab3f05dccaa41e50de5e6b4f088318d99fb48f7571e7e5d0b39735420e91`. Its own metadata and the prepared dataset YAML both specify one `pig` class, 13 points and the canonical side order; the checkpoint's recorded training YAML points to that dataset. The dataset manifest, YAML and preparation policy hashes are bound into the side manifest entry and bundle ID. Preparation's class-specific source-label mappings were applied **before training**; no v2 serving adapter or class-based landmark permutation is attached to this model. The prepared dataset and policy record ordering evidence, not anatomical correctness of all annotations.
+
+`export_side_canonical.py` checks the expected source and prepared-manifest hashes, policy agreement, source dataset records and unchanged top bytes. It copies the checkpoint into a fresh private directory, disables automatic installation, and exports CPU-only. The ONNX checker and CPU Runtime passed the fixed float32 `[1,3,640,640]` input, end-to-end `[1,300,45]` output, opset 17, single-class and named-point metadata checks. Original checkpoint, dataset metadata, policy, selected sample bytes, fixture, existing manifest and top model remained unchanged.
+
+Selected detections matched PyTorch on the generated side fixture and one prepared validation image from each of the 13 original source classes (`rtol=1e-4`, `atol=0.05`; maximum absolute difference `0.000091552734375`). The generated fixture and 12 of the 13 validation samples had one qualifying row and passed the existing side pose gate. One `35_side` validation sample produced two qualifying rows and was rejected as `pig_count`; neither rows nor thresholds were altered. These samples do not establish a rejection rate or weight accuracy. The private evidence at `D:/pigweigh-inference-artifacts/side-v3-canonical-20261108/parity-private.json` contains individual sample hashes and gate results.
+
+The unchanged top model and new side model both passed the generated-photo validation endpoints. An actual `POST /api/estimates` TestClient check using both models, marker detection, projection and the 14451 formula returned `58.06` kg, length `96.44` cm, width `30.62` cm, depth `28.75` cm and girth `93.28` cm. Unrounded projected values reproduced the formula; an absent price was stubbed, and a blank top image returned `422 marker_missing`. This is a functional generated-fixture result, not a pig measurement or database/price proof. The full private result is `D:/pigweigh-inference-artifacts/side-v3-canonical-20261108/fixture-proof-private.json`.
+
+Reproduce only with a **new** private output directory and the verified source inputs; existing outputs are never overwritten:
+
+```powershell
+& 'D:/pigweigh-export-env/Scripts/python.exe' -B training/export_side_canonical.py `
+  --output 'D:/pigweigh-inference-artifacts/<new-private-directory>' `
+  --source 'D:/pigweigh-pose-runs/side-roboflow-canonical-v32/weights/best.pt' `
+  --dataset 'D:/pigweigh-pose-prepared-roboflow-v3/side-view' `
+  --policy 'training/config/roboflow-side-v3.json' `
+  --existing-manifest 'server/models/v1/manifest.json' `
+  --fixture 'D:/pigweigh-pose-data/test/Gemini_Generated_Image_mcndf9mcndf9mcnd.jpg' `
+  --expected-source-sha256 '000dab3f05dccaa41e50de5e6b4f088318d99fb48f7571e7e5d0b39735420e91' `
+  --expected-dataset-manifest-sha256 '593d8c6881ada950aabaa89544264f1eb8ea9592114a6ea5c2d7310fe8de1609'
+```
+
+The first export used the same policy bytes from `D:/pigweigh-web/training/config/roboflow-side-v3.json`. The checkpoint, private dataset/manifest, photos and `source-copies/` remain outside Git; only the three approved serving files may be packaged. No training, GPU operation, package upgrade or download occurred during this export.
+
 ## Side-only v2 candidate (2026-11-06)
 
-The local candidate replaces only `side.onnx`; `top.onnx` is copied unchanged from the existing bundle. The candidate ID is `attached-marker-ellipse-14451-v1-35164d7e48c146d1`, with side SHA-256 `948c2c9d9849d84003a69f43f91cb1aa483d5afdd7752781acd24dc10fc0640f` and top SHA-256 `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa`. It has not been deployed by this export. The earlier November 3 release remains historical deployment evidence.
+The earlier local candidate replaced only `side.onnx`; `top.onnx` was copied unchanged from the existing bundle. Its ID was `attached-marker-ellipse-14451-v1-35164d7e48c146d1`, with side SHA-256 `948c2c9d9849d84003a69f43f91cb1aa483d5afdd7752781acd24dc10fc0640f` and top SHA-256 `370a4b6563bde3fc093e8716e7925c11135e0988628fa591c875ad829dd389aa`. It was superseded locally by the v3 candidate above. The earlier November 3 release remains historical deployment evidence.
 
 `export_side_adapter.py` validates the trusted checkpoint, source YAML/README and existing top hashes, copies the checkpoint into a fresh private directory, and exports a CPU ONNX source model with auto-install disabled. It appends an ONNX graph that chooses a canonical point permutation from the source prediction's class. It preserves row order, bounding boxes, scores and point values; it emits class 0 for valid source classes and a non-finite class sentinel for invalid IDs so the existing capture gate rejects them. It does not apply NMS, combine scores, deduplicate rows, infer weight from class, or relax the exactly-one threshold. The manifest binds the mapping, source checkpoint, dataset metadata and reviewed source policy hashes into the bundle ID. Mapping and policy hashes use sorted compact JSON with ASCII-escaped UTF-8, independent of line endings; checkpoint and dataset YAML/README hashes cover the exact private source bytes. The source classes and permutations are in `training/config/side-adapter-v2.json`.
 

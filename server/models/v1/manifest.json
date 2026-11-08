@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "bundle_id": "attached-marker-ellipse-14451-v1-35164d7e48c146d1",
+  "bundle_id": "attached-marker-ellipse-14451-v1-845afb1a5f873783",
   "method": "attached-marker-ellipse-14451-v1",
   "formula_divisor": 14451,
   "marker": {
@@ -42,7 +42,7 @@
     },
     "side": {
       "file": "side.onnx",
-      "sha256": "948c2c9d9849d84003a69f43f91cb1aa483d5afdd7752781acd24dc10fc0640f",
+      "sha256": "558c18e39b796ca7e0f0d7de591464cf668f44a3422c8dfc7c92b2c86ca789e4",
       "keypoints": [
         "snout-tip",
         "eye",
@@ -71,229 +71,14 @@
         45
       ],
       "end2end": true,
-      "source_checkpoint_sha256": "fca640f495f39e5f63d4bf8fc52ee41f7445e59a3f0aaf54072ae4cec30618c9",
-      "adapter": {
-        "version": "side-roboflow-v2-class-map-v1",
-        "mapping_sha256": "4d77082038fa94c8c972054277f9b27a202336a20cd8f2e373a9ecc302f295b6",
-        "source_policy_sha256": "96af2f3c90e472d64dcd2d3743bc83d93f8c0e0901a2108b95f5c9c396a7212f",
-        "json_hash_canonicalization": "sorted compact JSON, ASCII-escaped UTF-8",
-        "source_dataset_yaml_sha256": "32b65cd3eb48de241da4564152f9184238885746ba5cb9627ca614f3718a2984",
-        "source_dataset_readme_sha256": "32885ff2451b805595056bed6cd7bce03c39daaf70663d1939b0eba17c08376e",
-        "source_onnx_sha256": "3b4f7298e389f79754198e43175449f21281e244161d2ad6b954a0fcad7c9acc",
-        "source_classes": [
-          "16_side",
-          "17_side",
-          "18_side",
-          "19_side",
-          "20_side",
-          "23_side",
-          "27_side",
-          "28_side",
-          "29_side",
-          "34_side",
-          "35_side",
-          "36_side",
-          "38_side"
-        ],
-        "output_to_source": [
-          [
-            0,
-            1,
-            2,
-            3,
-            6,
-            4,
-            5,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            11,
-            12,
-            10,
-            9
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            11,
-            12,
-            10,
-            9
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            11,
-            12,
-            10,
-            9
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            11,
-            12,
-            7,
-            8,
-            9,
-            10
-          ]
-        ],
-        "score_semantics": "source weight-class score preserved; not pig certainty",
-        "evidence": "current class names and v1-v2 coordinate continuity; frozen v2 names not exhaustively verified"
+      "source_checkpoint_sha256": "000dab3f05dccaa41e50de5e6b4f088318d99fb48f7571e7e5d0b39735420e91",
+      "training_source": {
+        "prepared_dataset_yaml_sha256": "0f34637d2692e5edd10cbbeae77dfbf42302f51dea22cc3356c287fed5f2843d",
+        "prepared_dataset_manifest_sha256": "593d8c6881ada950aabaa89544264f1eb8ea9592114a6ea5c2d7310fe8de1609",
+        "preparation_policy_sha256": "d833efdb567454b00eaca17cf5a8878ea5f3fc897c5638b4718814e87f9ec107",
+        "class_names": [
+          "pig"
+        ]
       }
     }
   },
@@ -311,23 +96,20 @@
     "nms": false,
     "end2end": true,
     "opset": 17,
-    "side_adapter": {
+    "side": {
       "ultralytics": "8.4.9",
       "torch": "2.10.0+cu128",
       "onnx": "1.23.2",
       "onnxruntime": "1.24.4",
       "device": "cpu",
       "opset": 17,
-      "raw_flags": {
-        "imgsz": 640,
-        "batch": 1,
-        "dynamic": false,
-        "half": false,
-        "simplify": false,
-        "nms": false,
-        "end2end": true
-      },
-      "graph": "class-indexed ONNX point permutation"
+      "imgsz": 640,
+      "batch": 1,
+      "dynamic": false,
+      "half": false,
+      "simplify": false,
+      "nms": false,
+      "end2end": true
     }
   },
   "parity": {
@@ -340,14 +122,13 @@
       "scope": "functional fixture; not measurement/weight accuracy"
     },
     "side": {
-      "samples": 13,
-      "known_classes": 13,
-      "samples_with_selected_rows": 13,
-      "raw_torch_onnx_max_abs_selected": 0.0001068115234375,
-      "raw_adapter_max_abs": 0.0,
+      "samples": 14,
+      "validation_source_classes": 13,
+      "samples_with_selected_rows": 14,
+      "max_abs_selected_difference": 9.1552734375e-05,
       "rtol": 0.0001,
       "atol": 0.05,
-      "scope": "selected source rows and exact row remapping; not anatomical or weight accuracy"
+      "scope": "selected rows on one generated fixture and one validation image per original class; not weight accuracy"
     }
   }
 }

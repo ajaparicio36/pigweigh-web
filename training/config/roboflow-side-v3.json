@@ -1,0 +1,810 @@
+{
+  "schema_version": 1,
+  "review_basis": "2026-11-08 side-view-v3 is a separate Roboflow workspace-copy v2 export. Each of the 839 shared class/source basenames has the same 44 label tokens and slot order as side-view-v2; all 251 validation/test image bytes match. Two byte-image-matched examples per class bind this local version to the v1 named schema and v2 adapter; continuity is not an anatomy or accuracy certification.",
+  "lineage": {
+    "named_policy_path": "training/config/roboflow-pose-v1.json",
+    "named_policy_file_sha256": "42ecef85ed0f07d5a18f734dc5fa45273c0b4a2a6387de731fc9dc945720f995",
+    "adapter_path": "training/config/side-adapter-v2.json",
+    "adapter_file_sha256": "79c1d8155e5853e6fc9864a4d02733671355c2ddeef45050ca9391657367c25f",
+    "v2_yaml_sha256": "32b65cd3eb48de241da4564152f9184238885746ba5cb9627ca614f3718a2984",
+    "v3_yaml_sha256": "083044ee7bdbe4e595d0553bb465d641b001250fda73df95b5e1c0915dad21ef",
+    "v3_readme_sha256": "3deb6641aec0bfd442cd1fbe81cb7dae2315fab8336d5b7fb7c7e72c8d670833"
+  },
+  "views": {
+    "side": {
+      "canonical_keypoints": [
+        "snout-tip",
+        "eye",
+        "ear-tip",
+        "withers",
+        "mid-point-peak",
+        "loin",
+        "tail-base",
+        "front-shoulder-joint",
+        "front-hoof",
+        "rear-hip-joint",
+        "rear-hoof",
+        "sternum",
+        "belly-lowest-part"
+      ],
+      "aliases": {
+        "Snout_Tip-occluded-if-not-seen-": "snout-tip",
+        "Eye": "eye",
+        "Ear_Tip-head_reference-": "ear-tip",
+        "Withers-between_neck_shoulder_starts-": "withers",
+        "Mid_Point_Peak": "mid-point-peak",
+        "Loin-before_or_around_hips-": "loin",
+        "Tail_Base": "tail-base",
+        "Snout_Tip.": "snout-tip",
+        "Ear_Tip": "ear-tip",
+        "Ear_Tip-head-reference-": "ear-tip",
+        "Front-Shoulder-Joint": "front-shoulder-joint",
+        "Front_Hoof-attach_to_ground-": "front-hoof",
+        "Rear_Hip-Joint": "rear-hip-joint",
+        "Rear_Hip_Joint": "rear-hip-joint",
+        "Rear_Hip-attach-to-ground-": "rear-hoof",
+        "-Sternum-behind_leg-": "sternum",
+        "Sternum-behind_leg-": "sternum",
+        "-Belly-Lowest-Part": "belly-lowest-part",
+        "Belly-Lowest-Part": "belly-lowest-part"
+      },
+      "classes": {
+        "16_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Mid_Point_Peak",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "Rear_Hip_Joint",
+            "Rear_Hip-attach-to-ground-",
+            "Sternum-behind_leg-",
+            "Belly-Lowest-Part"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            6,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1865_jpeg_jpeg.rf.17f87d0a766580eae0e8d0168a27a440.txt",
+              "sha256": "f6676509b46bd7fdc748c47a4023b220ffe8e9432c52e8aa820e4274037d9b17",
+              "image": "valid/images/IMG_1865_jpeg_jpeg.rf.17f87d0a766580eae0e8d0168a27a440.jpg",
+              "image_sha256": "501c21012000c3b4e9f74613c483bab0d326cf03c79794f08659c36e85d01ef1",
+              "v2_label": "valid/labels/IMG_1865_jpeg_jpeg.rf.2d084bf187b34b4b4b14d6d15eac5b29.txt",
+              "v2_label_sha256": "f6676509b46bd7fdc748c47a4023b220ffe8e9432c52e8aa820e4274037d9b17",
+              "v2_image": "valid/images/IMG_1865_jpeg_jpeg.rf.2d084bf187b34b4b4b14d6d15eac5b29.jpg",
+              "v2_image_sha256": "501c21012000c3b4e9f74613c483bab0d326cf03c79794f08659c36e85d01ef1",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_1874_jpeg_jpeg.rf.33a8ca85a29ec58367357a0692b8efd9.txt",
+              "sha256": "1a611e9325e736421a279e5582b8fcb54bbf9e63145cf4a3a2e1125fd45ceb51",
+              "image": "test/images/IMG_1874_jpeg_jpeg.rf.33a8ca85a29ec58367357a0692b8efd9.jpg",
+              "image_sha256": "ca724281da824e67a40fd45cfef1677f322dd81b442881a64784f29f3361f8c9",
+              "v2_label": "test/labels/IMG_1874_jpeg_jpeg.rf.d26c38105604404068bec5311ca05ebf.txt",
+              "v2_label_sha256": "1a611e9325e736421a279e5582b8fcb54bbf9e63145cf4a3a2e1125fd45ceb51",
+              "v2_image": "test/images/IMG_1874_jpeg_jpeg.rf.d26c38105604404068bec5311ca05ebf.jpg",
+              "v2_image_sha256": "ca724281da824e67a40fd45cfef1677f322dd81b442881a64784f29f3361f8c9",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "17_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "-Belly-Lowest-Part",
+            "-Sternum-behind_leg-",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1705_jpeg_jpeg.rf.c297140095e19b90efbd7b3bd80f361f.txt",
+              "sha256": "3678ae114950afa4bd6fbc5a12e327231235e936bb1d0ef992e9ae878b960ff9",
+              "image": "valid/images/IMG_1705_jpeg_jpeg.rf.c297140095e19b90efbd7b3bd80f361f.jpg",
+              "image_sha256": "57d0c9b52c067000dd24d03240d5464715b97f90dead0171b686f18f9e5c03d4",
+              "v2_label": "valid/labels/IMG_1705_jpeg_jpeg.rf.ff2774640904ceb8d69a8a492e53f74b.txt",
+              "v2_label_sha256": "3678ae114950afa4bd6fbc5a12e327231235e936bb1d0ef992e9ae878b960ff9",
+              "v2_image": "valid/images/IMG_1705_jpeg_jpeg.rf.ff2774640904ceb8d69a8a492e53f74b.jpg",
+              "v2_image_sha256": "57d0c9b52c067000dd24d03240d5464715b97f90dead0171b686f18f9e5c03d4",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_1712_jpeg_jpeg.rf.d965a6024e5d667694e8801b36284bf9.txt",
+              "sha256": "b38b27026fe6d0e726691aa110e0119ad2dad743a9c8082d91cee235ec94bdd6",
+              "image": "test/images/IMG_1712_jpeg_jpeg.rf.d965a6024e5d667694e8801b36284bf9.jpg",
+              "image_sha256": "d383e297125275d06c84232aecc1afbb8c14fcd495fea462f692fe884ef2d681",
+              "v2_label": "test/labels/IMG_1712_jpeg_jpeg.rf.7580b5e4b99a41330f344030c7a10ea3.txt",
+              "v2_label_sha256": "b38b27026fe6d0e726691aa110e0119ad2dad743a9c8082d91cee235ec94bdd6",
+              "v2_image": "test/images/IMG_1712_jpeg_jpeg.rf.7580b5e4b99a41330f344030c7a10ea3.jpg",
+              "v2_image_sha256": "d383e297125275d06c84232aecc1afbb8c14fcd495fea462f692fe884ef2d681",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "18_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "-Belly-Lowest-Part",
+            "-Sternum-behind_leg-",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1556_jpeg_jpeg.rf.e8946586858f2436c764f1acd6843515.txt",
+              "sha256": "34cc9315c9d38e0a7923a6d020478eca71fdf62dc2157ee29a4764b54014fcf7",
+              "image": "valid/images/IMG_1556_jpeg_jpeg.rf.e8946586858f2436c764f1acd6843515.jpg",
+              "image_sha256": "ff52581bc9da55488f5410f790bd4e1209c855a0c9590e6126e2b0b3f432f966",
+              "v2_label": "valid/labels/IMG_1556_jpeg_jpeg.rf.377f3249775ea8b3f50954f752e75e05.txt",
+              "v2_label_sha256": "34cc9315c9d38e0a7923a6d020478eca71fdf62dc2157ee29a4764b54014fcf7",
+              "v2_image": "valid/images/IMG_1556_jpeg_jpeg.rf.377f3249775ea8b3f50954f752e75e05.jpg",
+              "v2_image_sha256": "ff52581bc9da55488f5410f790bd4e1209c855a0c9590e6126e2b0b3f432f966",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_1561_jpeg_jpeg.rf.92bbd4c1405c83362cdb6f8476e1d630.txt",
+              "sha256": "df071aaa6c9e7db87b02088a8f4e543cd74861c450814b20ba83c9d17c3df374",
+              "image": "test/images/IMG_1561_jpeg_jpeg.rf.92bbd4c1405c83362cdb6f8476e1d630.jpg",
+              "image_sha256": "7cadcb8ce903d74de773dc9316c86063e296eb0f0d84707ef921996347fb0ade",
+              "v2_label": "test/labels/IMG_1561_jpeg_jpeg.rf.97c2cc20ed3ccdfe5fa3c33829214f96.txt",
+              "v2_label_sha256": "df071aaa6c9e7db87b02088a8f4e543cd74861c450814b20ba83c9d17c3df374",
+              "v2_image": "test/images/IMG_1561_jpeg_jpeg.rf.97c2cc20ed3ccdfe5fa3c33829214f96.jpg",
+              "v2_image_sha256": "7cadcb8ce903d74de773dc9316c86063e296eb0f0d84707ef921996347fb0ade",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "19_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head-reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_1998_jpeg_jpeg.rf.d2c943e691b46c732a95e0965e714b39.txt",
+              "sha256": "0abc3dd78142a2e56f662a3943a068a5c682f1df0a22b9f415571c65974b79d3",
+              "image": "valid/images/IMG_1998_jpeg_jpeg.rf.d2c943e691b46c732a95e0965e714b39.jpg",
+              "image_sha256": "44510caf7aa7a5aafea6fdd9cf5586f611ddce4e0d0a2ea564670c3b56dbc24c",
+              "v2_label": "valid/labels/IMG_1998_jpeg_jpeg.rf.49794b4cd5249f54c4c6285af437547b.txt",
+              "v2_label_sha256": "0abc3dd78142a2e56f662a3943a068a5c682f1df0a22b9f415571c65974b79d3",
+              "v2_image": "valid/images/IMG_1998_jpeg_jpeg.rf.49794b4cd5249f54c4c6285af437547b.jpg",
+              "v2_image_sha256": "44510caf7aa7a5aafea6fdd9cf5586f611ddce4e0d0a2ea564670c3b56dbc24c",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_1992_jpeg_jpeg.rf.da505220a93c1bd45126d6b40706cd72.txt",
+              "sha256": "af1575cc737ee15adcfab98bd4e43398d5cc7a1bf26c84e2f7a9d25a0870003e",
+              "image": "test/images/IMG_1992_jpeg_jpeg.rf.da505220a93c1bd45126d6b40706cd72.jpg",
+              "image_sha256": "0d1b0f6dd59aade3d5482d8ab1d59e143e8df6f323701e4d63fbb09ccbe61e11",
+              "v2_label": "test/labels/IMG_1992_jpeg_jpeg.rf.76a653035d7685cb9776a95465ec6797.txt",
+              "v2_label_sha256": "af1575cc737ee15adcfab98bd4e43398d5cc7a1bf26c84e2f7a9d25a0870003e",
+              "v2_image": "test/images/IMG_1992_jpeg_jpeg.rf.76a653035d7685cb9776a95465ec6797.jpg",
+              "v2_image_sha256": "0d1b0f6dd59aade3d5482d8ab1d59e143e8df6f323701e4d63fbb09ccbe61e11",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "20_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2173_jpeg_jpeg.rf.0138ef7f64724217242a9432ba15af6e.txt",
+              "sha256": "3333c19ad69564525b9cc877de1d8f95b982fb3ebd6c53b89a60990c73aeb901",
+              "image": "valid/images/IMG_2173_jpeg_jpeg.rf.0138ef7f64724217242a9432ba15af6e.jpg",
+              "image_sha256": "ecc9887830bf22bad35f28aef52b1f54b41a7bddf0d3109cc175dd6ca914897b",
+              "v2_label": "valid/labels/IMG_2173_jpeg_jpeg.rf.3317f48e22c77cb22306bbfdac0dd563.txt",
+              "v2_label_sha256": "3333c19ad69564525b9cc877de1d8f95b982fb3ebd6c53b89a60990c73aeb901",
+              "v2_image": "valid/images/IMG_2173_jpeg_jpeg.rf.3317f48e22c77cb22306bbfdac0dd563.jpg",
+              "v2_image_sha256": "ecc9887830bf22bad35f28aef52b1f54b41a7bddf0d3109cc175dd6ca914897b",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_2170_jpeg_jpeg.rf.cf25f236a90bde8d6ea226c14ad92986.txt",
+              "sha256": "7b1593b98e4eea8ae6b93dc9e006def917d40bcf56f0e29c9497f3f50d9d4a41",
+              "image": "test/images/IMG_2170_jpeg_jpeg.rf.cf25f236a90bde8d6ea226c14ad92986.jpg",
+              "image_sha256": "6539da6cc5d4edb01b781188eb3c43601b747b46b8bad5e503456ad148478b2f",
+              "v2_label": "test/labels/IMG_2170_jpeg_jpeg.rf.37837066f12b4039057ad897c91242a7.txt",
+              "v2_label_sha256": "7b1593b98e4eea8ae6b93dc9e006def917d40bcf56f0e29c9497f3f50d9d4a41",
+              "v2_image": "test/images/IMG_2170_jpeg_jpeg.rf.37837066f12b4039057ad897c91242a7.jpg",
+              "v2_image_sha256": "6539da6cc5d4edb01b781188eb3c43601b747b46b8bad5e503456ad148478b2f",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "23_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip-occluded-if-not-seen-",
+            "Eye",
+            "Ear_Tip-head_reference-",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-",
+            "-Belly-Lowest-Part",
+            "-Sternum-behind_leg-",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            11,
+            12,
+            10,
+            9
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_5577_jpeg_jpeg.rf.0983f74a6997f3cbbf83f8b18c9ae643.txt",
+              "sha256": "73ee1308d27cf07009fb5ca1872d3fad683e21046afbfcdcae5832d07f23f37a",
+              "image": "valid/images/IMG_5577_jpeg_jpeg.rf.0983f74a6997f3cbbf83f8b18c9ae643.jpg",
+              "image_sha256": "190d2667efb7675b63acb53d3facbc32284f87846aa1cadc8427ef23f0f8132b",
+              "v2_label": "valid/labels/IMG_5577_jpeg_jpeg.rf.5feef40289a03f683e8161f971973fa5.txt",
+              "v2_label_sha256": "73ee1308d27cf07009fb5ca1872d3fad683e21046afbfcdcae5832d07f23f37a",
+              "v2_image": "valid/images/IMG_5577_jpeg_jpeg.rf.5feef40289a03f683e8161f971973fa5.jpg",
+              "v2_image_sha256": "190d2667efb7675b63acb53d3facbc32284f87846aa1cadc8427ef23f0f8132b",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_5561_jpeg_jpeg.rf.3bcee53c9fd7ff91b1a3ad1b2042d5c2.txt",
+              "sha256": "425fc9cd798ff11f91aa2644f75891077b6533c1ebce1976f0a6740ee2223fcf",
+              "image": "test/images/IMG_5561_jpeg_jpeg.rf.3bcee53c9fd7ff91b1a3ad1b2042d5c2.jpg",
+              "image_sha256": "391d2bffba25d098c8f8104e64de642e2f04e523d8e50bf4fb62006d5edd2ec9",
+              "v2_label": "test/labels/IMG_5561_jpeg_jpeg.rf.025cb3237d852497f69ad4af4a277e3c.txt",
+              "v2_label_sha256": "425fc9cd798ff11f91aa2644f75891077b6533c1ebce1976f0a6740ee2223fcf",
+              "v2_image": "test/images/IMG_5561_jpeg_jpeg.rf.025cb3237d852497f69ad4af4a277e3c.jpg",
+              "v2_image_sha256": "391d2bffba25d098c8f8104e64de642e2f04e523d8e50bf4fb62006d5edd2ec9",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "27_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3083_jpeg_jpeg.rf.b9e74eaf2fe659e8294296c29d07aacf.txt",
+              "sha256": "078034372635d74fbeca1db3808ea84cd7077b3f3d32f762983f7a528607678b",
+              "image": "valid/images/IMG_3083_jpeg_jpeg.rf.b9e74eaf2fe659e8294296c29d07aacf.jpg",
+              "image_sha256": "a7489e4cda3ded606936cb5ee736cf47cad8fafeccd9e41ba3eab953c39e7000",
+              "v2_label": "valid/labels/IMG_3083_jpeg_jpeg.rf.cf612c12d1145ba22fde483cc1b489f2.txt",
+              "v2_label_sha256": "078034372635d74fbeca1db3808ea84cd7077b3f3d32f762983f7a528607678b",
+              "v2_image": "valid/images/IMG_3083_jpeg_jpeg.rf.cf612c12d1145ba22fde483cc1b489f2.jpg",
+              "v2_image_sha256": "a7489e4cda3ded606936cb5ee736cf47cad8fafeccd9e41ba3eab953c39e7000",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_3077_jpeg_jpeg.rf.0a16a72b89728adb3f589ad19ed1760e.txt",
+              "sha256": "9aa6bfd425c83e806550ac96ca64772781438a4e3d7c72df4a969a39afec6803",
+              "image": "test/images/IMG_3077_jpeg_jpeg.rf.0a16a72b89728adb3f589ad19ed1760e.jpg",
+              "image_sha256": "d3d464e7903f19283f070962acc291614b0bf40e17ec4626887d00efee6667ff",
+              "v2_label": "test/labels/IMG_3077_jpeg_jpeg.rf.6caea2875bd315fb9a8761678e062efe.txt",
+              "v2_label_sha256": "9aa6bfd425c83e806550ac96ca64772781438a4e3d7c72df4a969a39afec6803",
+              "v2_image": "test/images/IMG_3077_jpeg_jpeg.rf.6caea2875bd315fb9a8761678e062efe.jpg",
+              "v2_image_sha256": "d3d464e7903f19283f070962acc291614b0bf40e17ec4626887d00efee6667ff",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "28_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3834_jpeg_jpeg.rf.5efb7420f328c2b5daca54b74ee20b29.txt",
+              "sha256": "54f49b0cb14256c6348e72f6bd85270a1cc834f225451d29272bfe62bd466390",
+              "image": "valid/images/IMG_3834_jpeg_jpeg.rf.5efb7420f328c2b5daca54b74ee20b29.jpg",
+              "image_sha256": "8fb64440305e73828577eb0a96f38ac4fb013575737b35ff8dd3d47e12f0661b",
+              "v2_label": "valid/labels/IMG_3834_jpeg_jpeg.rf.50aa2a0d76800727582c491809a99805.txt",
+              "v2_label_sha256": "54f49b0cb14256c6348e72f6bd85270a1cc834f225451d29272bfe62bd466390",
+              "v2_image": "valid/images/IMG_3834_jpeg_jpeg.rf.50aa2a0d76800727582c491809a99805.jpg",
+              "v2_image_sha256": "8fb64440305e73828577eb0a96f38ac4fb013575737b35ff8dd3d47e12f0661b",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_3828_jpeg_jpeg.rf.c49f23c89b98b307844b15597dced714.txt",
+              "sha256": "1fa9f1404830859c755a4388421131e03214521c2677c768209f95c6e48ed3f7",
+              "image": "test/images/IMG_3828_jpeg_jpeg.rf.c49f23c89b98b307844b15597dced714.jpg",
+              "image_sha256": "f473224e7aba1d6c25be95963ddb1c0c650fe02b633ea6211da79efa05c3933b",
+              "v2_label": "test/labels/IMG_3828_jpeg_jpeg.rf.d4c7760c75cc5a8c41e80c23165d313e.txt",
+              "v2_label_sha256": "1fa9f1404830859c755a4388421131e03214521c2677c768209f95c6e48ed3f7",
+              "v2_image": "test/images/IMG_3828_jpeg_jpeg.rf.d4c7760c75cc5a8c41e80c23165d313e.jpg",
+              "v2_image_sha256": "f473224e7aba1d6c25be95963ddb1c0c650fe02b633ea6211da79efa05c3933b",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "29_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_2926_jpeg_jpeg.rf.499bef6365ecbfe0d8b5bd88d45582dc.txt",
+              "sha256": "a1618baf3a04c4f46060497d4b481a10b95e998bc4954ec5cfa18b17b27bd019",
+              "image": "valid/images/IMG_2926_jpeg_jpeg.rf.499bef6365ecbfe0d8b5bd88d45582dc.jpg",
+              "image_sha256": "0b1343cb648c5bb97a6902c516c8e996b8a3aae4ef51a51de6ff5bf96e35321d",
+              "v2_label": "valid/labels/IMG_2926_jpeg_jpeg.rf.7385de110a530e0e202247c39c1cf5a9.txt",
+              "v2_label_sha256": "a1618baf3a04c4f46060497d4b481a10b95e998bc4954ec5cfa18b17b27bd019",
+              "v2_image": "valid/images/IMG_2926_jpeg_jpeg.rf.7385de110a530e0e202247c39c1cf5a9.jpg",
+              "v2_image_sha256": "0b1343cb648c5bb97a6902c516c8e996b8a3aae4ef51a51de6ff5bf96e35321d",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_2922_jpeg_jpeg.rf.12d1e0fa66fad7224950d2eaccdea074.txt",
+              "sha256": "23151e4640ee37df4a828d689de42269a032312d6b171a08f2387de1b46a5731",
+              "image": "test/images/IMG_2922_jpeg_jpeg.rf.12d1e0fa66fad7224950d2eaccdea074.jpg",
+              "image_sha256": "eb037e2a276fa56c8d6b22c313fd23bd14f8fbd631eb2e412b3d58cffb5f1a80",
+              "v2_label": "test/labels/IMG_2922_jpeg_jpeg.rf.bbc79b9dbbe07f00d8afd23ef6af0ebc.txt",
+              "v2_label_sha256": "23151e4640ee37df4a828d689de42269a032312d6b171a08f2387de1b46a5731",
+              "v2_image": "test/images/IMG_2922_jpeg_jpeg.rf.bbc79b9dbbe07f00d8afd23ef6af0ebc.jpg",
+              "v2_image_sha256": "eb037e2a276fa56c8d6b22c313fd23bd14f8fbd631eb2e412b3d58cffb5f1a80",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "34_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6080_jpeg_jpeg.rf.18eef2ceae84797c41df03d4b163e101.txt",
+              "sha256": "837a1d9dc9482f9876a5cb5e62471906d79995613310a9b607eeef5e7f077566",
+              "image": "valid/images/IMG_6080_jpeg_jpeg.rf.18eef2ceae84797c41df03d4b163e101.jpg",
+              "image_sha256": "120dd95cae330d307fe6215faadf1d88810c54558ca8125f4d4a564c5035aab8",
+              "v2_label": "valid/labels/IMG_6080_jpeg_jpeg.rf.995e4efc85040537df6baaa4359ae80b.txt",
+              "v2_label_sha256": "837a1d9dc9482f9876a5cb5e62471906d79995613310a9b607eeef5e7f077566",
+              "v2_image": "valid/images/IMG_6080_jpeg_jpeg.rf.995e4efc85040537df6baaa4359ae80b.jpg",
+              "v2_image_sha256": "120dd95cae330d307fe6215faadf1d88810c54558ca8125f4d4a564c5035aab8",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_6070_jpeg_jpeg.rf.8115c688740b17431d92ab2709726f5b.txt",
+              "sha256": "6010c351f7d3bd11de972decbdd966895c0550ed864ef38caac09143d5f7534b",
+              "image": "test/images/IMG_6070_jpeg_jpeg.rf.8115c688740b17431d92ab2709726f5b.jpg",
+              "image_sha256": "5b996236fb259ac0aa5117bad5fdb57b1810cb51156fc44d8cb111b589d96a8b",
+              "v2_label": "test/labels/IMG_6070_jpeg_jpeg.rf.635b905bf7f8d8e082ce5ed1f3398f7a.txt",
+              "v2_label_sha256": "6010c351f7d3bd11de972decbdd966895c0550ed864ef38caac09143d5f7534b",
+              "v2_image": "test/images/IMG_6070_jpeg_jpeg.rf.635b905bf7f8d8e082ce5ed1f3398f7a.jpg",
+              "v2_image_sha256": "5b996236fb259ac0aa5117bad5fdb57b1810cb51156fc44d8cb111b589d96a8b",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "35_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6842_jpeg_jpeg.rf.946fb2a466529249a770e3782f5aab7b.txt",
+              "sha256": "3f94d59c2b4d200fa4d44b6901121ea4e3568bbfd17c8fccc5f4ed2214dc7f83",
+              "image": "valid/images/IMG_6842_jpeg_jpeg.rf.946fb2a466529249a770e3782f5aab7b.jpg",
+              "image_sha256": "bafb620b25f1d2a26b267ea0c6d3cc4f6cb328c00f6ebd93886affdcdce7a777",
+              "v2_label": "valid/labels/IMG_6842_jpeg_jpeg.rf.c7ab3e0f1420674a09ce88eeb75bceb8.txt",
+              "v2_label_sha256": "3f94d59c2b4d200fa4d44b6901121ea4e3568bbfd17c8fccc5f4ed2214dc7f83",
+              "v2_image": "valid/images/IMG_6842_jpeg_jpeg.rf.c7ab3e0f1420674a09ce88eeb75bceb8.jpg",
+              "v2_image_sha256": "bafb620b25f1d2a26b267ea0c6d3cc4f6cb328c00f6ebd93886affdcdce7a777",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_6870_jpeg_jpeg.rf.a86eb93505d7f11a1d7367d99ac1a807.txt",
+              "sha256": "d83277b567a41b99a4575a9ff7baf2205e08da67163d7b5de581e64c25f781d5",
+              "image": "test/images/IMG_6870_jpeg_jpeg.rf.a86eb93505d7f11a1d7367d99ac1a807.jpg",
+              "image_sha256": "48b48a8f65198874bf68d9a4e6f8a6fc8ec4e4720bd9b403a9710b5a304cd62b",
+              "v2_label": "test/labels/IMG_6870_jpeg_jpeg.rf.1b7998fe67fae512ba79150633ecbe07.txt",
+              "v2_label_sha256": "d83277b567a41b99a4575a9ff7baf2205e08da67163d7b5de581e64c25f781d5",
+              "v2_image": "test/images/IMG_6870_jpeg_jpeg.rf.1b7998fe67fae512ba79150633ecbe07.jpg",
+              "v2_image_sha256": "48b48a8f65198874bf68d9a4e6f8a6fc8ec4e4720bd9b403a9710b5a304cd62b",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "36_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_6554_jpeg_jpeg.rf.8f54e1e1947ae6ba3de72bae41aca42f.txt",
+              "sha256": "758624b04bc74f63eaed2bc49e0108a60f2c0bd23ffe0626a5fef844bda553b3",
+              "image": "valid/images/IMG_6554_jpeg_jpeg.rf.8f54e1e1947ae6ba3de72bae41aca42f.jpg",
+              "image_sha256": "babbfc33de334c58903ff7c284a90127b8bfeea9928886c2876173bf6196d8a6",
+              "v2_label": "valid/labels/IMG_6554_jpeg_jpeg.rf.6bca391b2cb71c05c74405d79faa1a88.txt",
+              "v2_label_sha256": "758624b04bc74f63eaed2bc49e0108a60f2c0bd23ffe0626a5fef844bda553b3",
+              "v2_image": "valid/images/IMG_6554_jpeg_jpeg.rf.6bca391b2cb71c05c74405d79faa1a88.jpg",
+              "v2_image_sha256": "babbfc33de334c58903ff7c284a90127b8bfeea9928886c2876173bf6196d8a6",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_6562_jpeg_jpeg.rf.8cb51f88e5621bf3a85d781d28211f2b.txt",
+              "sha256": "1cdfba87c9d52f2d75aa9b8649c45d9df9a739030a02aa9804976017be6115b3",
+              "image": "test/images/IMG_6562_jpeg_jpeg.rf.8cb51f88e5621bf3a85d781d28211f2b.jpg",
+              "image_sha256": "d923aa0e41c1ddcb901991717a6c39c8f742ec4d28697ff28ce67300e325dc4d",
+              "v2_label": "test/labels/IMG_6562_jpeg_jpeg.rf.582fd0991dbb6fd014d83c0cd9685974.txt",
+              "v2_label_sha256": "1cdfba87c9d52f2d75aa9b8649c45d9df9a739030a02aa9804976017be6115b3",
+              "v2_image": "test/images/IMG_6562_jpeg_jpeg.rf.582fd0991dbb6fd014d83c0cd9685974.jpg",
+              "v2_image_sha256": "d923aa0e41c1ddcb901991717a6c39c8f742ec4d28697ff28ce67300e325dc4d",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        },
+        "38_side": {
+          "status": "verified",
+          "source_keypoint_names": [
+            "Snout_Tip.",
+            "Eye",
+            "Ear_Tip",
+            "Withers-between_neck_shoulder_starts-",
+            "Mid_Point_Peak",
+            "Loin-before_or_around_hips-",
+            "Tail_Base",
+            "Rear_Hip-Joint",
+            "Rear_Hip-attach-to-ground-",
+            "-Sternum-behind_leg-",
+            "-Belly-Lowest-Part",
+            "Front-Shoulder-Joint",
+            "Front_Hoof-attach_to_ground-"
+          ],
+          "output_to_input": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            11,
+            12,
+            7,
+            8,
+            9,
+            10
+          ],
+          "masks": {},
+          "evidence": [
+            {
+              "label": "valid/labels/IMG_3517_jpeg_jpeg.rf.cf96d64969314c60ae5c3d99afbbf198.txt",
+              "sha256": "972fae488d2872c121a6caac7134f61723eda6e3152ced188f47dbb599a39756",
+              "image": "valid/images/IMG_3517_jpeg_jpeg.rf.cf96d64969314c60ae5c3d99afbbf198.jpg",
+              "image_sha256": "ae0719cb1c7baa336ffb8f258dfba5746cf3f63d7f8d45b35af7c4ed0ac094ff",
+              "v2_label": "valid/labels/IMG_3517_jpeg_jpeg.rf.fe73ab5082478bef2fc4faf910397ae7.txt",
+              "v2_label_sha256": "972fae488d2872c121a6caac7134f61723eda6e3152ced188f47dbb599a39756",
+              "v2_image": "valid/images/IMG_3517_jpeg_jpeg.rf.fe73ab5082478bef2fc4faf910397ae7.jpg",
+              "v2_image_sha256": "ae0719cb1c7baa336ffb8f258dfba5746cf3f63d7f8d45b35af7c4ed0ac094ff",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            },
+            {
+              "label": "test/labels/IMG_3508_jpeg_jpeg.rf.3be9ea63495e0ba5cbd7aaf027344276.txt",
+              "sha256": "bce8d84fdbe0c245304d05ac00ac4f03bc7b0de3a19ff81130dddac758e0d581",
+              "image": "test/images/IMG_3508_jpeg_jpeg.rf.3be9ea63495e0ba5cbd7aaf027344276.jpg",
+              "image_sha256": "4d89e0819c592e33d89148180ff51860741ee369e079b6bfc1fe283457308424",
+              "v2_label": "test/labels/IMG_3508_jpeg_jpeg.rf.54ac5d510d70651995ee2d9b7cc814e4.txt",
+              "v2_label_sha256": "bce8d84fdbe0c245304d05ac00ac4f03bc7b0de3a19ff81130dddac758e0d581",
+              "v2_image": "test/images/IMG_3508_jpeg_jpeg.rf.54ac5d510d70651995ee2d9b7cc814e4.jpg",
+              "v2_image_sha256": "4d89e0819c592e33d89148180ff51860741ee369e079b6bfc1fe283457308424",
+              "check": "Shared source basename and image bytes match v2; all 44 label tokens match. Named source slots and permutation continue the reviewed v1 policy and v2 adapter; this is not anatomy certification."
+            }
+          ]
+        }
+      },
+      "excluded_labels": {}
+    }
+  }
+}
