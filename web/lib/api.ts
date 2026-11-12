@@ -14,6 +14,7 @@ export type EstimateMeasurements = {
 };
 export type EstimateMethod = {
   version: "attached-marker-ellipse-14451-v1";
+  correction?: { version: "pilot-v1"; length_factor: string; girth_factor: string };
   formula: "G_cm^2 * L_cm / 14451";
   marker_dictionary: "DICT_4X4_50";
   marker_id: 0;
@@ -43,6 +44,10 @@ function isPrice(value: unknown): value is Price {
     && typeof value.source_reference === "string" && value.source_reference.trim().length > 0
     && typeof value.published_at === "string" && /(?:Z|\+00:00)$/.test(value.published_at)
     && Number.isFinite(Date.parse(value.published_at));
+}
+
+export function isPriceHistory(value: unknown): value is { prices: Price[] } {
+  return isRecord(value) && Array.isArray(value.prices) && value.prices.every(isPrice);
 }
 
 export function isPriceSnapshot(value: unknown): value is PriceSnapshot {
@@ -110,7 +115,7 @@ export function isEstimate(value: unknown): value is Estimate {
 }
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string) {
+  constructor(public readonly status: number, public readonly code: string, message: string, public readonly view?: PhotoView) {
     super(message);
     this.name = "ApiError";
   }
@@ -126,7 +131,8 @@ export async function request<T>(path: string, guard: (value: unknown) => value 
   const value: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     if (isRecord(value) && isRecord(value.error) && typeof value.error.code === "string" && typeof value.error.message === "string") {
-      throw new ApiError(response.status, value.error.code, value.error.message);
+      const view = isRecord(value.error.details) ? value.error.details.view : undefined;
+      throw new ApiError(response.status, value.error.code, value.error.message, view === "top" || view === "side" ? view : undefined);
     }
     throw new ApiError(response.status, "service_unavailable", "The service couldn’t complete this request. Please try again.");
   }
@@ -141,4 +147,48 @@ export async function logout(): Promise<void> {
 
 export function jsonBody(value: unknown): Pick<RequestInit, "method" | "headers" | "body"> {
   return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) };
+}
+
+type PosePoint = { name: string; x: number; y: number; clear: boolean };
+export type PosePreview = { width: number; height: number; marker: string; pose: string;
+  box: [number, number, number, number] | null; points: PosePoint[] };
+
+function isPosePreview(value: unknown): value is PosePreview {
+  if (!value || typeof value !== "object") return false;
+  const frame = value as Record<string, unknown>;
+  const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
+  return finite(frame.width) && frame.width > 0 && finite(frame.height) && frame.height > 0
+    && typeof frame.marker === "string" && typeof frame.pose === "string"
+    && (frame.box === null || (Array.isArray(frame.box) && frame.box.length === 4 && frame.box.every(finite)))
+    && Array.isArray(frame.points) && frame.points.every((point: unknown) => {
+      if (!point || typeof point !== "object") return false;
+      const p = point as Record<string, unknown>;
+      return typeof p.name === "string" && finite(p.x) && finite(p.y) && typeof p.clear === "boolean";
+    });
+}
+
+export async function previewPhoto(view: PhotoView, file: File, signal: AbortSignal): Promise<PosePreview> {
+  const body = new FormData();
+  attachPhoto(body, "image", file);
+  return request(`/photos/${view}/validate?preview=true`, isPosePreview, { method: "POST", body, signal });
+}
+
+export function inferenceIssue(error: unknown): string {
+  if (error instanceof ApiError && error.status === 429) return "Server busy. Try again.";
+  if (error instanceof ApiError && error.status >= 500) return "Inference server unavailable. Try again.";
+  if (error instanceof TypeError) return errorMessage(error);
+  return error instanceof Error ? error.message : errorMessage(error);
+}
+
+
+export async function retryInference<T>(operation: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  for (let retry = 0; ; retry++) {
+    signal?.throwIfAborted();
+    try {
+      return await operation();
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.code !== "inference_busy" || retry >= 4) throw error;
+      await new Promise<void>((resolve) => setTimeout(resolve, 300));
+    }
+  }
 }

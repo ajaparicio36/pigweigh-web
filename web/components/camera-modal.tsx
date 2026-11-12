@@ -2,27 +2,10 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CameraSession, cameraErrorMessage, canCaptureVideo, capturePhoto, type TorchState } from "@/lib/camera";
-import { attachPhoto, request, errorMessage } from "@/lib/api";
+import { previewPhoto, inferenceIssue, errorMessage, type PosePreview } from "@/lib/api";
+import { DetectionStatus, ElapsedTime, StatusDot } from "./detection-status";
 import { runGuidedCapture } from "@/lib/guided-capture";
 import type { GuidedCaptureBinding } from "./photo-input";
-
-type PosePoint = { name: string; x: number; y: number; clear: boolean };
-type PosePreview = { width: number; height: number; marker: string; pose: string;
-  box: [number, number, number, number] | null; points: PosePoint[] };
-
-function isPosePreview(value: unknown): value is PosePreview {
-  if (!value || typeof value !== "object") return false;
-  const frame = value as Record<string, unknown>;
-  const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
-  return finite(frame.width) && frame.width > 0 && finite(frame.height) && frame.height > 0
-    && typeof frame.marker === "string" && typeof frame.pose === "string"
-    && (frame.box === null || (Array.isArray(frame.box) && frame.box.length === 4 && frame.box.every(finite)))
-    && Array.isArray(frame.points) && frame.points.every((point: unknown) => {
-      if (!point || typeof point !== "object") return false;
-      const p = point as Record<string, unknown>;
-      return typeof p.name === "string" && finite(p.x) && finite(p.y) && typeof p.clear === "boolean";
-    });
-}
 
 type CameraModalProps = {
   view: "top" | "side";
@@ -31,11 +14,12 @@ type CameraModalProps = {
   onClose: (reason: "close" | "upload") => void;
   guidedCapture?: Omit<GuidedCaptureBinding, "onAccept"> & { onAccept: (candidate: Parameters<GuidedCaptureBinding["onAccept"]>[0]) => boolean | Promise<boolean> };
   keepOpen?: boolean;
-  batchStatus?: string;
+  batchProgress?: { saved: number; total: number };
+  captureError?: string;
   captureBusy?: boolean;
 };
 
-export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture, keepOpen = false, batchStatus, captureBusy = false }: CameraModalProps): React.JSX.Element {
+export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture, keepOpen = false, batchProgress, captureError, captureBusy = false }: CameraModalProps): React.JSX.Element {
   const titleId = useId();
   const helpId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -55,7 +39,9 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
   const [torchMessage, setTorchMessage] = useState("");
   const [previewEnabled, setPreviewEnabled] = useState(true);
   const [preview, setPreview] = useState<PosePreview | null>(null);
-  const [previewMessage, setPreviewMessage] = useState("");
+  const [guidedDetection, setGuidedDetection] = useState<{
+    preview: PosePreview | null; confirmed?: boolean; checking?: boolean; saved?: boolean; issue?: string;
+  } | null>(null);
   const previewRef = useRef<AbortController | null>(null);
   const previewActive = previewEnabled && state === "ready" && !disabled && !guided.running;
 
@@ -73,20 +59,14 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
       try {
         const image = await capturePhoto(video, view, 960);
         if (signal.aborted) return;
-        const body = new FormData();
-        attachPhoto(body, "image", image);
-        const frame = await request(`/photos/${view}/validate?preview=true`, isPosePreview, { method: "POST", body, signal });
+        const frame = await previewPhoto(view, image, signal);
         if (signal.aborted) return;
         clearTimeout(stale);
         const age = performance.now() - started;
         setPreview(age < 3000 ? frame : null);
-        setPreviewMessage(`${frame.marker} · ${frame.pose}`);
         stale = setTimeout(() => setPreview(null), Math.max(0, 3000 - age));
-      } catch (failure) {
-        if (!signal.aborted) {
-          setPreview(null);
-          setPreviewMessage(errorMessage(failure));
-        }
+      } catch {
+        if (!signal.aborted) setPreview(null);
       } finally {
         if (!signal.aborted) next = setTimeout(() => void sample(), Math.max(100, 500 - (performance.now() - started)));
       }
@@ -157,9 +137,9 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
   }, [disabled, onClose]);
 
   function stopGuided(): void {
-    if (!guidedRef.current) return;
-    guidedRef.current.abort(); guidedRef.current = null;
-    setGuided({ running: false, message: "Guided capture stopped. You can still capture or upload a photo." });
+    guidedRef.current?.abort(); guidedRef.current = null;
+    setGuidedDetection(null);
+    setGuided({ running: false, message: "" });
   }
   function dismiss(reason: "close" | "upload" = "close"): void {
     if (dismissedRef.current) return;
@@ -199,18 +179,36 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
     if (!guidedCapture || disabled || !session || session.isClosed || !video || state !== "ready" || guidedRef.current || capturingRef.current) return;
     previewRef.current?.abort(); setPreview(null);
     const controller = new AbortController(); guidedRef.current = controller;
-    setGuided({ running: true, message: "Starting guided photo checks…" });
+    setGuidedDetection(null);
+    setGuided({ running: true, message: "" });
     try {
       while (!controller.signal.aborted && !session.isClosed) {
         const result = await runGuidedCapture({
           view, signal: controller.signal,
           capture: () => {
             if (session.isClosed || !canCaptureVideo(video)) return Promise.reject(new Error("The camera preview stopped."));
+            setGuidedDetection(null);
             return capturePhoto(video, view);
           },
-          check: (file, signal) => guidedCapture.checkCandidate(view, file, signal),
-          onProgress: ({ message }) => {
-            if (!controller.signal.aborted && !session.isClosed) setGuided({ running: true, message });
+          check: async (file, signal) => {
+            setGuidedDetection({ preview: null, checking: true });
+            const check = await guidedCapture.checkCandidate(view, file, signal);
+            if (signal.aborted || check.status === "cancelled") return check;
+            if (check.status === "passed") {
+              setGuidedDetection({ preview: null, confirmed: true });
+            } else if (check.kind === "rejected") {
+              try {
+                const frame = await previewPhoto(view, file, signal);
+                if (!signal.aborted) setGuidedDetection({ preview: frame });
+              } catch (failure) {
+                if (!signal.aborted) setGuidedDetection({ preview: null, issue: inferenceIssue(failure) });
+              }
+            } else {
+              const issue = check.kind === "busy" ? "Server busy" :
+                check.kind === "connection" ? "Server unreachable" : "Inference server unavailable";
+              setGuidedDetection({ preview: null, issue });
+            }
+            return check;
           },
         });
         if (controller.signal.aborted || session.isClosed) return;
@@ -221,11 +219,12 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
         const accepted = await guidedCapture.onAccept(result.candidate);
         if (controller.signal.aborted || session.isClosed) return;
         if (!accepted) {
-          setGuided({ running: false, message: "The photo could not be saved. Check the batch status and try again." });
+          setGuided({ running: false, message: "The photo could not be saved. Try again." });
           return;
         }
         if (!keepOpen) { dismiss(); return; }
-        await new Promise<void>((resolve) => setTimeout(resolve, 850));
+        setGuidedDetection({ preview: null, confirmed: true, saved: true });
+        await new Promise<void>((resolve) => setTimeout(resolve, 500));
       }
     } catch (failure) {
       if (!controller.signal.aborted && !session.isClosed) setGuided({ running: false, message: errorMessage(failure) });
@@ -254,63 +253,86 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
     }
   }
   const turnLightOff = torch === "on" || (torch === "unconfirmed" && torchRequested);
+  const stage = error ? "Camera unavailable" :
+    guidedDetection?.issue ?? (guided.message ? "Capture paused" :
+      guidedDetection?.checking ? "Checking photo…" :
+      guidedDetection?.saved ? "Photo saved" :
+      guidedDetection?.confirmed || captureBusy || state === "capturing" ? "Saving photo…" :
+      guidedDetection?.preview ? "Retaking photo…" :
+      guided.running ? "Taking photo…" :
+      state === "starting" ? "Starting camera…" : "Ready to capture");
+  const tone = error || guidedDetection?.issue || guided.message ? "bad" :
+    (guided.running && !guidedDetection?.saved) || captureBusy || state !== "ready" ? "wait" : "good";
   return (
     <dialog ref={dialogRef} className="camera-dialog" aria-labelledby={titleId} aria-describedby={helpId}
       onCancel={(event) => { event.preventDefault(); dismiss(); }}>
       <div className="camera-dialog-heading">
-        <h2 id={titleId}>Take {label} photo</h2>
-        {batchStatus && <span role="status">{batchStatus}</span>}
+        <h2 id={titleId}>{keepOpen ? `Capture ${label} batch` : `Take ${label} photo`}</h2>
         <button type="button" className="text-button" onClick={() => dismiss()} autoFocus>Close<span className="sr-only"> camera</span></button>
       </div>
       <div className="camera-dialog-body">
         <p id={helpId} className="camera-instructions">{view === "top"
           ? "Look straight down from above. Keep the whole pig visible, with the flat marker on its back near the middle of its body. Center the marker in the square guide."
           : "Look straight at the pig’s side. Keep its whole profile visible, with the flat marker on the visible flank. Center the marker in the square guide."}</p>
-        <div className="camera-preview" style={{ aspectRatio: videoAspect, width: `min(100%, ${45 * videoAspect}dvh)` }}>
-          <video ref={videoRef} autoPlay playsInline muted aria-label={`Live ${label} camera preview`}
-            onCanPlay={markReady} onPlaying={markReady} onResize={markReady}
-            onWaiting={() => { if (!sessionRef.current?.isClosed && !capturingRef.current) setState("starting"); }}
-            onError={() => { if (sessionRef.current?.isClosed) return; guidedRef.current?.abort(); guidedRef.current = null; sessionRef.current?.close(); setTorch("unsupported"); setGuided({ running: false, message: "Guided capture stopped because the preview stopped." }); setState("error"); setError("The live preview could not be shown. Close this window and try again, or upload a photo."); }} />
-          {previewActive && preview && Math.abs(preview.width / preview.height - videoAspect) < 0.02 &&
-            <svg aria-hidden="true" viewBox={`0 0 ${preview.width} ${preview.height}`}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 2, pointerEvents: "none" }}>
-              {preview.box && <rect x={preview.box[0]} y={preview.box[1]} width={Math.max(0, preview.box[2] - preview.box[0])}
-                height={Math.max(0, preview.box[3] - preview.box[1])} fill="none" stroke="#55e6a5" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
-              {preview.points.filter((p) => p.x >= 0 && p.y >= 0 && p.x < preview.width && p.y < preview.height).map((p) =>
-                <g key={p.name} fill={p.clear ? "#55e6a5" : "#ffca63"}>
-                  <circle cx={p.x} cy={p.y} r={preview.width * 0.008} stroke="#111" />
-                  <text x={p.x + 10} y={p.y - 10} fontSize={Math.max(16, preview.width * 0.022)}
-                    stroke="#111" strokeWidth="3" paintOrder="stroke">{p.name.replaceAll("-", " ")}</text>
-                </g>)}
-            </svg>}
-          {state !== "error" && <div className="camera-guides" aria-hidden="true"><div className="camera-marker-target" /></div>}
+        <details className="marker-placement-help">
+          <summary>Where to place the marker</summary>
+          <p>{view === "top" ? "Place the card flat on the middle of the pig’s back. Hold the phone directly above it."
+            : "Place the card flat on the side facing you. Hold the phone level with the pig’s side."}</p>
+        </details>
+        <div className="camera-preview-group">
+          <div className="camera-stage">
+            <div className="camera-stage-label">
+              <span role="status"><StatusDot tone={tone} active={tone === "wait"}>{stage}</StatusDot></span>
+              {tone === "wait" && <ElapsedTime key={stage} />}
+            </div>
+            {batchProgress && <span className="camera-stage-count" role="status">
+              <span className="sr-only">Photos saved </span>{batchProgress.saved}/{batchProgress.total}
+            </span>}
+          </div>
+          <div className="camera-preview" style={{ aspectRatio: videoAspect, width: `min(100%, ${45 * videoAspect}dvh)` }}>
+            <video ref={videoRef} autoPlay playsInline muted aria-label={`Live ${label} camera preview`}
+              onCanPlay={markReady} onPlaying={markReady} onResize={markReady}
+              onWaiting={() => { if (!sessionRef.current?.isClosed && !capturingRef.current) setState("starting"); }}
+              onError={() => { if (sessionRef.current?.isClosed) return; guidedRef.current?.abort(); guidedRef.current = null; sessionRef.current?.close(); setTorch("unsupported"); setGuided({ running: false, message: "Guided capture stopped because the preview stopped." }); setState("error"); setError("The live preview could not be shown. Close this window and try again, or upload a photo."); }} />
+            {previewActive && preview && Math.abs(preview.width / preview.height - videoAspect) < 0.02 &&
+              <svg aria-hidden="true" viewBox={`0 0 ${preview.width} ${preview.height}`}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 2, pointerEvents: "none" }}>
+                {preview.box && <rect x={preview.box[0]} y={preview.box[1]} width={Math.max(0, preview.box[2] - preview.box[0])}
+                  height={Math.max(0, preview.box[3] - preview.box[1])} fill="none" stroke="#55e6a5" strokeWidth="2" vectorEffect="non-scaling-stroke" />}
+                {preview.points.filter((p) => p.x >= 0 && p.y >= 0 && p.x < preview.width && p.y < preview.height).map((p) =>
+                  <g key={p.name} fill={p.clear ? "#55e6a5" : "#ffca63"}>
+                    <circle cx={p.x} cy={p.y} r={preview.width * 0.008} stroke="#111" />
+                    <text x={p.x + 10} y={p.y - 10} fontSize={Math.max(16, preview.width * 0.022)}
+                      stroke="#111" strokeWidth="3" paintOrder="stroke">{p.name.replaceAll("-", " ")}</text>
+                  </g>)}
+              </svg>}
+            {state !== "error" && <div className="camera-guides" aria-hidden="true"><div className="camera-marker-target" /></div>}
+          </div>
         </div>
-        {state === "starting" && <p className="camera-status" role="status">Starting camera…</p>}
-        {error && <p className="field-error" role="alert">{error}</p>}
+        {(error || captureError || (guided.message && !guidedDetection?.issue)) &&
+          <p className="field-error" role="alert">{error || captureError || guided.message}</p>}
+        {guidedDetection && !guidedDetection.issue && <DetectionStatus {...guidedDetection} />}
         <div className="camera-tool-row">
           <button type="button" className="button button-secondary" aria-pressed={previewEnabled}
             disabled={disabled || state !== "ready" || guided.running}
-            onClick={() => { setPreview(null); setPreviewMessage(""); setPreviewEnabled(!previewEnabled); }}>
+            onClick={() => { setPreview(null); setPreviewEnabled(!previewEnabled); }}>
             {previewEnabled ? "Hide live pose" : "Show live pose"}
           </button>
-          {guidedCapture && <button type="button" className="button button-secondary"
-            disabled={disabled || state !== "ready"}
-            onClick={() => { if (guided.running) stopGuided(); else void startGuided(); }}>
-            {guided.running ? "Stop guided capture" : "Start guided capture"}
-          </button>}
+          <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>
           {torch !== "unsupported" && <button type="button" className="button button-secondary"
             disabled={disabled || torchPending} onClick={() => void toggleTorch()}>
             {torchPending ? "Changing light…" : turnLightOff ? "Light off" : "Light on"}
           </button>}
         </div>
-        {previewActive && <p className="camera-status" role="status">{previewMessage || "Checking live pose…"}</p>}
         {torchMessage && <p role="status">{torchMessage}</p>}
-        {previewEnabled && guided.running && <p className="camera-status">Live pose pauses during guided capture.</p>}
-        {guided.message && <p className="field-help" role="status">{guided.message}</p>}
       </div>
       <div className="camera-actions">
-        <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>
-        <button type="button" className="button button-primary" disabled={disabled || captureBusy || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Saving photo…" : view === "top" ? "Save top photo" : "Save side photo"}</button>
+        {guidedCapture && <button type="button" className="button button-secondary"
+          disabled={disabled || (!guided.running && (captureBusy || state !== "ready"))}
+          onClick={() => { if (guided.running) stopGuided(); else void startGuided(); }}>
+          {guided.running ? "Stop guided capture" : "Guided Capture"}
+        </button>}
+        <button type="button" className="button button-primary" disabled={disabled || captureBusy || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Saving photo…" : "Manual Capture"}</button>
       </div>
     </dialog>
   );

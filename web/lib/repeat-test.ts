@@ -1,6 +1,8 @@
 import { BlobReader, BlobWriter, TextReader, ZipWriter } from "@zip.js/zip.js";
 import type { Estimate } from "./api";
 
+export const ATTEMPTS_PER_PIG = 3;
+
 export type RepeatAttempt = {
   number: number;
   hashes?: { top: string; side: string };
@@ -10,8 +12,10 @@ export type RepeatAttempt = {
   top: File | null;
   side: File | null;
 };
-export type BatchPhoto = { file: File; hash: string };
+export type BatchPhoto = { file: File; hash: string; savedAt?: string };
 export type RepeatSession = { pig: string; scaleKg: string; attempts: RepeatAttempt[];
+  createdAt?: string;
+  pendingKeypointResults?: Record<string, Estimate>;
   batch?: { top: BatchPhoto[]; side: BatchPhoto[] } };
 
 async function database(): Promise<IDBDatabase> {
@@ -23,7 +27,7 @@ async function database(): Promise<IDBDatabase> {
   });
 }
 
-export async function editSession(update?: (current: RepeatSession | null) => RepeatSession | null): Promise<RepeatSession | null> {
+export async function editSession(update?: (current: RepeatSession | null) => RepeatSession | null, pig?: string): Promise<RepeatSession | null> {
   const db = await database();
   try {
     return await new Promise((resolve, reject) => {
@@ -31,17 +35,27 @@ export async function editSession(update?: (current: RepeatSession | null) => Re
       const store = transaction.objectStore("session");
       const read = store.get("current");
       let current: RepeatSession | null = null;
-      read.onsuccess = () => {
+      function apply(value: RepeatSession | undefined, key: string): void {
         try {
-          current = read.result ?? null;
+          current = value ?? null;
           if (update) {
             current = update(current);
-            if (current) store.put(current, "current");
-            else store.delete("current");
+            if (current) store.put(current, key);
+            else store.delete(key);
           }
         } catch (error) {
           reject(error);
           transaction.abort();
+        }
+      }
+      read.onsuccess = () => {
+        const active = read.result as RepeatSession | undefined;
+        if (pig === undefined || active?.pig === pig) {
+          apply(active, "current");
+        } else {
+          const key = "pig:" + pig;
+          const archived = store.get(key);
+          archived.onsuccess = () => apply(archived.result, key);
         }
       };
       transaction.oncomplete = () => resolve(current);
@@ -125,6 +139,24 @@ async function annotatedPhoto(photo: File, points: Record<string, ExportLandmark
   }
 }
 
+function expectedValuation(weight: string, price: string): string | null {
+  if (!/^\d+\.\d{2}$/.test(weight) || !/^\d+\.\d{2}$/.test(price)) return null;
+  const product = BigInt(weight.replace(".", "")) * BigInt(price.replace(".", ""));
+  const cents = ((product + BigInt(50)) / BigInt(100)).toString().padStart(3, "0");
+  return cents.slice(0, -2) + "." + cents.slice(-2);
+}
+
+function repeatStatistics(values: number[]) {
+  if (!values.length) return { count: 0, mean: null, sampleSd: null };
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const squaredError = values.reduce((sum, value) => sum + (value - mean) ** 2, 0);
+  return {
+    count: values.length,
+    mean,
+    sampleSd: values.length > 1 ? Math.sqrt(squaredError / (values.length - 1)) : null,
+  };
+}
+
 export async function exportRepeatTest(session: RepeatSession): Promise<Blob> {
   const zip = new ZipWriter(new BlobWriter("application/zip"), { useWebWorkers: false, level: 0 });
   const csvCell = (value: unknown) => {
@@ -133,7 +165,10 @@ export async function exportRepeatTest(session: RepeatSession): Promise<Blob> {
     return '"' + safe.replaceAll('"', '""') + '"';
   };
   const rows = [["pig_id", "attempt", "saved_at", "scale_kg", "estimate_kg", "body_length_cm", "chest_width_cm",
-    "chest_depth_cm", "girth_cm", "top_detection_score", "side_detection_score", "formula", "model_bundle", "status", "failure"]];
+    "chest_depth_cm", "girth_cm", "top_detection_score", "side_detection_score", "formula", "model_bundle", "status", "failure",
+    "price_php_per_kg", "price_id", "price_source", "displayed_value_php", "expected_value_php", "valuation_check"]];
+  const weights: number[] = [];
+  const valuesByPrice = new Map<string, number[]>();;
   for (const attempt of session.attempts) {
     const folder = "A" + String(attempt.number).padStart(2, "0");
     const photos: Record<string, string> = {};
@@ -173,12 +208,40 @@ export async function exportRepeatTest(session: RepeatSession): Promise<Blob> {
       }, null, 2)));
     }
     const m = result?.measurements;
+    const valuation = result?.valuation;
+    const price = valuation?.price;
+    const expected = result && price ? expectedValuation(result.estimated_weight_kg, price.php_per_kg) : null;
+    const check = !result ? "" : expected === null ? "unavailable"
+      : expected === valuation?.amount_php ? "match" : "mismatch";
+    if (result) weights.push(Number(result.estimated_weight_kg));
+    if (valuation) {
+      const rate = valuation.price.php_per_kg;
+      const values = valuesByPrice.get(rate) ?? [];
+      values.push(Number(valuation.amount_php));
+      valuesByPrice.set(rate, values);
+    }
     rows.push([session.pig, String(number), savedAt, session.scaleKg, result?.estimated_weight_kg ?? "",
       m?.body_length_cm ?? "", m?.chest_width_cm ?? "", m?.chest_depth_cm ?? "", m?.girth_cm ?? "",
       String(detail?.diagnostics?.top?.model_score ?? ""), String(detail?.diagnostics?.side?.model_score ?? ""),
-      result?.method.formula ?? "", result?.artifacts.bundle_id ?? "", result ? "estimated" : "failed", failure ?? ""]);
+      result?.method.formula ?? "", result?.artifacts.bundle_id ?? "", result ? "estimated" : "failed", failure ?? "",
+      price?.php_per_kg ?? "", price?.id ?? "", price?.source_reference ?? "",
+      valuation?.amount_php ?? "", expected ?? "", check]);
   }
   await zip.add("summary.csv", new TextReader(rows.map((row) => row.map(csvCell).join(",")).join("\r\n")));
+  const savedAttempts = session.attempts.length;
+  await zip.add("evaluation.json", new TextReader(JSON.stringify({
+    pig: session.pig,
+    scaleKg: session.scaleKg,
+    savedAttempts,
+    successfulEstimates: weights.length,
+    failedSavedAttempts: savedAttempts - weights.length,
+    savedAttemptSuccessRate: savedAttempts ? weights.length / savedAttempts : null,
+    weightKg: repeatStatistics(weights),
+    displayedValuePhpByFixedRate: Array.from(valuesByPrice, ([pricePhpPerKg, values]) => ({
+      pricePhpPerKg,
+      ...repeatStatistics(values),
+    })),
+  }, null, 2)));
   const batchRows = [["pair", "top_photo", "side_photo", "saved_attempt"]];
   const batch = session.batch;
   if (batch) {
@@ -249,13 +312,57 @@ export async function openPig(pig: string, scaleKg: string): Promise<RepeatSessi
         const saved = store.get(key);
         saved.onsuccess = () => {
           const previous = current?.pig === pig ? current : saved.result as RepeatSession | undefined;
-          selected = { ...previous, pig, scaleKg: scaleKg || previous?.scaleKg || "", attempts: previous?.attempts ?? [] };
+          selected = { ...previous, pig, createdAt: previous ? previous.createdAt : new Date().toISOString(), scaleKg: scaleKg || previous?.scaleKg || "", attempts: previous?.attempts ?? [] };
           store.put(selected, "current");
           store.delete(key);
         };
       };
       transaction.oncomplete = () => resolve(selected);
       transaction.onabort = () => reject(transaction.error ?? new Error("Could not open this pig."));
+    });
+  } finally { db.close(); }
+}
+
+export async function listPigs(): Promise<RepeatSession[]> {
+  const db = await database();
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction("session", "readonly");
+      const request = transaction.objectStore("session").openCursor();
+      const pigs: RepeatSession[] = [];
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        if (cursor.key === "current" || String(cursor.key).startsWith("pig:")) {
+          pigs.push(cursor.value as RepeatSession);
+        }
+        cursor.continue();
+      };
+      transaction.oncomplete = () => resolve(pigs);
+      transaction.onabort = () => reject(transaction.error);
+    });
+  } finally { db.close(); }
+}
+
+export async function removePig(pig: string): Promise<boolean> {
+  const db = await database();
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction("session", "readwrite");
+      const store = transaction.objectStore("session");
+      const read = store.get("current");
+      let removedCurrent = false;
+      read.onsuccess = () => {
+        removedCurrent = read.result?.pig === pig;
+        store.delete("pig:" + pig);
+        if (removedCurrent) {
+          store.delete("current");
+          store.delete("draft-top");
+          store.delete("draft-side");
+        }
+      };
+      transaction.oncomplete = () => resolve(removedCurrent);
+      transaction.onabort = () => reject(transaction.error);
     });
   } finally { db.close(); }
 }

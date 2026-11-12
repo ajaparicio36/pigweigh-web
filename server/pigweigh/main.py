@@ -5,7 +5,7 @@ import json
 import math
 import re
 import secrets
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Annotated, Literal
 from collections.abc import Callable
 
@@ -325,6 +325,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             PriceRecord, PriceRecord.id == PriceState.current_id).where(PriceState.id == 1)).one()
         return {"revision": state.revision, "price": price_json(price)}
 
+    @app.get("/api/prices/history")
+    def price_history(session: DB):
+        prices = session.scalars(select(PriceRecord)
+                                 .order_by(PriceRecord.published_at.desc(), PriceRecord.id.desc()).limit(50))
+        return {"prices": [price_json(price) for price in prices]}
+
     @app.post("/api/auth/login")
     def login(data: LoginInput, request: Request, response: Response, session: DB):
         if not guard.admit() or not guard.hash_slots.acquire(blocking=False):
@@ -483,6 +489,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     raise APIError(422, exc.code, exc.message, {"view": exc.view}) from None
                 except InferenceUnavailable:
                     raise APIError(503, "inference_unavailable", "Estimation requires a verified local model bundle and marker configuration.") from None
+            # Keep the original photo measurements for audit and apply the fixed pilot factors.
+            raw = result["measurements"]
+            length = Decimal(raw["body_length_cm"]) * Decimal("1.26")
+            girth = Decimal(raw["girth_cm"]) * Decimal("1.1137635905676664")
+            result["uncorrected"] = {"measurements": raw, "estimated_weight_kg": result["estimated_weight_kg"]}
+            result["measurements"] = {**raw, "body_length_cm": str(length.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+                                      "girth_cm": str(girth.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))}
+            result["estimated_weight_kg"] = str((girth ** 2 * length / Decimal(FORMULA_DIVISOR)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP))
+            result["method"]["correction"] = {"version": "pilot-v1", "length_factor": "1.26",
+                                                "girth_factor": "1.1137635905676664"}
             # This short read occurs only after CPU inference; no DB transaction spans it.
             def priced_result():
                 with Session(engine) as session:

@@ -48,6 +48,7 @@ input, textarea { caret-color: var(--primary); }
 .header-inner { max-width: 72rem; min-height: 4.5rem; padding: 0 2rem; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .wordmark { font-size: 1.5rem; font-weight: 750; letter-spacing: -0.04em; text-decoration: none; }
 .wordmark span { font-weight: 450; }
+.app-version { margin-inline-start: 0.4rem; color: var(--background); font-size: 0.625rem; font-weight: 600; letter-spacing: normal; white-space: nowrap; }
 .app-header nav { display: flex; align-self: stretch; gap: 0.5rem; }
 .app-header nav a { min-width: 5rem; display: grid; place-items: center; padding: 0.75rem; text-decoration: none; border-bottom: 3px solid transparent; font-size: 0.9375rem; color: #f3ebdf; }
 .app-header nav a[aria-current="page"] { border-color: var(--background); font-weight: 650; color: var(--surface); }
@@ -107,6 +108,9 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; back
 .photo-check-retry { min-height: 2.75rem; }
 
 .camera-dialog { width: min(48rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--foreground); overflow: auto; overscroll-behavior: contain; }
+.camera-dialog[open]:has(.camera-dialog-body) { display: flex; flex-direction: column; overflow: hidden; }
+.camera-dialog-heading, .camera-actions { flex-shrink: 0; }
+.camera-dialog-body { min-height: 0; overflow-y: auto; }
 .camera-dialog::backdrop { background: rgb(24 17 14 / 70%); }
 .camera-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
 .camera-dialog-heading h2 { font-size: 1.25rem; }
@@ -118,15 +122,15 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; back
 .camera-guides { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .camera-marker-target { width: min(3rem, 40cqw, 40cqh); aspect-ratio: 1; border: 2px dashed #fff; outline: 1px solid rgb(0 0 0 / 60%); }
 .camera-status { margin-top: 0.875rem; font-size: 0.875rem; }
-.camera-actions { display: flex; justify-content: space-between; gap: 1rem; position: sticky; bottom: 0; padding: 1rem 1.5rem max(1rem, env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+.camera-actions { display: flex; gap: 1rem; padding: 1rem 1.5rem max(1rem, env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+
+.camera-actions .button { flex: 1; }
 
 @media (orientation: landscape) and (max-height: 500px) {
   .camera-dialog[open] { display: flex; flex-direction: column; }
-  .camera-dialog-heading, .camera-actions { flex-shrink: 0; }
   .camera-dialog-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; column-gap: 1rem; }
-  .camera-preview { grid-column: 1; grid-row: 1 / span 4; }
-  .camera-instructions, .camera-status, .camera-dialog-body > .field-error, .camera-dialog-body > .field-help { grid-column: 2; }
-  .camera-actions { position: static; }
+  .camera-preview-group { grid-column: 1; grid-row: 1 / span 6; }
+  .camera-dialog-body > :not(.camera-preview-group) { grid-column: 2; }
 }
 
 .marker-print-layout { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: 2.5rem; padding: 1.75rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
@@ -264,6 +268,7 @@ details li + li { margin-top: 0.375rem; }
 .attempt-remove { min-height: 44px; padding-inline: 0.75rem; margin-inline-start: 0.5rem; }
 
 .pig-attempts, .keypoint-panel { display: grid; min-width: 0; gap: 0.875rem; }
+.pig-attempts :is(p, h3, h4, .saved-pair) { overflow-wrap: anywhere; }
 .pig-attempts > .field + .field { margin-top: 0; }
 .pig-attempts > .button { justify-self: start; }
 .pilot-section { display: grid; gap: 0.75rem; border-top: 1px solid var(--border); padding-top: 1rem; }
@@ -276,3 +281,249 @@ details li + li { margin-top: 0.375rem; }
 .keypoint-panel select { display: block; min-height: 44px; max-width: 100%; padding: 0.5rem; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); }
 .keypoint-panel svg { display: block; border-radius: 8px; background: var(--surface-soft); }
 .pilot-section .camera-tool-row { align-items: center; }
+
+.batch-next {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.batch-step { padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; }
+.batch-step-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; }
+.batch-count { font-weight: 700; font-variant-numeric: tabular-nums; }
+.camera-batch-status { grid-column: 1 / -1; font-size: 1rem; font-weight: 700; }
+
+
+.pig-attempts [aria-label="Current photo pair"], .saved-pair { position: relative; }
+.pig-attempts [aria-label="Current photo pair"] > h3, .saved-pair { padding-inline-end: 3rem; }
+.pair-remove {
+  position: absolute;
+  inset-block-start: 0.25rem;
+  inset-inline-end: 0.25rem;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--primary-dark);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.pair-remove:disabled { opacity: 0.5; cursor: default; }
+
+
+.pig-gallery-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.pig-gallery-arrows { display: flex; gap: 0.4rem; }
+.pig-gallery-arrows .button { min-width: 44px; padding-inline: 0.55rem; border-radius: 50%; }
+.pig-gallery {
+  list-style: none;
+  padding: 0 0 0.5rem;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(88%, 17rem);
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.pig-gallery-card { min-width: 0; scroll-snap-align: start; border: 1px solid var(--border); border-radius: 0.65rem; background: var(--surface); }
+.pig-card-heading { display: flex; gap: 0.4rem; align-items: center; padding-inline: 0.55rem; white-space: nowrap; }
+.pig-card-heading strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pig-card-heading span { color: var(--muted); font-size: 0.8125rem; }
+.pig-card-heading .pig-card-remove { margin: 0 0 0 auto; padding-inline: 0.15rem; }
+.pig-card-cover { display: block; position: relative; width: 100%; height: clamp(11rem, 55vw, 16rem); overflow: hidden; border-radius: 0 0 0.65rem 0.65rem; background: var(--surface-soft); cursor: pointer; }
+.pig-gallery-image { width: 100%; height: 100%; object-fit: cover; }
+.pig-card-cover span { position: absolute; inset: auto 0.5rem 0.5rem; padding: 0.45rem 0.65rem; border-radius: 0.4rem; background: #30231de8; color: white; font-weight: 650; text-align: start; }
+.pig-card-cover:focus-visible { outline-offset: -4px; }
+.pig-gallery-details { min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.65rem; }
+
+.pig-card-remove { display: block; margin: 0.25rem 0.5rem 0 auto; min-height: 44px; padding-inline: 0.5rem; }
+
+
+.capture-workflow { display: grid; gap: 1rem; min-width: 0; }
+.capture-workflow .section-heading p, .capture-workflow .submit-status,
+.photo-check p, .camera-instructions, .camera-status, .marker-placement-help { font-size: 1rem; }
+.marker-placement-help { margin: 0 0 0.75rem; }
+.marker-placement-help summary { min-height: 44px; align-content: center; cursor: pointer; }
+.capture-workflow .photo-check, .capture-workflow .selected-file { overflow-wrap: anywhere; }
+.capture-workflow .submit-row .button { white-space: normal; }
+
+.capture-pair-heading { position: relative; padding-inline-end: 3.25rem; overflow-wrap: anywhere; }
+.capture-workflow #result-title { margin-bottom: 0.75rem; }
+.capture-workflow .result-panel > .button { margin-block-start: 0.75rem; }
+
+
+.monthly-price-trend { display: grid; gap: 0.45rem; min-width: 0; }
+.monthly-price-trend svg { display: block; width: 100%; max-width: 28rem; height: auto; }
+.monthly-price-trend svg text { font-size: 12px; fill: var(--foreground); }
+.monthly-price-trend table { width: 100%; border-collapse: collapse; text-align: start; font-variant-numeric: tabular-nums; }
+.monthly-price-trend th, .monthly-price-trend td { padding: 0.5rem 0.35rem; border-bottom: 1px solid var(--border); text-align: start; }
+
+
+.market-plot { display: grid; gap: 0.45rem; min-width: 0; }
+.market-quote { display: grid; gap: 0.25rem; }
+.market-value { font-size: clamp(1.6rem, 7vw, 2.2rem); line-height: 1.15; font-weight: 750; }
+.market-value span { font-size: 0.875rem; font-weight: 500; color: var(--muted); }
+.market-change { color: var(--primary-dark); font-weight: 650; }
+.market-months { display: flex; gap: 0.2rem; padding: 0.25rem; border-radius: 2rem; background: var(--surface-soft); }
+.market-months button { flex: 1; min-width: 0; min-height: 44px; border-radius: 2rem; color: var(--foreground); cursor: pointer; }
+.market-months button[aria-pressed="true"] { background: var(--primary-dark); color: var(--surface); font-weight: 650; }
+.keypoint-photo svg { display: block; }
+.keypoint-photo circle:focus-visible { outline: none; stroke: #ffca63; stroke-width: 9; }
+.keypoint-photo > p { padding: 0.75rem; overflow-wrap: anywhere; }
+
+.photo-primary-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+.photo-primary-actions .button { flex: 1 1 8rem; width: auto; padding-inline: 0.6rem; margin: 0; white-space: normal; }
+.market-change { font-size: 0.875rem; }
+.market-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; gap: 0.5rem; }
+.market-month-picker { display: grid; gap: 0.2rem; min-width: 0; font-size: 0.875rem; }
+.market-month-picker select { width: 100%; min-height: 44px; border: 1px solid var(--control-border); border-radius: 0.5rem; padding-inline: 0.4rem; background: var(--surface); }
+
+.add-pig-form { display: grid; gap: 0.75rem; }
+.keypoint-close { justify-self: center; min-width: 11rem; margin-block: 0.5rem; }
+
+
+.market-axis-label { color: var(--muted); font-size: 0.8125rem; font-weight: 600; }
+.market-time-axis { width: min(100%, 28rem); text-align: center; }
+.market-line-key { margin: 0; }
+.pig-gallery-details:not([hidden]) { display: grid; gap: 0.75rem; }
+.pig-pair-nav { display: flex; justify-content: center; align-items: center; gap: 0.85rem; }
+.pig-pair-nav .button { width: 44px; padding-inline: 0; border-radius: 50%; }
+.pig-preview-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pig-preview-actions:empty { display: none; }
+.pig-preview-actions .button { flex: 1 1 9rem; padding-inline: 0.5rem; white-space: normal; }
+
+.pig-capture-thumbnails { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.pig-capture-thumbnails img { aspect-ratio: 1; height: auto; border-radius: 0.4rem; }
+.pig-capture-thumbnails .attempt-remove { margin: 0; padding-inline: 0; }
+.pig-upload-field { display: grid; gap: 0.375rem; justify-items: start; min-width: 0; }
+.pig-attempts input[type="file"] { min-width: 0; max-width: 100%; }
+.pig-attempts input[type="file"]:disabled::file-selector-button {
+  color: var(--muted);
+  background: var(--surface-soft);
+  cursor: not-allowed;
+}
+
+.detection-status {
+  --status-color: #9a590e;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.detection-status::before {
+  content: "";
+  flex: 0 0 0.55rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--status-color);
+}
+
+.detection-good { --status-color: #167749; }
+.detection-bad { --status-color: #b62730; }
+.detection-list { display: grid; gap: 0.2rem; margin-top: 0.35rem; }
+.batch-keypoint-image { display: block; width: 100%; max-height: 48vh; object-fit: contain; }
+
+.keypoint-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: 0.4rem;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.keypoint-thumbnail .batch-keypoint-image { width: 100%; height: 100%; object-fit: cover; }
+.keypoint-photo-dialog .batch-keypoint-image { max-height: 75dvh; margin: auto; }
+
+.keypoint-photo-dialog .keypoint-panel { padding: 1rem; }
+
+
+.camera-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.625rem 0 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.camera-stage-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.camera-dialog-body > .detection-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.875rem;
+  font-size: 0.875rem;
+}
+
+.camera-dialog-body > .detection-list small { flex-basis: 100%; }
+
+.camera-dialog-body > .camera-tool-row { margin-top: 0.75rem; }
+.price-provenance { min-width: 0; overflow-wrap: anywhere; }
+.pig-capture-thumbnails > div { min-width: 0; }
+
+@media (min-width: 768px) {
+  .pig-capture-thumbnails { grid-template-columns: repeat(3, minmax(0, 10rem)); }
+  .pig-upload-field { max-width: 30rem; }
+  .monthly-price-trend {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 0.65rem clamp(1rem, 3vw, 2rem);
+    align-items: start;
+  }
+  .market-quote-heading, .monthly-price-trend > details { grid-column: 1 / -1; }
+  .market-plot { grid-column: 2; grid-row: 2 / span 3; }
+  .market-plot svg, .market-plot .market-time-axis { max-width: none; width: 100%; }
+  .market-months, .market-controls { grid-column: 1; }
+}
+
+.market-quote-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.market-view {
+  flex: none;
+  display: grid;
+  gap: 0.125rem;
+  text-align: end;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.camera-stage-label {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.process-elapsed {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.detection-active::before { animation: detection-pulse 1.2s ease-in-out infinite; }
+
+@keyframes detection-pulse {
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detection-active::before { animation: none; }
+}
+
+.monthly-price-trend td { overflow-wrap: anywhere; }

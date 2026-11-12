@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppHeader } from "@/components/app-header";
 import { EstimateForm } from "@/components/estimate-form";
 
@@ -7,8 +8,8 @@ export default function Home(): React.JSX.Element {
       <AppHeader current="estimate" />
       <main id="main-content" className="page-shell">
         <div className="page-heading">
-          <h1>Estimate live weight</h1>
-          <p>Start with two photos of the same pig: one from above and one from the side.</p>
+          <h1>Estimate Hog Live Weight</h1>
+          <p><Link href="/marker">Print the ArUco marker</Link> at 100% scale. Check that the black square is 10 cm on each side, then take a top and side photo of the same pig.</p>
         </div>
         <EstimateForm />
       </main>

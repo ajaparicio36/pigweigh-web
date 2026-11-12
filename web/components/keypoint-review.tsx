@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type PointerEvent } from "react";
-import { attachPhoto, errorMessage, request, type PhotoView } from "@/lib/api";
+import { attachPhoto, errorMessage, request, retryInference, type PhotoView } from "@/lib/api";
 import { SIDE_ANCHORS, TOP_ANCHORS, inversePilotHomography, projectPilotPoint, type PilotSegment } from "@/lib/pilot-record";
 
 type Point = [number, number];
@@ -31,14 +31,13 @@ function isChecked(value: unknown, view: PhotoView): value is CheckedView {
     });
 }
 
-export function KeypointReview({ top, side, initial, onApply, onClose, saving = false }: {
-  top: File; side: File; initial?: Adjustments["overrides"]; saving?: boolean; onApply: (edits: Adjustments) => void; onClose: () => void;
+export function KeypointReview({ top, side, initial, onApply, onClose, saving = false, activeView, saveError }: {
+  activeView?: PhotoView; saveError?: string; top: File; side: File; initial?: Adjustments["overrides"]; saving?: boolean; onApply: (edits: Adjustments) => void; onClose: () => void;
 }): React.JSX.Element {
   const [data, setData] = useState<Record<PhotoView, CheckedView> | null>(null);
   const [urls, setUrls] = useState<Record<PhotoView, string> | null>(null);
   const [error, setError] = useState("");
-  const [view, setView] = useState<PhotoView>("top");
-  const [selected, setSelected] = useState("");
+  const [dragging, setDragging] = useState<{ view: PhotoView; name: string } | null>(null);
   const [edits, setEdits] = useState<Adjustments["overrides"]>(initial ?? { top: {}, side: {} });
   useEffect(() => {
     const controller = new AbortController();
@@ -46,8 +45,8 @@ export function KeypointReview({ top, side, initial, onApply, onClose, saving = 
     async function check(view: PhotoView, file: File): Promise<CheckedView> {
       const body = new FormData();
       attachPhoto(body, "image", file);
-      return request(`/photos/${view}/validate?diagnostics=true`,
-        (value): value is CheckedView => isChecked(value, view), { method: "POST", body, signal: controller.signal });
+      return retryInference(() => request(`/photos/${view}/validate?diagnostics=true`,
+        (value): value is CheckedView => isChecked(value, view), { method: "POST", body, signal: controller.signal }), controller.signal);
     }
     void (async () => {
       try {
@@ -64,96 +63,108 @@ export function KeypointReview({ top, side, initial, onApply, onClose, saving = 
     return () => { controller.abort(); URL.revokeObjectURL(photos.top); URL.revokeObjectURL(photos.side); };
   }, [top, side]);
 
-  const d = data?.[view].diagnostics;
-  const lines: { name: string; segment: PilotSegment }[] = [];
-  if (d) {
-    const point = (name: string) => edits[view][name] ?? d.landmarks[name]?.used;
-    if (view === "side") {
-      const withers = point("withers"), sternum = point("sternum");
-      if (withers && sternum) lines.push({ name: "Chest depth", segment: [withers, sternum] });
-    } else {
-      const leftChest = point("left-chest"), rightChest = point("right-chest");
-      if (leftChest && rightChest) lines.push({ name: "Chest width", segment: [leftChest, rightChest] });
-      const leftEar = point("left-ear-base"), rightEar = point("right-ear-base"), tail = point("tail-base");
-      const inverse = inversePilotHomography(d.image_to_marker);
-      const left = leftEar && projectPilotPoint(d.image_to_marker, leftEar);
-      const right = rightEar && projectPilotPoint(d.image_to_marker, rightEar);
-      if (inverse && left && right && tail) {
-        const midpoint = projectPilotPoint(inverse, [(left[0] + right[0]) / 2, (left[1] + right[1]) / 2]);
-        if (midpoint) lines.push({ name: "Body length", segment: [midpoint, tail] });
-      }
-    }
-  }
-  function move(event: PointerEvent<SVGSVGElement>, name: string): void {
-    if (!d || !name) return;
+  function move(view: PhotoView, event: PointerEvent<SVGSVGElement>, name: string): void {
+    if (!name) return;
     const transform = event.currentTarget.getScreenCTM();
     if (!transform) return;
     const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(transform.inverse());
-    place(name, p.x, p.y);
+    place(view, name, p.x, p.y);
   }
-  function place(name: string, x: number, y: number): void {
+  function place(view: PhotoView, name: string, x: number, y: number): void {
+    const d = data?.[view].diagnostics;
     if (!d) return;
     const [left, upper, right, lower] = d.bounding_box;
     const point: Point = [Math.max(0, left, Math.min(d.width - 1, right, x)),
       Math.max(0, upper, Math.min(d.height - 1, lower, y))];
     setEdits((current) => ({ ...current, [view]: { ...current[view], [name]: point } }));
   }
-  return <section className="result-panel keypoint-panel" aria-label="Review keypoints">
-    <h2>Review keypoints</h2>
-    {error ? <p role="alert">{error}</p> : !data || !d || !urls ? <p role="status">Loading detected points…</p> : <>
-      <p>Drag a point, or select its name and tap its new position on the photo.</p>
+  return <section className="keypoint-panel" aria-label="Review keypoints">
+    <p>Drag and drop the points to adjust them.</p>
+    {(error || saveError) && <p role="alert">{error || saveError}</p>}
+    {!error && !data && <p role="status">Loading detected points…</p>}
+    {data && !error &&
       <div className="submit-row">
-        {(["top", "side"] as const).map((item) => <button key={item} type="button" className="button button-secondary"
-          aria-pressed={view === item} onClick={() => { setView(item); setSelected(""); }}>{item === "top" ? "Top view" : "Side view"}</button>)}
-        <label>Point <select value={selected} onChange={(event) => setSelected(event.target.value)}>
-          <option value="">Choose a point</option>{names[view].map((name) => <option key={name}>{name}</option>)}
-        </select></label>
-      </div>
-      <div className="camera-tool-row" role="group" aria-label="Move selected point by one image pixel">
-        {([["Left", -1, 0], ["Up", 0, -1], ["Down", 0, 1], ["Right", 1, 0]] as const).map(([direction, dx, dy]) =>
-          <button key={direction} type="button" className="button button-secondary" disabled={!selected || saving}
-            onClick={() => {
-              const point = edits[view][selected] ?? d.landmarks[selected]?.used;
-              if (point) place(selected, point[0] + dx, point[1] + dy);
-            }}>Move {direction.toLowerCase()}</button>)}
-      </div>
-      <svg viewBox={`0 0 ${d.width} ${d.height}`} style={{ width: "100%", maxHeight: "65vh" }}
-        aria-label={`Editable ${view} photo`}
-        onPointerDown={(event) => {
-          const name = (event.target as SVGElement).dataset.point || selected;
-          if (!name) return;
-          event.currentTarget.setPointerCapture(event.pointerId);
-          setSelected(name);
-          move(event, name);
-        }}
-        onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) move(event, selected); }}>
-        <image href={urls[view]} width={d.width} height={d.height} />
-        {lines.map(({ name, segment: [[x1, y1], [x2, y2]] }) =>
-          <g key={name} pointerEvents="none">
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#101820" strokeWidth="7" vectorEffect="non-scaling-stroke" />
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={name === "Chest width" ? "#ffca63" : "#57c8ff"} strokeWidth="3" vectorEffect="non-scaling-stroke" />
-            <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 12} fill="white" stroke="#111" strokeWidth="4"
-              textAnchor="middle" paintOrder="stroke" fontSize={Math.max(d.width, d.height) / 40}>{name}</text>
-          </g>)}
-        {names[view].map((name) => {
-          const point = edits[view][name] ?? d.landmarks[name].used;
-          if (!point) return null;
-          return <g key={name}>
-            <circle data-point={name} cx={point[0]} cy={point[1]} r={Math.max(d.width, d.height) / 45}
-              fill={selected === name ? "#ffca63" : "#55e6a5"} stroke="#111" strokeWidth="4" style={{ touchAction: "none", cursor: "grab" }} />
-            <text x={point[0] + 16} y={point[1] - 16} fill="white" stroke="#111" strokeWidth="4"
-              paintOrder="stroke" fontSize={Math.max(d.width, d.height) / 40} pointerEvents="none">{name}</text>
-          </g>;
-        })}
-      </svg>
-      <div className="submit-row">
-        <button type="button" className="button button-secondary" onClick={() => setEdits({ top: {}, side: {} })}>Reset points</button>
+        <button type="button" className="button button-secondary" disabled={saving} onClick={() => setEdits((current) => activeView ? { ...current, [activeView]: {} } : { top: {}, side: {} })}>Reset points</button>
         <button type="button" className="button button-primary" disabled={saving} onClick={() => onApply({
           version: 1, bundle_id: data.top.artifacts.bundle_id,
           image_sha256: { top: data.top.diagnostics.image_sha256, side: data.side.diagnostics.image_sha256 }, overrides: edits,
-        })}>Use these points</button>
+        })}>{saving ? "Saving points…" : "Save points"}</button>
       </div>
-    </>}
-    <button type="button" className="text-button" onClick={onClose}>Close review</button>
+    }
+    <div className={activeView ? undefined : "photo-grid"}>
+      {(activeView ? [activeView] : ["top", "side"] as const).map((view) => {
+        const d = data?.[view].diagnostics;
+        const file = view === "top" ? top : side;
+        const label = view === "top" ? "Top view" : "Side view";
+        return <div className="photo-card keypoint-photo" key={view}>
+          <div className="photo-heading"><h3>{label}</h3><span className="photo-state">Marker view</span></div>
+          {d && urls ? (() => {
+              const lines: { name: string; segment: PilotSegment }[] = [];
+              {
+                const point = (name: string) => edits[view][name] ?? d.landmarks[name]?.used;
+                if (view === "side") {
+                  const withers = point("withers"), sternum = point("sternum");
+                  if (withers && sternum) lines.push({ name: "Chest depth", segment: [withers, sternum] });
+                } else {
+                  const leftChest = point("left-chest"), rightChest = point("right-chest");
+                  if (leftChest && rightChest) lines.push({ name: "Chest width", segment: [leftChest, rightChest] });
+                  const leftEar = point("left-ear-base"), rightEar = point("right-ear-base"), tail = point("tail-base");
+                  const inverse = inversePilotHomography(d.image_to_marker);
+                  const left = leftEar && projectPilotPoint(d.image_to_marker, leftEar);
+                  const right = rightEar && projectPilotPoint(d.image_to_marker, rightEar);
+                  if (inverse && left && right && tail) {
+                    const midpoint = projectPilotPoint(inverse, [(left[0] + right[0]) / 2, (left[1] + right[1]) / 2]);
+                    if (midpoint) lines.push({ name: "Body length", segment: [midpoint, tail] });
+                  }
+                }
+              }
+            return (
+                  <svg viewBox={`0 0 ${d.width} ${d.height}`} style={{ width: "100%", maxHeight: "65vh" }}
+                    aria-label={`Editable ${view} photo`}
+                    onPointerDown={(event) => {
+                      const name = (event.target as SVGElement).dataset.point;
+                      if (!name || saving) return;
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      setDragging({ view, name });
+                      move(view, event, name);
+                    }}
+                    onPointerMove={(event) => {
+                      if (!saving && dragging?.view === view && event.currentTarget.hasPointerCapture(event.pointerId)) {
+                        move(view, event, dragging.name);
+                      }
+                    }} onLostPointerCapture={() => { setDragging(null); }}>
+                    <image href={urls[view]} width={d.width} height={d.height} />
+                    {lines.map(({ name, segment: [[x1, y1], [x2, y2]] }) =>
+                      <g key={name} pointerEvents="none">
+                        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#101820" strokeWidth="7" vectorEffect="non-scaling-stroke" />
+                        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={name === "Chest width" ? "#ffca63" : "#57c8ff"} strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                        <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 12} fill="white" stroke="#111" strokeWidth="4"
+                          textAnchor="middle" paintOrder="stroke" fontSize={Math.max(d.width, d.height) / 40}>{name}</text>
+                      </g>)}
+                    {names[view].map((name) => {
+                      const point = edits[view][name] ?? d.landmarks[name].used;
+                      if (!point) return null;
+                      return <g key={name}>
+                        <circle data-point={name} cx={point[0]} cy={point[1]} r={Math.max(d.width, d.height) / 45}
+                          fill="#55e6a5" tabIndex={0} aria-label={name.replaceAll("-", " ")}
+                          onKeyDown={(event) => {
+                            const offsets: Record<string, Point> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+                            const offset = offsets[event.key];
+                            if (!offset || saving) return;
+                            event.preventDefault();
+                            const step = event.shiftKey ? 10 : 1;
+                            place(view, name, point[0] + offset[0] * step, point[1] + offset[1] * step);
+                          }} stroke="#111" strokeWidth="4" style={{ touchAction: "none", cursor: "grab" }} />
+                        <text x={point[0] + 16} y={point[1] - 16} fill="white" stroke="#111" strokeWidth="4"
+                          paintOrder="stroke" fontSize={Math.max(d.width, d.height) / 40} pointerEvents="none">{name}</text>
+                      </g>;
+                    })}
+                  </svg>
+            );
+          })() : <p className="muted">{file.name}</p>}
+        </div>;
+      })}
+    </div>
+    <button type="button" className="button button-secondary keypoint-close" disabled={saving} onClick={onClose}>Close review</button>
   </section>;
 }
