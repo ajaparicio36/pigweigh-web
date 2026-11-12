@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "PigWeigh | Live weight estimation", template: "%s | PigWeigh" },
+  title: { default: "PigWeigh Beta | Live weight estimation", template: "%s | PigWeigh Beta" },
   description: "An experimental thesis tool for paired pig photos, estimated live weight, and published Philippine peso prices.",
 };
 
