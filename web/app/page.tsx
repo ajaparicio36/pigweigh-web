@@ -13,7 +13,7 @@ export default function Home(): React.JSX.Element {
         </div>
         <EstimateForm />
       </main>
-      <footer className="page-footer">PigWeigh is an experimental thesis project. Estimates are not guaranteed sale prices.</footer>
+      <footer className="page-footer">PigWeigh 1.0 · Weight estimates are approximate.</footer>
     </>
   );
 }

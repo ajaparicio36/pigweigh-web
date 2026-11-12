@@ -527,3 +527,5 @@ details li + li { margin-top: 0.375rem; }
 }
 
 .monthly-price-trend td { overflow-wrap: anywhere; }
+
+.market-source-picker { grid-column: 1 / -1; }

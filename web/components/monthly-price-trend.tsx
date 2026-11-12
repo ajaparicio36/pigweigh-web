@@ -49,7 +49,8 @@ function pricesFor(range: Range, published: MonthlyPrice[]): MonthlyPrice[] {
 export function MonthlyPriceTrend(): React.JSX.Element {
   const [range, setRange] = useState<Range>("3M");
   const [selectedKey, setSelectedKey] = useState("");
-  const [published, setPublished] = useState<MonthlyPrice[]>([]);
+  const [source, setSource] = useState<"published" | "psa">("published");
+  const [publications, setPublished] = useState<MonthlyPrice[]>([]);
   const [priceStatus, setPriceStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
     const controller = new AbortController();
@@ -92,6 +93,7 @@ export function MonthlyPriceTrend(): React.JSX.Element {
     const timer = window.setInterval(updateDate, 30_000);
     return () => window.clearInterval(timer);
   }, []);
+  const published = source === "published" ? publications : [];
   const years: readonly number[] = published.length ? [...new Set(published.map(({ year }) => year))] : placeholderYears;
   const activeRange = typeof range === "number" && !years.includes(range) ? "3M" : range;
   const rangeName = typeof activeRange === "number" ? String(activeRange) : rangeNames[activeRange];
@@ -166,6 +168,15 @@ export function MonthlyPriceTrend(): React.JSX.Element {
         onClick={() => selectRange(option)}>{option}</button>)}
     </div>
     <div className="market-controls">
+      {publications.length > 0 && <label className="market-month-picker market-source-picker"><span>Price source</span>
+        <select value={source} onChange={(event) => {
+          setSource(event.target.value === "psa" ? "psa" : "published");
+          selectRange("3M");
+        }}>
+          <option value="published">Admin published prices</option>
+          <option value="psa">PSA reference prices</option>
+        </select>
+      </label>}
       <label className="market-month-picker"><span>Year</span><select value={typeof activeRange === "number" ? activeRange : ""} onChange={(event) => {
         const year = years.find((option) => String(option) === event.target.value);
         if (year) selectRange(year);

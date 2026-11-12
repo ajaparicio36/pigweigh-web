@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "PigWeigh Beta | Live weight estimation", template: "%s | PigWeigh Beta" },
-  description: "An experimental thesis tool for paired pig photos, estimated live weight, and published Philippine peso prices.",
+  title: { default: "PigWeigh 1.0 | Live weight estimation", template: "%s | PigWeigh 1.0" },
+  description: "Estimate hog live weight from paired photos and view published Philippine peso prices.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>): React.JSX.Element {
