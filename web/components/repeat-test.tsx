@@ -367,7 +367,17 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
         if (pig === session?.pig) savePigId("");
         setAddingPig(true);
       }}>Add new pig</button>}
-    <h2>Pig photos</h2>
+    <div className="pig-gallery-heading">
+      <h2>Pig photos</h2>
+      {pigs.some((entry) => entry.attempts.some(({ top, side }) => top || side) || entry.batch?.top.length || entry.batch?.side.length) &&
+        <button type="button" className="button button-secondary" disabled={blocked} onClick={() => void run(async () => {
+          const { downloadPigReport } = await import("@/lib/pig-report");
+          await downloadPigReport(pigs.filter((entry) =>
+            entry.attempts.some(({ top, side }) => top || side) || entry.batch?.top.length || entry.batch?.side.length));
+          setMessage("PDF downloaded.");
+        })}>Export PDF</button>}
+    </div>
+
     <PigGallery pigs={pigs} blocked={blocked}
       onOpen={(id) => void run(() => selectPig(id))}
       onReview={async (id, photo, points) => {

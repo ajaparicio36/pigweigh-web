@@ -139,6 +139,16 @@ async function annotatedPhoto(photo: File, points: Record<string, ExportLandmark
   }
 }
 
+export async function savedKeypointPhoto(attempt: RepeatAttempt, view: "top" | "side"): Promise<Blob | null> {
+  const detail = attempt.result as (Estimate & ExportReview) | null;
+  const diagnostics = detail?.diagnostics?.[view];
+  const points = diagnostics?.landmarks ?? detail?.provenance?.landmarks?.[view];
+  const photo = attempt[view];
+  return photo && points && reviewPoints[view].some((name) => points[name]?.used)
+    ? annotatedPhoto(photo, points, reviewPoints[view], "used", diagnostics)
+    : null;
+}
+
 function expectedValuation(weight: string, price: string): string | null {
   if (!/^\d+\.\d{2}$/.test(weight) || !/^\d+\.\d{2}$/.test(price)) return null;
   const product = BigInt(weight.replace(".", "")) * BigInt(price.replace(".", ""));
