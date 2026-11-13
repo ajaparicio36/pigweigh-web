@@ -17,7 +17,7 @@ try {
   throw error;
 }
 after(() => rmSync(compiled, { recursive: true, force: true }));
-const { formatMoney, normalizePrice } = require(path.join(compiled, "format.js"));
+const { formatEstimatedValue, formatMoney, normalizePrice } = require(path.join(compiled, "format.js"));
 const { ApiError, isPriceSnapshot, isReadiness, isAdminSession, isEstimate, isPhotoValidation, validatePhoto, request } = require(path.join(compiled, "api.js"));
 
 // Synthetic protocol fixtures exercise software parsing, never inference accuracy.
@@ -198,4 +198,10 @@ test("per-photo request sends only the selected file and rejects a mismatched re
     globalThis.fetch = async () => Response.json({ status: "validated", view: "side", artifacts: { bundle_id: "fixture" } });
     await assert.rejects(validatePhoto("top", file, signal), (error) => error instanceof ApiError && error.code === "invalid_response");
   } finally { globalThis.fetch = original; }
+});
+
+test("estimated value uses the displayed weight and rounds to centavos", () => {
+  assert.equal(formatEstimatedValue("28.02", "152.35"), "₱4,268.85");
+  assert.equal(formatEstimatedValue("0.50", "0.01"), "₱0.01");
+  assert.equal(formatEstimatedValue("3.00", "92233720368547758.07"), "₱276,701,161,105,643,274.21");
 });

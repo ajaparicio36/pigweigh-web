@@ -16,7 +16,7 @@ const {runGuidedCapture}=require(path.join(compiled,"guided-capture.js"));
 const {PhotoCheckQueue}=require(path.join(compiled,"photo-checks.js"));
 const makePhoto=()=>new File(["synthetic still"],"frame.jpg",{type:"image/jpeg"});
 const fail=(kind)=>({status:"failed",kind,message:`${kind} failure`});
-test("rejected and busy checks retry at 850 ms beyond the old attempt limit", async()=>{
+test("rejected and busy checks retry at 500 ms beyond the old attempt limit", async()=>{
   for (const kind of ["rejected", "busy"]) {
     const file=makePhoto(), delays=[];
     let checks=0;
@@ -24,7 +24,7 @@ test("rejected and busy checks retry at 850 ms beyond the old attempt limit", as
       capture:async()=>file,wait:async(ms)=>{delays.push(ms)},check:async()=>++checks <= 6
         ? fail(kind) : {status:"passed",view:"top",file,data:{status:"validated",view:"top",artifacts:{bundle_id:"fixture"}}}});
     assert.equal(result.status,"passed");
-    assert.deepEqual(delays,[850,850,850,850,850,850]);
+    assert.deepEqual(delays,[500,500,500,500,500,500]);
   }
 });
 

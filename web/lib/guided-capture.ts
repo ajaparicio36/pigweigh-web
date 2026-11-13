@@ -1,7 +1,7 @@
 import type { CandidatePassed, CandidateResult } from "./photo-checks";
 import type { PhotoView } from "./api";
 
-export const GUIDED_RETAKE_DELAY_MS = 850;
+export const GUIDED_RETAKE_DELAY_MS = 500;
 export type GuidedProgress = { attempt: number; message: string };
 export type GuidedResult = { status: "passed"; candidate: CandidatePassed } | { status: "stopped" } | { status: "failed"; message: string };
 type GuidedOptions = {

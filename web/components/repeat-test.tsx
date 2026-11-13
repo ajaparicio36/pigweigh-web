@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { ApiError, inferenceIssue, attachPhoto, isEstimate, request, retryInference, validatePhoto, type Estimate, type PhotoView } from "@/lib/api";
+import { ApiError, inferenceIssue, attachPhoto, isEstimate, isPriceSnapshot, request, retryInference, validatePhoto, type Estimate, type PhotoView, type Price } from "@/lib/api";
 import { KeypointPhotoDialog, KeypointThumbnail, useBatchKeypoints } from "./batch-keypoint-preview";
 import { ElapsedTime, StatusDot } from "./detection-status";
 import { CameraModal } from "./camera-modal";
 import { PhotoCheckQueue } from "@/lib/photo-checks";
+import { formatEstimatedValue, formatMoney } from "@/lib/format";
 import { photoValidationError } from "@/lib/camera";
 import { KeypointReview, type Adjustments } from "./keypoint-review";
 import { ATTEMPTS_PER_PIG, editSession, listPigs, openPig, photoDigest, removePig, type BatchPhoto, type RepeatAttempt, type RepeatSession } from "@/lib/repeat-test";
@@ -233,7 +234,8 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
   const weights = session?.attempts.flatMap(({ result }) => result ? [Number(result.estimated_weight_kg)] : []) ?? [];
   const matchesBatch = !batch || (batch.top.length >= 3 && batch.side.length >= 3 &&
     batch.top.slice(0, 3).every(({ hash }, index) => session && savedPair(session, hash, batch.side[index].hash)));
-  const average = weights.length ? weights.reduce((sum, weight) => sum + weight, 0) / weights.length : null;
+  const average = weights.length ? (weights.reduce((sum, weight) => sum + weight, 0) / weights.length).toFixed(2) : null;
+  const estimatePrice = session?.estimatePrice;
 
   async function selectPig(id: string): Promise<void> {
     setShowKeypoints(false);
@@ -293,6 +295,12 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
           return;
         }
       }
+      let estimatePrice: Price | null | undefined;
+      try {
+        estimatePrice = (await request("/prices/current", isPriceSnapshot)).price;
+      } catch {
+        // Keep the weight result usable when the price service is unavailable.
+      }
       setSession(await editSession((current) => {
         if (!current || current.pig !== session.pig || JSON.stringify(current.attempts) !== JSON.stringify(session.attempts)
           || JSON.stringify(current.pendingKeypointResults) !== JSON.stringify(session.pendingKeypointResults)
@@ -300,7 +308,7 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
             || batch[view].some((photo, index) => current.batch?.[view][index]?.hash !== photo.hash))) {
           throw new Error("This pig changed in another tab. Reopen it before estimating.");
         }
-        return { ...current, attempts, pendingKeypointResults: undefined };
+        return { ...current, attempts, estimatePrice, pendingKeypointResults: undefined };
       }));
       setMessage("Average weight saved.");
     }).finally(() => setEstimateProgress(null));
@@ -463,7 +471,15 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
         initial={savedOverrides(editedResult(session, enlargedTop.hash, enlargedSide.hash))}
         onSave={(points) => saveBatchPoints(enlarged.index, points)}
         onClose={() => { enlarged.trigger.focus(); setEnlarged(null); }} />}
-      {average !== null && <p><strong>{matchesBatch ? "Average estimated weight" : "Last saved average"}: {average.toFixed(2)} kg</strong></p>}
+      {average !== null && <div aria-live="polite">
+        <p><strong>{matchesBatch ? "Average estimated weight" : "Last saved average"}: {average} kg</strong></p>
+        {matchesBatch && (estimatePrice ? <>
+          <p><strong>Estimated value: {formatEstimatedValue(average, estimatePrice.php_per_kg)}</strong></p>
+          <p className="muted">Based on the DA rate at estimate time · {formatMoney(estimatePrice.php_per_kg)} per kg</p>
+        </> : <p className="muted">{estimatePrice === null
+          ? "Estimated value unavailable until the DA publishes a price."
+          : "Select Estimate weight to check the current DA price."}</p>)}
+      </div>}
     </section>}
     {message && <p role="status">{message}</p>}
   </section>;
