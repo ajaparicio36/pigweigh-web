@@ -74,10 +74,10 @@ export function attachPhoto(body: FormData, field: string, photo: Blob): void {
   body.set(field, new File([photo.slice(0, photo.size, photo.type)], filename, { type: photo.type }), filename);
 }
 
-export async function validatePhoto(view: PhotoView, file: File, signal: AbortSignal): Promise<PhotoValidation> {
+export async function validatePhoto(view: PhotoView, file: File, signal: AbortSignal, guided = false): Promise<PhotoValidation> {
   const body = new FormData();
   attachPhoto(body, "image", file);
-  return request(`/photos/${view}/validate`, (value): value is PhotoValidation => isPhotoValidation(value) && value.view === view,
+  return request(`/photos/${view}/validate${guided ? "?guided=true" : ""}`, (value): value is PhotoValidation => isPhotoValidation(value) && value.view === view,
     { method: "POST", body, signal });
 }
 

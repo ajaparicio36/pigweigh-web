@@ -40,7 +40,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
   const [previewEnabled, setPreviewEnabled] = useState(true);
   const [preview, setPreview] = useState<PosePreview | null>(null);
   const [guidedDetection, setGuidedDetection] = useState<{
-    preview: PosePreview | null; confirmed?: boolean; checking?: boolean; saved?: boolean; issue?: string;
+    preview: PosePreview | null; confirmed?: boolean; checking?: boolean; saved?: boolean; issue?: string; hint?: string;
   } | null>(null);
   const previewRef = useRef<AbortController | null>(null);
   const previewActive = previewEnabled && state === "ready" && !disabled && !guided.running;
@@ -199,7 +199,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
             } else if (check.kind === "rejected") {
               try {
                 const frame = await previewPhoto(view, file, signal);
-                if (!signal.aborted) setGuidedDetection({ preview: frame });
+                if (!signal.aborted) setGuidedDetection({ preview: frame, hint: check.message });
               } catch (failure) {
                 if (!signal.aborted) setGuidedDetection({ preview: null, issue: inferenceIssue(failure) });
               }
@@ -272,8 +272,8 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
       </div>
       <div className="camera-dialog-body">
         <p id={helpId} className="camera-instructions">{view === "top"
-          ? "Look straight down from above. Keep the whole pig visible, with the flat marker on its back near the middle of its body. Center the marker in the square guide."
-          : "Look straight at the pig’s side. Keep its whole profile visible, with the flat marker on the visible flank. Center the marker in the square guide."}</p>
+          ? "Hold the phone directly above the pig and wait for it to straighten. Keep both ear bases and the tail base visible, with the flat marker on its back near the middle of its body. Center the marker in the square guide."
+          : "Look straight at the pig’s side. Keep the withers and underside of the chest visible, with the flat marker on the visible flank. Center the marker in the square guide."}</p>
         <details className="marker-placement-help">
           <summary>Where to place the marker</summary>
           <p>{view === "top" ? "Place the card flat on the middle of the pig’s back. Hold the phone directly above it."
@@ -312,6 +312,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
         {(error || captureError || (guided.message && !guidedDetection?.issue)) &&
           <p className="field-error" role="alert">{error || captureError || guided.message}</p>}
         {guidedDetection && !guidedDetection.issue && <DetectionStatus {...guidedDetection} />}
+        {guidedDetection?.hint && <p className="camera-status">{guidedDetection.hint}</p>}
         <div className="camera-tool-row">
           <button type="button" className="button button-secondary" aria-pressed={previewEnabled}
             disabled={disabled || state !== "ready" || guided.running}

@@ -180,7 +180,7 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
   const [ready, setReady] = useState(false);
   const [camera, setCamera] = useState<"top" | "side" | null>(null);
   const closeCamera = useCallback(() => setCamera(null), []);
-  const [photoChecks] = useState(() => new PhotoCheckQueue(validatePhoto));
+  const [photoChecks] = useState(() => new PhotoCheckQueue((view, file, signal) => validatePhoto(view, file, signal, true)));
   useEffect(() => {
     photoChecks.resume();
     return () => photoChecks.dispose();
