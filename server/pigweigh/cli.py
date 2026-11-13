@@ -1,8 +1,10 @@
 import argparse
 from datetime import datetime, timezone
 from getpass import getpass
+import os
 import sys
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -13,9 +15,27 @@ from pigweigh.security import PASSWORDS, normalize_username
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="PigWeigh admin provisioning")
-    parser.add_argument("command", choices=["create-admin"])
+    parser.add_argument("command", choices=["create-admin", "set-admin-hash"])
     parser.add_argument("--username", required=True)
     args = parser.parse_args()
+    if args.command == "set-admin-hash":
+        password_hash = os.environ.get("PIGWEIGH_RELEASE_ADMIN_HASH", "")
+        if not password_hash.startswith("$argon2id$"):
+            sys.exit("Set an Argon2id password hash in PIGWEIGH_RELEASE_ADMIN_HASH")
+        username = normalize_username(args.username)
+        engine = make_engine(Settings.from_env())
+        try:
+            with Session(engine) as session:
+                admin = session.scalar(select(Admin).where(Admin.username == username))
+                if admin is None:
+                    admin = Admin(username=username, disabled=False, created_at=datetime.now(timezone.utc))
+                    session.add(admin)
+                admin.password_hash = password_hash
+                session.commit()
+        finally:
+            engine.dispose()
+        print("Admin credentials provisioned")
+        return
     if not sys.stdin.isatty():
         sys.exit("Run admin provisioning in an interactive terminal")
     try:
