@@ -17,6 +17,7 @@ const chartDateISO = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Manila",
 const rangeNames = { "3M": "3 months", "1Y": "1 year", All: "All time" } as const;
 const placeholderYears = [2024, 2025, 2026] as const;
 const publishedMonth = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Manila", month: "long" });
+const publicationDay = new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric" });
 const publishedTime = new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 const ranges = ["3M", "1Y", "All"] as const;
 type Range = (typeof ranges)[number] | number;
@@ -105,7 +106,9 @@ export function MonthlyPriceTrend(): React.JSX.Element {
   const selected = matchingIndex < 0 ? series.findLastIndex(({ basis }) => basis !== "Projection") : matchingIndex;
   const current = series[selected];
   const projected = current.basis === "Projection";
-  const baseline = series.find(({ basis }) => basis !== "Projection") ?? current;
+  const baseline = current.published
+    ? series[selected - 1] ?? current
+    : series.find(({ basis }) => basis !== "Projection") ?? current;
   const difference = current.cents - baseline.cents;
   const percent = (difference / baseline.cents * 100).toFixed(2);
   const values = series.map(({ cents }) => cents);
@@ -118,7 +121,16 @@ export function MonthlyPriceTrend(): React.JSX.Element {
     const include = forecastLine ? projected || series[index + 1]?.basis === "Projection" : !projected;
     return include ? [`${x(index)},${y(entry.cents)}`] : [];
   }).join(" ");
-  const dateTicks = [...new Set([0, Math.floor((series.length - 1) / 2), series.length - 1])];
+  const lastIndex = series.length - 1;
+  const firstDay = series[0].published?.published_at;
+  const lastDay = series[lastIndex].published?.published_at;
+  const sameDay = firstDay && lastDay && chartDateISO.format(new Date(firstDay)) === chartDateISO.format(new Date(lastDay));
+  const dateTicks = published.length
+    ? sameDay ? [{ index: lastIndex, x: 146.5, anchor: "middle" as const }]
+      : [{ index: 0, x: x(0), anchor: "start" as const }, { index: lastIndex, x: x(lastIndex), anchor: "end" as const }]
+    : [0, Math.floor(lastIndex / 2), lastIndex].map((index) => ({
+      index, x: x(index), anchor: index === 0 ? "start" as const : index === lastIndex ? "end" as const : "middle" as const,
+    }));
   function selectRange(next: Range): void {
     setRange(next);
     setSelectedKey("");
@@ -138,7 +150,7 @@ export function MonthlyPriceTrend(): React.JSX.Element {
         <p className="muted">{labelFor(current)} · {current.basis}</p>
         {priceStatus === "error" && <p className="field-help">Published prices could not be refreshed.</p>}
         {!published.length && <p className="field-help">{priceStatus === "loading" ? "Checking for published prices…" : "PSA reference prices"}</p>}
-        {difference !== 0 && <p className="market-change">{difference < 0 ? "▼" : "▲"} {currency.format(Math.abs(difference) / 100)} ({percent}%) since {baseline.month} {baseline.year}</p>}
+        {difference !== 0 && <p className="market-change">{difference < 0 ? "▼" : "▲"} {currency.format(Math.abs(difference) / 100)} ({percent}%) {current.published ? "vs. previous publication" : `since ${baseline.month} ${baseline.year}`}</p>}
       </div>
     </div>
     <div className="market-plot">
@@ -153,9 +165,9 @@ export function MonthlyPriceTrend(): React.JSX.Element {
         <line x1={x(selected)} x2={x(selected)} y1="4" y2="99" stroke="var(--control-border)" />
         <polyline points={points(false)} fill="none" stroke="var(--primary-dark)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
         <polyline points={points(true)} fill="none" stroke="var(--muted)" strokeWidth="3" strokeDasharray="6 5" />
-        {dateTicks.map((index) => <text key={index} x={x(index)} y="116"
-          textAnchor={series.length === 1 ? "middle" : index === 0 ? "start" : index === series.length - 1 ? "end" : "middle"}>
-          {series[index].published ? chartDate.format(new Date(series[index].published!.published_at)) : `${series[index].month.slice(0, 3)} ${series[index].year}`}
+        {dateTicks.map(({ index, x: tickX, anchor }) => <text key={index} x={tickX} y="116" textAnchor={anchor}>
+          {series[index].published ? (sameDay ? chartDate : publicationDay).format(new Date(series[index].published!.published_at))
+            : `${series[index].month.slice(0, 3)} ${series[index].year}`}
         </text>)}
         <circle cx={x(selected)} cy={y(current.cents)} r="4" fill={projected ? "var(--surface)" : "var(--primary-dark)"}
           stroke="var(--primary-dark)" strokeWidth="2" />
