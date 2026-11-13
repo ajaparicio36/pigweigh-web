@@ -529,3 +529,13 @@ details li + li { margin-top: 0.375rem; }
 .monthly-price-trend td { overflow-wrap: anywhere; }
 
 .market-source-picker { grid-column: 1 / -1; }
+
+.price-history { grid-column: 1 / -1; min-width: 0; }
+.price-history table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.875rem; }
+.price-history th, .price-history td { text-align: start; padding: 0.65rem 0.4rem; vertical-align: top; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.price-history th { background: var(--surface); }
+.price-history th:nth-child(2), .price-history td:nth-child(2) { text-align: end; font-variant-numeric: tabular-nums; }
+.price-history td:nth-child(2) { font-weight: 650; }
+.history-date { width: 30%; }
+.history-rate { width: 22%; }
+.price-history a, .price-provenance a { color: var(--primary-dark); text-decoration: underline; }

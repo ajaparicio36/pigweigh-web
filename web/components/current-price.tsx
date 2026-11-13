@@ -26,11 +26,11 @@ export function CurrentPrice({ state, onRetry }: { state: LoadState<PriceSnapsho
       </div>
       {state.status === "ready" && state.data.price && (
         <div className="price-provenance">
-          <p><span className="field-caption">Source reference</span>{state.data.price.source_reference}</p>
+          <p><span className="field-caption">Source reference</span><SourceReference value={state.data.price.source_reference} /></p>
           <p className="muted">Published <time dateTime={state.data.price.published_at}>{formatPublishedAt(state.data.price.published_at)}</time> (Philippine time)</p>
         </div>
       )}
-      <div>
+      <div className="price-history">
         <button type="button" className="text-button" disabled={history?.status === "loading"}
           onClick={() => void loadHistory()}>
           {history?.status === "ready" ? "Refresh price history" : "View price history"}
@@ -38,17 +38,28 @@ export function CurrentPrice({ state, onRetry }: { state: LoadState<PriceSnapsho
         {history?.status === "loading" && <p role="status">Loading price history…</p>}
         {history?.status === "error" && <p role="alert">{history.message}</p>}
         {history?.status === "ready" && (history.data.length ? (
-          <ul>
-            {history.data.map((price) => (
-              <li key={price.id}>
-                <time dateTime={price.published_at}>{formatPublishedAt(price.published_at)}</time>
-                {" · "}{formatMoney(price.php_per_kg)} per kg
-                <p className="muted">{price.source_reference}</p>
-              </li>
-            ))}
-          </ul>
+          <table>
+            <caption className="sr-only">Published price history in Philippine time</caption>
+            <colgroup><col className="history-date" /><col className="history-rate" /><col /></colgroup>
+            <thead><tr><th scope="col">Published</th><th scope="col">₱ / kg</th><th scope="col">Source</th></tr></thead>
+            <tbody>{history.data.map((price) => (
+              <tr key={price.id}>
+                <td><time dateTime={price.published_at}>{formatPublishedAt(price.published_at)}</time></td>
+                <td>{formatMoney(price.php_per_kg)}</td>
+                <td><SourceReference value={price.source_reference} /></td>
+              </tr>
+            ))}</tbody>
+          </table>
         ) : <p className="muted">No price records yet.</p>)}
       </div>
     </section>
   );
+}
+
+
+function SourceReference({ value }: { value: string }): React.JSX.Element {
+  const parts = value.split(/(https?:\/\/[^\s]+)/);
+  return <>{parts.map((part, index) => index % 2 === 1
+    ? <a key={index} href={part} title={part} target="_blank" rel="noopener noreferrer">Open source</a>
+    : part)}</>;
 }
