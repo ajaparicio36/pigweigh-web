@@ -501,14 +501,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # Keep the original photo measurements for audit and apply the fixed pilot factors.
             raw = result["measurements"]
             length = Decimal(raw["body_length_cm"]) * Decimal("1.26")
-            girth = Decimal(raw["girth_cm"]) * Decimal("1.1137635905676664")
+            girth = Decimal(raw["girth_cm"]) * Decimal("1.11")
             result["uncorrected"] = {"measurements": raw, "estimated_weight_kg": result["estimated_weight_kg"]}
             result["measurements"] = {**raw, "body_length_cm": str(length.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
                                       "girth_cm": str(girth.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))}
             result["estimated_weight_kg"] = str((girth ** 2 * length / Decimal(FORMULA_DIVISOR)).quantize(
                 Decimal("0.01"), rounding=ROUND_HALF_UP))
             result["method"]["correction"] = {"version": "pilot-v1", "length_factor": "1.26",
-                                                "girth_factor": "1.1137635905676664"}
+                                                "girth_factor": "1.11"}
             # This short read occurs only after CPU inference; no DB transaction spans it.
             def priced_result():
                 with Session(engine) as session:

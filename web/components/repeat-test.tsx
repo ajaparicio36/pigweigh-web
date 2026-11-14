@@ -9,7 +9,7 @@ import { PhotoCheckQueue } from "@/lib/photo-checks";
 import { formatEstimatedValue, formatMoney } from "@/lib/format";
 import { photoValidationError } from "@/lib/camera";
 import { KeypointReview, type Adjustments } from "./keypoint-review";
-import { ATTEMPTS_PER_PIG, editSession, listPigs, openPig, photoDigest, removePig, type BatchPhoto, type RepeatAttempt, type RepeatSession } from "@/lib/repeat-test";
+import { ATTEMPTS_PER_PIG, MAX_SAVED_PIGS, editSession, listPigs, openPig, photoDigest, removePig, type BatchPhoto, type RepeatAttempt, type RepeatSession } from "@/lib/repeat-test";
 
 function AttemptPhotos({ attempt }: { attempt: Pick<RepeatAttempt, "top" | "side"> & { number?: number } }): React.JSX.Element {
   const [urls, setUrls] = useState<{ top: string | null; side: string | null } | null>(null);
@@ -278,12 +278,16 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
         setEstimateProgress(index + 1);
         const hashes = { top: top.hash, side: side.hash };
         const existing = savedPair(session, hashes.top, hashes.side);
-        if (existing) {
+        if (existing?.result?.method.correction?.girth_factor === "1.11") {
           attempts.push({ ...existing, number: index + 1 });
           continue;
         }
         try {
-          const result = session.pendingKeypointResults?.[pairKey(hashes.top, hashes.side)] ?? await estimatePhotos(top.file, side.file);
+          const pending = session.pendingKeypointResults?.[pairKey(hashes.top, hashes.side)];
+          const prior = pending ?? existing?.result;
+          const overrides = savedOverrides(prior);
+          const result = pending?.method.correction?.girth_factor === "1.11"
+            ? pending : await estimatePhotos(top.file, side.file, prior && overrides ? { version: 1, bundle_id: prior.artifacts.bundle_id, image_sha256: hashes, overrides } : undefined);
           attempts.push({ number: index + 1, hashes, savedAt: new Date().toISOString(), result, failure: null, top: top.file, side: side.file });
         } catch (error) {
           if (error instanceof ApiError && error.status === 422) {
@@ -370,11 +374,12 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
         <button type="submit" className="button button-primary" disabled={blocked || !pig.trim()}>Start capture</button>
         <button type="button" className="button button-secondary" disabled={busy} onClick={() => setAddingPig(false)}>Cancel</button>
       </div>
-    </form> : <button className="button button-primary" type="button" disabled={blocked}
+    </form> : <button className="button button-primary" type="button" disabled={blocked || pigs.length >= MAX_SAVED_PIGS}
       onClick={() => {
         if (pig === session?.pig) savePigId("");
         setAddingPig(true);
       }}>Add new pig</button>}
+    {pigs.length >= MAX_SAVED_PIGS && <p className="muted">Three pigs saved. Remove a pig to add another.</p>}
     <div className="pig-gallery-heading">
       <h2>Pig photos</h2>
       {pigs.some((entry) => entry.attempts.some(({ top, side }) => top || side) || entry.batch?.top.length || entry.batch?.side.length) &&

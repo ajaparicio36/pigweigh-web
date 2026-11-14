@@ -2,6 +2,7 @@ import { BlobReader, BlobWriter, TextReader, ZipWriter } from "@zip.js/zip.js";
 import type { Estimate, Price } from "./api";
 
 export const ATTEMPTS_PER_PIG = 3;
+export const MAX_SAVED_PIGS = 3;
 
 export type RepeatAttempt = {
   number: number;
@@ -319,13 +320,29 @@ export async function openPig(pig: string, scaleKg: string): Promise<RepeatSessi
       read.onsuccess = () => {
         const current: RepeatSession | undefined = read.result;
         const key = "pig:" + pig;
-        if (current && current.pig !== pig) store.put(current, "pig:" + current.pig);
         const saved = store.get(key);
         saved.onsuccess = () => {
           const previous = current?.pig === pig ? current : saved.result as RepeatSession | undefined;
-          selected = { ...previous, pig, createdAt: previous ? previous.createdAt : new Date().toISOString(), scaleKg: scaleKg || previous?.scaleKg || "", attempts: previous?.attempts ?? [] };
-          store.put(selected, "current");
-          store.delete(key);
+          const select = () => {
+            if (current && current.pig !== pig) store.put(current, "pig:" + current.pig);
+            selected = {
+              ...previous, pig, createdAt: previous ? previous.createdAt : new Date().toISOString(),
+              scaleKg: scaleKg || previous?.scaleKg || "", attempts: previous?.attempts ?? [],
+            };
+            store.put(selected, "current");
+            store.delete(key);
+          };
+          if (previous) { select(); return; }
+          const savedKeys = store.getAllKeys();
+          savedKeys.onsuccess = () => {
+            const count = savedKeys.result.filter((key) => key === "current" || String(key).startsWith("pig:")).length;
+            if (count >= MAX_SAVED_PIGS) {
+              reject(new Error("Remove a saved pig before adding another."));
+              transaction.abort();
+              return;
+            }
+            select();
+          };
         };
       };
       transaction.oncomplete = () => resolve(selected);
