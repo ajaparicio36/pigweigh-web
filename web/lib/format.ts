@@ -19,6 +19,14 @@ export function formatMoney(value: string): string {
   return `₱${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${fraction}`;
 }
 
+export function formatEstimatedValue(weightKg: string, pricePerKg: string): string {
+  const hundredthsOfKg = BigInt(weightKg.replace(".", ""));
+  const centavosPerKg = BigInt(pricePerKg.replace(".", ""));
+  const total = (hundredthsOfKg * centavosPerKg + BigInt(50)) / BigInt(100);
+  const digits = total.toString().padStart(3, "0");
+  return formatMoney(`${digits.slice(0, -2)}.${digits.slice(-2)}`);
+}
+
 export function formatPublishedAt(value: string): string {
   return new Intl.DateTimeFormat("en-PH", {
     dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Manila",

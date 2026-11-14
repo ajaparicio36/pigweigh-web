@@ -1,5 +1,5 @@
 import { BlobReader, BlobWriter, TextReader, ZipWriter } from "@zip.js/zip.js";
-import type { Estimate } from "./api";
+import type { Estimate, Price } from "./api";
 
 export const ATTEMPTS_PER_PIG = 3;
 
@@ -15,6 +15,7 @@ export type RepeatAttempt = {
 export type BatchPhoto = { file: File; hash: string; savedAt?: string };
 export type RepeatSession = { pig: string; scaleKg: string; attempts: RepeatAttempt[];
   createdAt?: string;
+  estimatePrice?: Price | null;
   pendingKeypointResults?: Record<string, Estimate>;
   batch?: { top: BatchPhoto[]; side: BatchPhoto[] } };
 
