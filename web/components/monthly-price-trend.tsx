@@ -20,7 +20,7 @@ const publishedMonth = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Manila
 const publicationDay = new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric" });
 const publishedTime = new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 const ranges = ["3M", "1Y", "All"] as const;
-type Range = (typeof ranges)[number] | number;
+type Range = (typeof ranges)[number];
 type Basis = "PSA national average" | "PSA preliminary" | "Projection" | "Admin published";
 type MonthlyPrice = { year: number; month: string; cents: number; basis: Basis; published?: Price };
 
@@ -35,7 +35,6 @@ const allPrices = [...history, ...preliminary, ...forecast];
 function pricesFor(range: Range, published: MonthlyPrice[]): MonthlyPrice[] {
   if (published.length) {
     if (range === "All") return published;
-    if (typeof range === "number") return published.filter(({ year }) => year === range);
     const latest = new Date(published.at(-1)!.published!.published_at);
     const [year, month] = chartDateISO.format(latest).split("-").map(Number);
     const firstMonth = new Date(Date.UTC(year, month - (range === "3M" ? 3 : 12), 1)).toISOString().slice(0, 7);
@@ -43,15 +42,13 @@ function pricesFor(range: Range, published: MonthlyPrice[]): MonthlyPrice[] {
   }
   if (range === "All") return allPrices;
   if (range === "3M") return [...preliminary, ...forecast];
-  if (range === "1Y") return allPrices.slice(-(12 + forecast.length));
-  return allPrices.filter(({ year }) => year === range);
+  return allPrices.slice(-(12 + forecast.length));
 }
 
 export function MonthlyPriceTrend(): React.JSX.Element {
   const [range, setRange] = useState<Range>("3M");
   const [selectedKey, setSelectedKey] = useState("");
-  const [source, setSource] = useState<"published" | "psa">("published");
-  const [publications, setPublished] = useState<MonthlyPrice[]>([]);
+  const [published, setPublished] = useState<MonthlyPrice[]>([]);
   const [priceStatus, setPriceStatus] = useState<"loading" | "ready" | "error">("loading");
   useEffect(() => {
     const controller = new AbortController();
@@ -94,11 +91,7 @@ export function MonthlyPriceTrend(): React.JSX.Element {
     const timer = window.setInterval(updateDate, 30_000);
     return () => window.clearInterval(timer);
   }, []);
-  const published = source === "published" ? publications : [];
-  const years: readonly number[] = published.length ? [...new Set(published.map(({ year }) => year))] : placeholderYears;
-  const activeRange = typeof range === "number" && !years.includes(range) ? "3M" : range;
-  const rangeName = typeof activeRange === "number" ? String(activeRange) : rangeNames[activeRange];
-  const series = pricesFor(activeRange, published);
+  const series = pricesFor(range, published);
   const entryKey = (entry: MonthlyPrice) => entry.published?.id ?? `${entry.year}-${entry.month}`;
   const labelFor = (entry: MonthlyPrice) => entry.published
     ? publishedTime.format(new Date(entry.published.published_at)) : `${entry.month} ${entry.year}`;
@@ -131,6 +124,9 @@ export function MonthlyPriceTrend(): React.JSX.Element {
     : [0, Math.floor(lastIndex / 2), lastIndex].map((index) => ({
       index, x: x(index), anchor: index === 0 ? "start" as const : index === lastIndex ? "end" as const : "middle" as const,
     }));
+  function selectPoint(index: number): void {
+    setSelectedKey(entryKey(series[Math.max(0, Math.min(lastIndex, index))]));
+  }
   function selectRange(next: Range): void {
     setRange(next);
     setSelectedKey("");
@@ -140,7 +136,7 @@ export function MonthlyPriceTrend(): React.JSX.Element {
     <div className="market-quote-heading">
       <h2 id="monthly-price-title">Live hog price trend</h2>
       <div className="market-view" aria-label="Chart view and today's date">
-        <span>View: {rangeName}</span>
+        <span>View: {rangeNames[range]}</span>
         {today && <time dateTime={today.iso} aria-label={`Today in the Philippines, ${today.label}`}>{today.label}</time>}
       </div>
     </div>
@@ -154,8 +150,19 @@ export function MonthlyPriceTrend(): React.JSX.Element {
       </div>
     </div>
     <div className="market-plot">
+      <span className="sr-only" id="monthly-chart-help">Use the arrow keys to read each price. Home and End go to the first and last points.</span>
       <p className="market-axis-label">Price (₱/kg liveweight)</p>
-      <svg viewBox="0 0 360 125" role="img" aria-labelledby="monthly-chart-title monthly-chart-desc">
+      <svg viewBox="0 0 360 125" role="slider" tabIndex={0}
+        aria-labelledby="monthly-chart-title" aria-describedby="monthly-chart-help monthly-chart-desc"
+        aria-valuemin={1} aria-valuemax={series.length} aria-valuenow={selected + 1}
+        aria-valuetext={`${labelFor(current)}, ${currency.format(current.cents / 100)} per kilogram, ${current.basis}`}
+        onKeyDown={(event) => {
+          const target = { ArrowLeft: selected - 1, ArrowRight: selected + 1, ArrowDown: selected - 1,
+            ArrowUp: selected + 1, Home: 0, End: lastIndex }[event.key];
+          if (target === undefined) return;
+          event.preventDefault();
+          selectPoint(target);
+        }}>
         <title id="monthly-chart-title">{`Live hog prices, ${series[0].month} ${series[0].year} to ${series.at(-1)?.month} ${series.at(-1)?.year}`}</title>
         <desc id="monthly-chart-desc">{published.length ? "Prices published by PigWeigh administrators." : "The solid line shows PSA national averages. The dashed line shows projections."} Exact prices are in the price table.</desc>
         {[min, max].map((tick) => <g key={tick}>
@@ -169,36 +176,24 @@ export function MonthlyPriceTrend(): React.JSX.Element {
           {series[index].published ? (sameDay ? chartDate : publicationDay).format(new Date(series[index].published!.published_at))
             : `${series[index].month.slice(0, 3)} ${series[index].year}`}
         </text>)}
+        {series.map((entry, index) => <circle key={entryKey(entry)} cx={x(index)} cy={y(entry.cents)} r="2"
+          fill={entry.basis === "Projection" ? "var(--muted)" : "var(--primary-dark)"} />)}
         <circle cx={x(selected)} cy={y(current.cents)} r="4" fill={projected ? "var(--surface)" : "var(--primary-dark)"}
           stroke="var(--primary-dark)" strokeWidth="2" />
+        {series.map((entry, index) => {
+          const left = index === 0 ? 0 : (x(index - 1) + x(index)) / 2;
+          const right = index === lastIndex ? 289 : (x(index) + x(index + 1)) / 2;
+          return <rect key={entryKey(entry)} x={left} y="0" width={right - left} height="120" fill="transparent"
+            onPointerEnter={(event) => { if (event.pointerType === "mouse") selectPoint(index); }}
+            onClick={() => selectPoint(index)} />;
+        })}
       </svg>
       <p className="market-axis-label market-time-axis">{published.length ? "Publication date" : "Month and year"}</p>
       {series.some(({ basis }) => basis === "Projection") && <p className="field-help market-line-key">Dashed line shows projected prices.</p>}
     </div>
     <div className="market-months" role="group" aria-label="Price chart range">
-      {ranges.map((option) => <button key={option} type="button" aria-pressed={activeRange === option}
+      {ranges.map((option) => <button key={option} type="button" aria-pressed={range === option}
         onClick={() => selectRange(option)}>{option}</button>)}
-    </div>
-    <div className="market-controls">
-      {publications.length > 0 && <label className="market-month-picker market-source-picker"><span>Price source</span>
-        <select value={source} onChange={(event) => {
-          setSource(event.target.value === "psa" ? "psa" : "published");
-          selectRange("3M");
-        }}>
-          <option value="published">Admin published prices</option>
-          <option value="psa">PSA reference prices</option>
-        </select>
-      </label>}
-      <label className="market-month-picker"><span>Year</span><select value={typeof activeRange === "number" ? activeRange : ""} onChange={(event) => {
-        const year = years.find((option) => String(option) === event.target.value);
-        if (year) selectRange(year);
-      }}>
-        <option value="" disabled>Choose year</option>
-        {years.map((year) => <option key={year}>{year}</option>)}
-      </select></label>
-      <label className="market-month-picker"><span>{published.length ? "Publication" : "Month"}</span><select value={entryKey(current)} onChange={(event) => setSelectedKey(event.target.value)}>
-        {series.map((entry) => <option key={entryKey(entry)} value={entryKey(entry)}>{labelFor(entry)}{entry.basis === "Projection" ? " (projected)" : ""}</option>)}
-      </select></label>
     </div>
     <details>
       <summary>{published.length ? "View published prices and sources" : "View monthly prices and sources"}</summary>
