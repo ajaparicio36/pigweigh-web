@@ -39,7 +39,7 @@ export default function MarkerPage(): React.JSX.Element {
               <li><strong>Measure the black square.</strong> Each side must be 100 mm. Do not include the white margin in your measurement.</li>
               <li><strong>Keep the card flat and the margin intact.</strong> Put it on the back for the top photo, then on the visible flank for the side photo. Keep all four corners visible and avoid covering body landmarks.</li>
             </ol>
-            <Link href="/" className="button button-secondary">Continue to photos</Link>
+            <Link href="/" className="button button-secondary">Continue to capture</Link>
           </section>
           <section className="marker-explanation" aria-labelledby="marker-why-title">
             <h2 id="marker-why-title">Why DICT_4X4_50?</h2>
