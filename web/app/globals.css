@@ -117,6 +117,9 @@ input[type="file"]::file-selector-button { font: inherit; font-weight: 600; back
 .camera-dialog-heading .text-button { min-height: 2.75rem; padding-inline: 0.5rem; }
 .camera-dialog-body { padding: 1.25rem 1.5rem; }
 .camera-instructions { font-size: 0.9375rem; max-width: 70ch; margin-bottom: 1rem; }
+.camera-instructions ul { list-style: disc; padding-inline-start: 1.25rem; margin-top: 0.375rem; }
+.camera-instructions li + li { margin-top: 0.25rem; }
+.camera-detection-help { margin-top: 0.625rem; }
 .camera-preview { position: relative; display: grid; place-items: center; container-type: size; margin-inline: auto; max-height: 45dvh; overflow: hidden; border-radius: 8px; background: #211b17; }
 .camera-preview video { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
 .camera-guides { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }

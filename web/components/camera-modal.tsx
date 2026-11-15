@@ -11,7 +11,7 @@ type CameraModalProps = {
   view: "top" | "side";
   disabled: boolean;
   onCapture: (file: File) => void;
-  onClose: (reason: "close" | "upload") => void;
+  onClose: () => void;
   guidedCapture?: Omit<GuidedCaptureBinding, "onAccept"> & { onAccept: (candidate: Parameters<GuidedCaptureBinding["onAccept"]>[0]) => boolean | Promise<boolean> };
   keepOpen?: boolean;
   batchProgress?: { saved: number; total: number };
@@ -83,7 +83,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
   const label = view === "top" ? "top view" : "side view";
 
   useEffect(() => {
-    if (disabled) { onClose("close"); return; }
+    if (disabled) { onClose(); return; }
     const dialog = dialogRef.current;
     const video = videoRef.current;
     const session = new CameraSession();
@@ -95,7 +95,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
       if (document.visibilityState === "hidden") {
         dismissedRef.current = true;
         guidedRef.current?.abort(); guidedRef.current = null;
-        session.close(); dialog?.close(); onClose("close");
+        session.close(); dialog?.close(); onClose();
       }
     }
     async function start(): Promise<void> {
@@ -141,11 +141,11 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
     setGuidedDetection(null);
     setGuided({ running: false, message: "" });
   }
-  function dismiss(reason: "close" | "upload" = "close"): void {
+  function dismiss(): void {
     if (dismissedRef.current) return;
     dismissedRef.current = true;
     guidedRef.current?.abort(); guidedRef.current = null;
-    sessionRef.current?.close(); dialogRef.current?.close(); onClose(reason);
+    sessionRef.current?.close(); dialogRef.current?.close(); onClose();
   }
   function markReady(): void {
     const video = videoRef.current;
@@ -271,9 +271,15 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
         <button type="button" className="text-button" onClick={() => dismiss()} autoFocus>Close<span className="sr-only"> camera</span></button>
       </div>
       <div className="camera-dialog-body">
-        <p id={helpId} className="camera-instructions">{view === "top"
-          ? "Look straight down from above. Keep the whole pig visible, with the flat marker on its back near the middle of its body. Center the marker in the square guide."
-          : "Look straight at the pig’s side. Keep its whole profile visible, with the flat marker on the visible flank. Center the marker in the square guide."}</p>
+        <div id={helpId} className="camera-instructions">
+          <p><strong>Before you take the photo</strong></p>
+          <ul>
+            <li>{view === "top" ? "Make sure the pig’s body is straight, with no sideways curve." : "Wait for the pig to stand still before taking the photo."}</li>
+            <li>{view === "top" ? "Aim straight down. Keep both ear bases and the tail base visible." : "Aim straight at the side. Keep the legs, withers, and underside of the chest visible."} Fit the whole pig in frame and make sure it is well lit.</li>
+            <li>{view === "top" ? "Place the ArUco marker flat near the middle of the pig’s back." : "Place the ArUco marker flat on the side facing the camera."} Keep the full marker visible and centered in the square guide.</li>
+          </ul>
+          <p className="camera-detection-help">Look for green dots beside <strong>Pig: Detected</strong> and <strong>ArUco: Detected</strong>. Check that the required body points are clear before saving.</p>
+        </div>
         <details className="marker-placement-help">
           <summary>Where to place the marker</summary>
           <p>{view === "top" ? "Place the card flat on the middle of the pig’s back. Hold the phone directly above it."
@@ -312,13 +318,13 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
         {(error || captureError || (guided.message && !guidedDetection?.issue)) &&
           <p className="field-error" role="alert">{error || captureError || guided.message}</p>}
         {guidedDetection && !guidedDetection.issue && <DetectionStatus {...guidedDetection} />}
+        {!guidedDetection && previewActive && preview && <DetectionStatus preview={preview} />}
         <div className="camera-tool-row">
           <button type="button" className="button button-secondary" aria-pressed={previewEnabled}
             disabled={disabled || state !== "ready" || guided.running}
             onClick={() => { setPreview(null); setPreviewEnabled(!previewEnabled); }}>
             {previewEnabled ? "Hide live pose" : "Show live pose"}
           </button>
-          <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>
           {torch !== "unsupported" && <button type="button" className="button button-secondary"
             disabled={disabled || torchPending} onClick={() => void toggleTorch()}>
             {torchPending ? "Changing light…" : turnLightOff ? "Light off" : "Light on"}
