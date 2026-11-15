@@ -28,7 +28,7 @@ type CameraModalProps = {
   view: "top" | "side";
   disabled: boolean;
   onCapture: (file: File) => void;
-  onClose: (reason: "close" | "upload") => void;
+  onClose: () => void;
   guidedCapture?: Omit<GuidedCaptureBinding, "onAccept"> & { onAccept: (candidate: Parameters<GuidedCaptureBinding["onAccept"]>[0]) => boolean | Promise<boolean> };
   keepOpen?: boolean;
   batchStatus?: string;
@@ -103,7 +103,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
   const label = view === "top" ? "top view" : "side view";
 
   useEffect(() => {
-    if (disabled) { onClose("close"); return; }
+    if (disabled) { onClose(); return; }
     const dialog = dialogRef.current;
     const video = videoRef.current;
     const session = new CameraSession();
@@ -115,7 +115,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
       if (document.visibilityState === "hidden") {
         dismissedRef.current = true;
         guidedRef.current?.abort(); guidedRef.current = null;
-        session.close(); dialog?.close(); onClose("close");
+        session.close(); dialog?.close(); onClose();
       }
     }
     async function start(): Promise<void> {
@@ -161,11 +161,11 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
     guidedRef.current.abort(); guidedRef.current = null;
     setGuided({ running: false, message: "Guided capture stopped. You can still capture or upload a photo." });
   }
-  function dismiss(reason: "close" | "upload" = "close"): void {
+  function dismiss(): void {
     if (dismissedRef.current) return;
     dismissedRef.current = true;
     guidedRef.current?.abort(); guidedRef.current = null;
-    sessionRef.current?.close(); dialogRef.current?.close(); onClose(reason);
+    sessionRef.current?.close(); dialogRef.current?.close(); onClose();
   }
   function markReady(): void {
     const video = videoRef.current;
@@ -309,7 +309,6 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
         {guided.message && <p className="field-help" role="status">{guided.message}</p>}
       </div>
       <div className="camera-actions">
-        <button type="button" className="button button-secondary" onClick={() => dismiss("upload")}>Use upload instead</button>
         <button type="button" className="button button-primary" disabled={disabled || captureBusy || state !== "ready"} onClick={() => void takePhoto()}>{state === "capturing" ? "Saving photo…" : view === "top" ? "Save top photo" : "Save side photo"}</button>
       </div>
     </dialog>

@@ -22,10 +22,9 @@ export function PhotoInput({ view, file, check, disabled, onChange, onRetry, gui
   const [error, setError] = useState("");
   const label = view === "top" ? "Top view" : "Side view";
   const rejected = check.status === "error" && check.kind === "rejected";
-  const closeCamera = useCallback((reason: "close" | "upload"): void => {
+  const closeCamera = useCallback((): void => {
     setCameraOpen(false);
-    if (reason === "upload") inputRef.current?.focus();
-    else cameraButtonRef.current?.focus();
+    cameraButtonRef.current?.focus();
   }, []);
 
   useEffect(() => {
