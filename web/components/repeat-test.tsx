@@ -445,12 +445,6 @@ export function RepeatTest({ estimationReady }: { estimationReady: boolean }): R
           </div>
           <button type="button" className="button button-primary" disabled={blocked || viewFull}
             onClick={() => setCamera(view)}>Take {view} photo</button>
-          <label className="pig-upload-field">Upload {view} photos <input type="file" accept="image/jpeg,image/png,image/webp" multiple
-            disabled={blocked || viewFull} onChange={(event) => {
-              const files = Array.from(event.currentTarget.files ?? []);
-              event.currentTarget.value = "";
-              if (!blocked && !viewFull) void addPhotos(view, files);
-            }} /></label>
         </section>;
       })}
       {camera && <CameraModal view={camera} disabled={false} keepOpen captureBusy={busy} onClose={closeCamera}

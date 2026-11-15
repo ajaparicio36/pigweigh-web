@@ -401,7 +401,6 @@ details li + li { margin-top: 0.375rem; }
 .pig-capture-thumbnails { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
 .pig-capture-thumbnails img { aspect-ratio: 1; height: auto; border-radius: 0.4rem; }
 .pig-capture-thumbnails .attempt-remove { margin: 0; padding-inline: 0; }
-.pig-upload-field { display: grid; gap: 0.375rem; justify-items: start; min-width: 0; }
 .pig-attempts input[type="file"] { min-width: 0; max-width: 100%; }
 .pig-attempts input[type="file"]:disabled::file-selector-button {
   color: var(--muted);
@@ -476,7 +475,6 @@ details li + li { margin-top: 0.375rem; }
 
 @media (min-width: 768px) {
   .pig-capture-thumbnails { grid-template-columns: repeat(3, minmax(0, 10rem)); }
-  .pig-upload-field { max-width: 30rem; }
   .monthly-price-trend {
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     gap: 0.65rem clamp(1rem, 3vw, 2rem);

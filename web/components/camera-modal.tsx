@@ -100,7 +100,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
     }
     async function start(): Promise<void> {
       try {
-        if (!window.isSecureContext) throw new Error("Open PigWeigh over HTTPS to use the camera, or upload a photo instead.");
+        if (!window.isSecureContext) throw new Error("Open PigWeigh over HTTPS to use the camera.");
         if (!navigator.mediaDevices?.getUserMedia) throw new Error("This browser does not support camera capture. Upload a photo instead.");
         const stream = await session.open(() => navigator.mediaDevices.getUserMedia({
           audio: false,
@@ -112,7 +112,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
             if (session.isClosed) return;
             guidedRef.current?.abort(); guidedRef.current = null;
             session.close(); setTorch("unsupported"); setGuided({ running: false, message: "Guided capture stopped because the camera stopped." }); setState("error");
-            setError("The camera stopped. Close this window and try again, or upload a photo.");
+            setError("The camera stopped. Close this window and try again.");
           }, { once: true });
         }
         setTorch(session.torchState());
@@ -169,7 +169,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
       else dismiss();
     } catch (failure: unknown) {
       if (session.isClosed) return;
-      setError(failure instanceof Error ? failure.message : "The photo could not be saved. Try again or upload a photo.");
+      setError(failure instanceof Error ? failure.message : "The photo could not be saved. Try again.");
       setState(canCaptureVideo(video) ? "ready" : "starting");
     } finally { capturingRef.current = false; }
   }
@@ -299,7 +299,7 @@ export function CameraModal({ view, disabled, onCapture, onClose, guidedCapture,
             <video ref={videoRef} autoPlay playsInline muted aria-label={`Live ${label} camera preview`}
               onCanPlay={markReady} onPlaying={markReady} onResize={markReady}
               onWaiting={() => { if (!sessionRef.current?.isClosed && !capturingRef.current) setState("starting"); }}
-              onError={() => { if (sessionRef.current?.isClosed) return; guidedRef.current?.abort(); guidedRef.current = null; sessionRef.current?.close(); setTorch("unsupported"); setGuided({ running: false, message: "Guided capture stopped because the preview stopped." }); setState("error"); setError("The live preview could not be shown. Close this window and try again, or upload a photo."); }} />
+              onError={() => { if (sessionRef.current?.isClosed) return; guidedRef.current?.abort(); guidedRef.current = null; sessionRef.current?.close(); setTorch("unsupported"); setGuided({ running: false, message: "Guided capture stopped because the preview stopped." }); setState("error"); setError("The live preview could not be shown. Close this window and try again."); }} />
             {previewActive && preview && Math.abs(preview.width / preview.height - videoAspect) < 0.02 &&
               <svg aria-hidden="true" viewBox={`0 0 ${preview.width} ${preview.height}`}
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 2, pointerEvents: "none" }}>
