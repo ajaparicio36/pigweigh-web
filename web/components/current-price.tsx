@@ -26,7 +26,6 @@ export function CurrentPrice({ state, onRetry }: { state: LoadState<PriceSnapsho
       </div>
       {state.status === "ready" && state.data.price && (
         <div className="price-provenance">
-          <p><span className="field-caption">Source reference</span><SourceReference value={state.data.price.source_reference} /></p>
           <p className="muted">Published <time dateTime={state.data.price.published_at}>{formatPublishedAt(state.data.price.published_at)}</time> (Philippine time)</p>
         </div>
       )}
@@ -40,13 +39,12 @@ export function CurrentPrice({ state, onRetry }: { state: LoadState<PriceSnapsho
         {history?.status === "ready" && (history.data.length ? (
           <table>
             <caption className="sr-only">Published price history in Philippine time</caption>
-            <colgroup><col className="history-date" /><col className="history-rate" /><col /></colgroup>
-            <thead><tr><th scope="col">Published</th><th scope="col">₱ / kg</th><th scope="col">Source</th></tr></thead>
+            <colgroup><col className="history-date" /><col className="history-rate" /></colgroup>
+            <thead><tr><th scope="col">Published</th><th scope="col">₱ / kg</th></tr></thead>
             <tbody>{history.data.map((price) => (
               <tr key={price.id}>
                 <td><time dateTime={price.published_at}>{formatPublishedAt(price.published_at)}</time></td>
                 <td>{formatMoney(price.php_per_kg)}</td>
-                <td><SourceReference value={price.source_reference} /></td>
               </tr>
             ))}</tbody>
           </table>
@@ -54,12 +52,4 @@ export function CurrentPrice({ state, onRetry }: { state: LoadState<PriceSnapsho
       </div>
     </section>
   );
-}
-
-
-function SourceReference({ value }: { value: string }): React.JSX.Element {
-  const parts = value.split(/(https?:\/\/[^\s]+)/);
-  return <>{parts.map((part, index) => index % 2 === 1
-    ? <a key={index} href={part} title={part} target="_blank" rel="noopener noreferrer">Open source</a>
-    : part)}</>;
 }

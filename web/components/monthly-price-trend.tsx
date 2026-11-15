@@ -196,12 +196,12 @@ export function MonthlyPriceTrend(): React.JSX.Element {
         onClick={() => selectRange(option)}>{option}</button>)}
     </div>
     <details>
-      <summary>{published.length ? "View published prices and sources" : "View monthly prices and sources"}</summary>
+      <summary>{published.length ? "View published prices" : "View monthly prices"}</summary>
       <table>
         <caption className="sr-only">Live hog prices in pesos per kilogram liveweight</caption>
-        <thead><tr><th scope="col">{published.length ? "Published" : "Month"}</th><th scope="col">Price per kg</th><th scope="col">{published.length ? "Source" : "Basis"}</th></tr></thead>
+        <thead><tr><th scope="col">{published.length ? "Published" : "Month"}</th><th scope="col">Price per kg</th></tr></thead>
         <tbody>{series.map((entry) => <tr key={entryKey(entry)}>
-          <th scope="row">{labelFor(entry)}</th><td>{currency.format(entry.cents / 100)}</td><td>{entry.published?.source_reference ?? entry.basis}</td>
+          <th scope="row">{labelFor(entry)}</th><td>{currency.format(entry.cents / 100)}</td>
         </tr>)}</tbody>
       </table>
       {published.length ? <p className="field-help">Showing up to the latest 50 published prices.</p> :

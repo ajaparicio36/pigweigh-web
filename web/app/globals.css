@@ -200,7 +200,7 @@ details li + li { margin-top: 0.375rem; }
 .field input:disabled, .field textarea:disabled { background: var(--surface-soft); color: var(--muted); }
 .session-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.9375rem; }
 .session-row p { overflow-wrap: anywhere; }
-.publication-fields { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 2rem; align-items: start; }
+.publication-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; align-items: start; }
 .publication-fields .field + .field { margin-top: 0; }
 .amount-input { position: relative; }
 .amount-input > span { position: absolute; top: 0.6875rem; left: 0.875rem; color: var(--muted); }
@@ -537,6 +537,6 @@ details li + li { margin-top: 0.375rem; }
 .price-history th { background: var(--surface); }
 .price-history th:nth-child(2), .price-history td:nth-child(2) { text-align: end; font-variant-numeric: tabular-nums; }
 .price-history td:nth-child(2) { font-weight: 650; }
-.history-date { width: 30%; }
-.history-rate { width: 22%; }
+.history-date { width: 65%; }
+.history-rate { width: 35%; }
 .price-history a, .price-provenance a { color: var(--primary-dark); text-decoration: underline; }

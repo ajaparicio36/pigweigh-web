@@ -14,9 +14,7 @@ export function AdminPanel(): React.JSX.Element {
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState<"login" | "publish" | "logout" | null>(null);
   const [amount, setAmount] = useState("");
-  const [reference, setReference] = useState("");
   const [priceError, setPriceError] = useState("");
-  const [referenceError, setReferenceError] = useState("");
   const [needsReview, setNeedsReview] = useState(false);
   const [reviewed, setReviewed] = useState(false);
   const activeRequest = useRef(false);
@@ -73,7 +71,7 @@ export function AdminPanel(): React.JSX.Element {
     if (activeRequest.current) return;
     activeRequest.current = true; setBusy("logout"); setNotice(null);
     try {
-      await logout(); setAuth({ status: "signed-out" }); setAmount(""); setReference(""); setNeedsReview(false); setReviewed(false);
+      await logout(); setAuth({ status: "signed-out" }); setAmount(""); setNeedsReview(false); setReviewed(false);
       setNotice({ kind: "info", message: "You’ve signed out." });
     } catch (error: unknown) { setNotice({ kind: "error", message: errorMessage(error) }); }
     finally { activeRequest.current = false; setBusy(null); }
@@ -83,14 +81,12 @@ export function AdminPanel(): React.JSX.Element {
     event.preventDefault();
     if (activeRequest.current || price.status !== "ready" || (needsReview && !reviewed)) return;
     const normalized = normalizePrice(amount);
-    const source = reference.trim();
     setPriceError(normalized ? "" : "Enter a positive price with up to two decimal places, within the supported range.");
-    setReferenceError(source.length > 0 && source.length <= 500 ? "" : "Add a source reference of 1 to 500 characters.");
-    if (!normalized || !source || source.length > 500) return;
+    if (!normalized) return;
     activeRequest.current = true; setBusy("publish"); setNotice(null);
     try {
-      const data = await request("/prices", isPriceSnapshot, jsonBody({ php_per_kg: normalized, source_reference: source, expected_revision: price.data.revision }));
-      setPrice({ status: "ready", data }); setAmount(""); setReference(""); setNeedsReview(false); setReviewed(false);
+      const data = await request("/prices", isPriceSnapshot, jsonBody({ php_per_kg: normalized, source_reference: "Admin published price", expected_revision: price.data.revision }));
+      setPrice({ status: "ready", data }); setAmount(""); setNeedsReview(false); setReviewed(false);
       setNotice({ kind: "success", message: `${formatMoney(normalized)} per kg is now published. The new price takes effect immediately.` });
     } catch (error: unknown) {
       if (error instanceof ApiError && error.status === 409) {
@@ -118,7 +114,7 @@ export function AdminPanel(): React.JSX.Element {
           <div className="field"><label htmlFor="password">Password</label><input id="password" name="password" type="password" autoComplete="current-password" required maxLength={128} disabled={busy === "login"} /></div>
           <button className="button button-primary" type="submit" disabled={busy === "login"}>{busy === "login" ? "Signing in…" : "Sign in"}</button>
         </form>
-        <aside className="login-context"><h2>One published price</h2><p>Each valuation uses the current price per kilogram and records its source.</p><p className="muted">Photo estimates are available without an admin account. Sign-in is only for price administration.</p></aside>
+        <aside className="login-context"><h2>One published price</h2><p>Each valuation uses the current published price per kilogram.</p><p className="muted">Photo estimates are available without an admin account. Sign-in is only for price administration.</p></aside>
       </div>}
       {auth.status === "signed-in" && <>
         <div className="session-row"><p>Signed in as <strong>{auth.session.admin.username}</strong></p><button type="button" className="button button-secondary" disabled={busy !== null} onClick={() => void signOut()}>{busy === "logout" ? "Signing out…" : "Sign out"}</button></div>
@@ -127,10 +123,9 @@ export function AdminPanel(): React.JSX.Element {
           <div className="section-heading"><h2 id="publish-title">Publish a new price</h2><p className="muted">The new price appears on the public chart and applies to new valuations. Saved valuations keep their original price.</p></div>
           <div className="publication-fields">
             <div className="field"><label htmlFor="price">Price per kilogram</label><div className="amount-input"><span aria-hidden="true">₱</span><input id="price" name="php_per_kg" type="text" inputMode="decimal" value={amount} required maxLength={24} disabled={busy !== null} aria-describedby={`price-help${priceError ? " price-error" : ""}`} aria-invalid={Boolean(priceError)} onChange={(event) => { setAmount(event.target.value); setPriceError(""); }} /><span aria-hidden="true">/ kg</span></div><p id="price-help" className="field-help">Philippine pesos. Up to two decimal places.</p>{priceError && <p id="price-error" className="field-error" role="alert">{priceError}</p>}</div>
-            <div className="field"><label htmlFor="reference">Source reference</label><textarea id="reference" name="source_reference" rows={3} required maxLength={500} value={reference} disabled={busy !== null} aria-describedby={`reference-help${referenceError ? " reference-error" : ""}`} aria-invalid={Boolean(referenceError)} onChange={(event) => { setReference(event.target.value); setReferenceError(""); }} /><p id="reference-help" className="field-help">Name the publication, report or other source. Include its date or link where useful.</p>{referenceError && <p id="reference-error" className="field-error" role="alert">{referenceError}</p>}</div>
           </div>
           {needsReview && <div className="review-price"><p>Review the current published price above. Your draft has not been published.</p><label className="checkbox-label"><input type="checkbox" checked={reviewed} disabled={price.status !== "ready" || busy !== null} onChange={(event) => setReviewed(event.target.checked)} />I’ve reviewed the current price and want to publish my draft.</label></div>}
-          <div className="publish-actions"><p className="field-help">{price.status !== "ready" ? "Load the current price before publishing." : "Publication creates a new price record with your source reference."}</p><button type="submit" className="button button-primary" disabled={busy !== null || price.status !== "ready" || (needsReview && !reviewed)}>{busy === "publish" ? "Publishing…" : "Publish price"}</button></div>
+          <div className="publish-actions"><p className="field-help">{price.status !== "ready" ? "Load the current price before publishing." : "Publication creates a new price record."}</p><button type="submit" className="button button-primary" disabled={busy !== null || price.status !== "ready" || (needsReview && !reviewed)}>{busy === "publish" ? "Publishing…" : "Publish price"}</button></div>
         </form>
       </>}
     </div>
