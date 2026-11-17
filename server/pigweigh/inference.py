@@ -304,6 +304,23 @@ class InferenceEngine:
     def _measure_view(self, view: str, image: Image.Image, diagnostics: dict | None = None,
                       overrides: dict[str, list[float]] | None = None, *,
                       include_segments: bool = True) -> dict[str, np.ndarray]:
+        """Retry a sideways photo turned upright when no pig is found as captured."""
+        try:
+            return self._measure_upright(view, image, diagnostics, overrides, include_segments=include_segments)
+        except CaptureRejected as exc:
+            if exc.code != "pig_count" or not exc.message.startswith("No clear pig") or overrides:
+                raise
+            for angle in (90, 270):
+                try:
+                    return self._measure_upright(view, image.rotate(angle, expand=True), diagnostics,
+                                                 overrides, include_segments=include_segments)
+                except CaptureRejected:
+                    continue
+            raise
+
+    def _measure_upright(self, view: str, image: Image.Image, diagnostics: dict | None = None,
+                         overrides: dict[str, list[float]] | None = None, *,
+                         include_segments: bool = True) -> dict[str, np.ndarray]:
         """Run marker, pose and original projection gates before applying any edit."""
         if not self.readiness()["ready"]:
             raise InferenceUnavailable()
